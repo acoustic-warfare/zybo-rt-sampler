@@ -1,0 +1,1 @@
+This directory holds file to be located in /boot on the Zybo z7
