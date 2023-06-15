@@ -102,6 +102,18 @@ TODO
 
 ## Steps
 
+## Connecting to the Zybo via SSH
+1. Wait for the process "crng init" to finish. Usually takes between 5 to 15 minutes.
+2. Enable SSHD:
+```bash
+systemctl enable sshd
+systemctl enable sshd.service
+```
+3. Connect to the Zybo with 
+```bash
+ssh root@ip_address
+```
+
 ## Known Issues
 
 ### "A start job is running for Network Name Resolution"
