@@ -2,6 +2,9 @@
 
 Rapid Development on the Zybo using Baremetal uBoot or Arch Linux
 
+You may copy the contents of `out/` to the SD-card with `out/boot/` on the boot partition and so on.
+
+
 ## Prerequisites (Ubuntu)
 
 ### 1. A DHCP Server
