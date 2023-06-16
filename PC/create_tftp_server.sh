@@ -27,6 +27,6 @@ TFTP_OPTIONS="--secure -v"
 EOL
 
 sudo systemctl enable tftpd-hpa
-sudo systemctl restart tfpd-hpa
+sudo systemctl restart tftpd-hpa
 
 echo "Done"
