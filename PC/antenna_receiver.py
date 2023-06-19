@@ -8,9 +8,7 @@ import ctypes
 
 import numpy as np
 
-from multiprocessing import Process, JoinableQueue, active_children
-import os
-import sys
+from multiprocessing import Process, JoinableQueue
 
 # NOTE: Check if big-endian or little-endian as this is often flipped
 # use:
@@ -77,8 +75,7 @@ class _listener:
     def _exit_gracefully(self, *args, **kwargs):
         """Break loop on `SIGINT` or `SIGTERM`"""
         self.running = False
-        self.sock.close()
-        
+
     def listen(self):
         """Receiving loop will put data into a queue for the algorithm to poll"""
         while self.running:
@@ -90,7 +87,6 @@ class _listener:
             data_array = np.frombuffer(data, dtype=config.D_TYPE)
 
             self._q.put(data_array)
-
 
         print("Done")
 
@@ -108,7 +104,8 @@ class AntennaReceiver:
         self.running = True
 
         signal.signal(signal.SIGINT, self._exit_gracefully)
-        #signal.signal(signal.SIGTERM, self._exit_gracefully)
+        signal.signal(signal.SIGTERM, self._exit_gracefully)
+
         # Starting receiver as a separate process
         self.process = Process(target=self._listener.listen)
         self.process.start()
@@ -116,8 +113,9 @@ class AntennaReceiver:
     def _exit_gracefully(self, *args, **kwargs):
         """Break loop on `SIGINT` or `SIGTERM`"""
         self.running = False
-        os.kill(self.process.pid, signal.SIGTERM)
-        os._exit(0)
+        self._listener.sock.close()
+        self.process.join()
+
 
     def disconnect(self):
         """Wrapper for shutting down listener"""
@@ -127,8 +125,9 @@ class AntennaReceiver:
         while self.running:
             counter = 0
             final_buffer = np.zeros((100, 68), dtype=config.D_TYPE)
-            
+
             while counter < 100:
+            
                 for buffer in queue_rows(self._q):
                     
                     final_buffer[counter, :] = buffer
@@ -146,6 +145,5 @@ if __name__ == '__main__':
     receiver = AntennaReceiver()
 
     for i, sample in enumerate(receiver.get_data()):
-        if receiver.running:
-            print(sample[0][3])
-            print(i)
+        print(sample[0][3])
+        print(i)
