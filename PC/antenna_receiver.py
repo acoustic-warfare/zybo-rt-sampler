@@ -9,6 +9,8 @@ import ctypes
 import numpy as np
 
 from multiprocessing import Process, JoinableQueue
+import os
+import sys
 
 # NOTE: Check if big-endian or little-endian as this is often flipped
 # use:
@@ -75,6 +77,7 @@ class _listener:
     def _exit_gracefully(self, *args, **kwargs):
         """Break loop on `SIGINT` or `SIGTERM`"""
         self.running = False
+        self.sock.close()
 
     def listen(self):
         """Receiving loop will put data into a queue for the algorithm to poll"""
@@ -113,8 +116,8 @@ class AntennaReceiver:
     def _exit_gracefully(self, *args, **kwargs):
         """Break loop on `SIGINT` or `SIGTERM`"""
         self.running = False
-        self._listener.sock.close()
-        self.process.join()
+        os.kill(self.process.pid, signal.SIGTERM)
+        os._exit(0)
 
 
     def disconnect(self):
