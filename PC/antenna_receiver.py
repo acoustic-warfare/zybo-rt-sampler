@@ -26,7 +26,7 @@ class Data(ctypes.Structure):
     ]
 
 DATA_SIZE = ctypes.sizeof(Data)
-
+print(DATA_SIZE)
 class read_from_q:
     def __init__(self, q, block=False, timeout=None):
         """
@@ -147,5 +147,5 @@ if __name__ == '__main__':
 
     for i, sample in enumerate(receiver.get_data()):
         if receiver.running:
-            print(sample[0][3])
+            print(sample[0])
             print(i)
