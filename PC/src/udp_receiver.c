@@ -86,7 +86,7 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb){
 int close_socket(int socket_desc){
     return close(socket_desc);
 }
-
+//TODO: Remove main here and work in the real main file instead
 int main(void){
     // Create UDP socket:
     int socket_desc = create_and_bind_socket();
