@@ -52,9 +52,11 @@ run: build/main.o build/circular_buffer.o # build/cy_api.o
 
 .PHONY: clean
 
+# $(BUILD)/*.c $(BUILD)/*.h
 clean:
 	echo "Removing Generated Build Files"
-	rm $(BUILD)/*.c $(BUILD)/*.h $(BUILD)/*.o
+	
+	rm $(BUILD)/*.o 
 
 	echo "Removing Binaries"
 	rm $(BIN)
