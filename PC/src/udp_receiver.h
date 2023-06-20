@@ -1,3 +1,25 @@
+/******************************************************************************
+ * Title                 :   UDP-packer receiver
+ * Filename              :   udp_receiver.h
+ * Author                :   jteglund
+ * Origin Date           :   20/06/2023
+ * Version               :   1.0.0
+ * Compiler              :   gcc (GCC) 9.5.0
+ * Target                :   x86_64 GNU/Linux
+ * Notes                 :   None
+ ******************************************************************************
+
+ Functions to manage a UDP-packet receiver with functionality to write to a circular buffer.
+
+ USAGE:
+
+ #include "udp_receiver.h"
+ 
+ sockfd = create_and_bind_socket();
+ receive_and_print(sockfd); | receive_and_write_to_buffer(sockfd, ring_buffer *rb);
+ close_socket();
+*/
+
 #include "circular_buffer.h"
 
 #define UDP_PORT 21844
