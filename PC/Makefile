@@ -37,6 +37,9 @@ build/main.o:
 build/circular_buffer.o:
 	$(CC) $(CFLAGS) -c src/circular_buffer.c -o build/circular_buffer.o
 
+build/antenna.o:
+	$(CC) $(CFLAGS) -c src/antenna/antenna.c -o build/antenna.o
+
 # 
 # lib/beamformer.so: build/main.o build/cy_api.o
 # 	$(CC) ${CFLAGS} -lm -shared -o lib/beamformer.so build/main.o build/cy_api.o -fPIC
@@ -44,8 +47,8 @@ build/circular_buffer.o:
 build/sampler.o: src/receiver.c
 	$(CC) $(CFLAGS) -lm -c -o build/sampler.o src/receiver.c
 
-lib/libsampler.so: build/sampler.o
-	$(CC) $(CFLAGS) -lm -shared -o lib/libsampler.so build/sampler.o -fPIC
+lib/libsampler.so: build/sampler.o build/antenna.o
+	$(CC) $(CFLAGS) -lm -shared -o lib/libsampler.so build/sampler.o build/antenna.o -fPIC
 
 run: build/main.o build/circular_buffer.o # build/cy_api.o 
 	$(CC) build/main.o build/circular_buffer.o $(LFLAGS) -o $(BIN)
