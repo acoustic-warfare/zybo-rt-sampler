@@ -23,6 +23,9 @@ typedef struct _ring_buffer
     float data[BUFFER_LENGTH];
 } ring_buffer;
 
+ring_buffer *create_ring_buffer();
+
+ring_buffer *destroy_ring_buffer(ring_buffer *rb);
 
 void write_buffer(ring_buffer *rb, float *in, int length, int offset);
 

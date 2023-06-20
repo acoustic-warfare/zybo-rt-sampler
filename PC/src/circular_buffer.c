@@ -15,13 +15,14 @@
 
  #include "circular_buffer.h"
 
- ring_buffer *rb = (ring_buffer *)calloc(1, sizeof(ring_buffer));
- rb->index = 0:
+ ring_buffer *rb = create_ring_buffer();
 
  write_buffer(rb, ptr, N, 0);
 
  read_buffer_mcpy(rb, &out[0]);
 
+ rb = destroy_ring_buffer(rb);
+ 
 */
 
 #include <stdlib.h>
@@ -30,6 +31,22 @@
 #include "config.h"
 #include "circular_buffer.h"
 
+/*
+Create a ring buffer
+*/
+ring_buffer *create_ring_buffer(){
+    ring_buffer *rb = (ring_buffer *)calloc(1, sizeof(ring_buffer));
+    rb->index = 0;
+    return rb;
+}
+
+/*
+Destroy a ring buffer
+*/
+ring_buffer *destroy_ring_buffer(ring_buffer *rb){
+    free(rb);
+    rb = NULL;
+}
 
 /*
 Write data from an address `in` to a ring buffer you can specify offset

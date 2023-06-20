@@ -85,7 +85,6 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb){
         }
         write_buffer_int32(rb, client_msg->stream, N_MICROPHONES, 0);
     }
-
     free(client_msg);
     return 0;
 }
@@ -94,15 +93,14 @@ int close_socket(int socket_desc){
     return close(socket_desc);
 }
 
-int demo(void){
+int main(void){
     // Create UDP socket:
     int socket_desc = create_and_bind_socket();
 
     //Create a ring buffer
-    ring_buffer *rb = (ring_buffer *)calloc(1, sizeof(ring_buffer));
-    rb->index = 0;
+    ring_buffer* rb = create_ring_buffer();
 
-    //receive_and_write_to_buffer(socket_desc, rb);
+    receive_and_write_to_buffer(socket_desc, rb);
 
     //receive_and_print(socket_desc);
     // Close the socket:
