@@ -23,7 +23,10 @@ int create_and_bind_socket();
 /// @return -1 if error occured.
 int receive_and_print(int socket_desc);
 
-// TODO
+/// @brief Receives messages from UDP client forever and writes to a ring buffer
+/// @param socket_desc A socket file descriptor
+/// @param rb A pointer to a ring buffer
+/// @return 0 if no errors and -1 if the message can't be received
 int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb);
 
 /// @brief Closes the socket descriptor.

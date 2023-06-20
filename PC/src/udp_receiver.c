@@ -40,13 +40,6 @@ int create_and_bind_socket(){
     return socket_desc;
 }
 
-//TODO: Find a better way to type convert
-float *int32_array_to_float(int32_t *int32_array, float *to_array, int array_length){    
-    for(int i = 0; i < array_length; i++){
-        to_array[i] = (float)int32_array[i];
-    }
-    return to_array;
-}
 
 #include <stdlib.h>
 int receive_and_print(int socket_desc)
@@ -82,9 +75,8 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb){
             return -1;
         }
         //Cast all values to float
-        int32_array_to_float(client_msg->stream, message, 64);
-        //TODO: FIX MAGIC NUMBER
-        write_buffer(rb, message, 64, 0);
+        //TODO: Fix magic number
+        write_buffer_int32(rb, client_msg->stream, 64, 0);
     }
 
     free(client_msg);

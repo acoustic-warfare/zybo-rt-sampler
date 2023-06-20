@@ -26,7 +26,7 @@
 
 #include <stdlib.h>
 #include <string.h> // memcpy
-
+#include <stdint.h>
 #include "config.h"
 #include "circular_buffer.h"
 
@@ -46,6 +46,28 @@ void write_buffer(ring_buffer *rb, float *in, int length, int offset)
         
         idx = (i + previous_item) & buffer_length; // Wrap around
         rb->data[idx] = in[i + offset];
+    }
+
+    // Sync current index
+    rb->index += length;
+    rb->index &= BUFFER_LENGTH - 1;
+}
+
+/*
+Write data from an address `in` to a ring buffer you can specify offset
+but most of the times, it will probably just be 0
+*/
+void write_buffer_int32(ring_buffer *rb, int32_t *in, int length, int offset)
+{
+    int buffer_length = BUFFER_LENGTH - 1;
+    int previous_item = rb->index;
+
+    int idx;
+    for (int i = 0; i < length; ++i)
+    {
+        
+        idx = (i + previous_item) & buffer_length; // Wrap around
+        rb->data[idx] = (float)in[i + offset];
     }
 
     // Sync current index
