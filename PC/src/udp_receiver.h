@@ -1,6 +1,15 @@
 #define UDP_PORT 21844
 #define SERVER_IP "10.0.0.1"
 
+/// @brief FPGA Protocol
+typedef struct _msg
+{
+    int32_t array_id;
+    int32_t version;
+    int32_t frequency;
+    int32_t counter;
+    int32_t stream[64]; // Change magic number
+} msg;
 
 /// @brief Creates and binds the socket to a server ip and port.
 /// @pre Requires the SERVER_IP and UDP_PORT to be correctly specified in the header file.

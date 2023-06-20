@@ -60,6 +60,26 @@ int receive_and_print_message(int socket_desc){
     return 0;
 }
 
+#include <stdlib.h>
+int receive_and_print(int socket_desc)
+{
+    msg *client_msg = (msg *)calloc(1, sizeof(msg));
+
+    printf("Listening for incoming messages...\n\n");
+
+     // Receive client's message:
+    while(true){
+        if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0){
+            printf("Couldn't receive\n");
+            return -1;
+        }
+        //Prints the 3rd element of the message received
+        printf("%s" "%d \n", "Sample count: ", client_msg->counter);
+    }
+
+    return 0;
+}
+
 int receive_and_write_to_buffer(int socket_desc){
     return 0;
 }
@@ -72,7 +92,8 @@ int main(void){
     // Create UDP socket:
     int socket_desc = create_and_bind_socket();
     
-    receive_and_print_message(socket_desc);
+    // receive_and_print_message(socket_desc);
+    receive_and_print(socket_desc);
     // Close the socket:
     close_socket(socket_desc);
     
