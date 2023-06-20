@@ -1,0 +1,6 @@
+{
+    "python.analysis.typeCheckingMode": "off",
+    "files.associations": {
+        "socket.h": "c"
+    }
+}

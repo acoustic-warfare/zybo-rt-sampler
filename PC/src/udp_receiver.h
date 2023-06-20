@@ -21,7 +21,7 @@ int create_and_bind_socket();
 /// @brief Receives messages from the UDP client forever and prints the messages.
 /// @param socket_desc A socket file descriptor
 /// @return -1 if error occured.
-int receive_and_print_message(int socket_desc);
+int receive_and_print(int socket_desc);
 
 // TODO
 int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb);

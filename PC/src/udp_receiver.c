@@ -48,27 +48,6 @@ float *int32_array_to_float(int32_t *int32_array, float *to_array, int array_len
     return to_array;
 }
 
-int receive_and_print_message(int socket_desc){
-    // Create buffer
-    int32_t client_message[MESSAGE_LENGTH];
-    // Clean buffers:
-    memset(client_message, '\0', sizeof(client_message));
-
-    printf("Listening for incoming messages...\n\n");
-    // Receive client's message:
-    while(true){
-        if (recv(socket_desc, client_message, sizeof(client_message), 0) < 0){
-            printf("Couldn't receive\n");
-            return -1;
-        }
-        //Prints the 3rd element of the message received
-
-        printf("%s" "%d \n", "Sample count: ", client_message[3]);
-    }
-
-    return 0;
-}
-
 #include <stdlib.h>
 int receive_and_print(int socket_desc)
 {
@@ -85,36 +64,30 @@ int receive_and_print(int socket_desc)
         //Prints the 3rd element of the message received
         printf("%s" "%d \n", "Sample count: ", client_msg->counter);
     }
-
+    free(client_msg);
     return 0;
 }
 
 int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb){
     // Create buffer
-    int32_t client_message[MESSAGE_LENGTH];
-    float message[MESSAGE_LENGTH];
-    float out[MESSAGE_LENGTH];
-    // Clean buffer:
-    memset(client_message, '\0', sizeof(client_message));
+    msg *client_msg = (msg *)calloc(1, sizeof(msg));
+    float message[64];
 
     printf("Listening for incoming messages...\n\n");
     
     // Receive client's message:
     while(true){
-        if (recv(socket_desc, client_message, sizeof(client_message), 0) < 0){
+        if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0){
             printf("Couldn't receive\n");
-            //Cast all values to float
-            int32_array_to_float(client_message, message, MESSAGE_LENGTH);
             return -1;
         }
-        //Prints the 3rd element of the message received
-        
-        write_buffer(rb, message, MESSAGE_LENGTH, 0);
-        read_buffer_mcpy(rb, &out[0]);
-        for(int i = 0; i < MESSAGE_LENGTH; i++){
-            printf("%f", out[3]);
-        }
+        //Cast all values to float
+        int32_array_to_float(client_msg->stream, message, 64);
+        //TODO: FIX MAGIC NUMBER
+        write_buffer(rb, message, 64, 0);
     }
+
+    free(client_msg);
     return 0;
 }
 
@@ -125,16 +98,15 @@ int close_socket(int socket_desc){
 int main(void){
     // Create UDP socket:
     int socket_desc = create_and_bind_socket();
-    
+
     //Create a ring buffer
     ring_buffer *rb = (ring_buffer *)calloc(1, sizeof(ring_buffer));
     rb->index = 0;
 
-    receive_and_write_to_buffer(socket_desc, rb);
+    //receive_and_write_to_buffer(socket_desc, rb);
 
-    //receive_and_print_message(socket_desc);
+    receive_and_print(socket_desc);
     // Close the socket:
     close_socket(socket_desc);
-    
     return 0;
 }
