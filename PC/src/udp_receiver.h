@@ -1,3 +1,5 @@
+#include "circular_buffer.h"
+
 #define UDP_PORT 21844
 #define SERVER_IP "10.0.0.1"
 
@@ -13,7 +15,7 @@ int create_and_bind_socket();
 int receive_and_print_message(int socket_desc);
 
 // TODO
-int receive_and_write_to_buffer(int socket_desc);
+int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb);
 
 /// @brief Closes the socket descriptor.
 /// @param socket_desc A socket file descriptor.
