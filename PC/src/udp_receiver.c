@@ -21,11 +21,6 @@
 #include <stdbool.h>
 #include "udp_receiver.h"
 
-//TODO move these defines to config
-#define HEADER 4
-#define NO_MICROPHONES 2
-#define NO_SAMPLES 32
-#define MESSAGE_LENGTH HEADER + NO_MICROPHONES * NO_SAMPLES
 
 int create_and_bind_socket(){
     int socket_desc;
