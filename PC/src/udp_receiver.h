@@ -21,6 +21,7 @@
 */
 
 #include "circular_buffer.h"
+#include "config.h"
 
 #define UDP_PORT 21844
 #define SERVER_IP "10.0.0.1"
@@ -32,7 +33,7 @@ typedef struct _msg
     int32_t version;
     int32_t frequency;
     int32_t counter;
-    int32_t stream[64]; // Change magic number
+    int32_t stream[N_MICROPHONES]; 
 } msg;
 
 /// @brief Creates and binds the socket to a server ip and port.

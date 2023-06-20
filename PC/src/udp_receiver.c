@@ -83,9 +83,7 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb){
             printf("Couldn't receive\n");
             return -1;
         }
-        //Cast all values to float
-        //TODO: Fix magic number
-        write_buffer_int32(rb, client_msg->stream, 64, 0);
+        write_buffer_int32(rb, client_msg->stream, N_MICROPHONES, 0);
     }
 
     free(client_msg);
