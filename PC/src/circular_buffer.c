@@ -1,47 +1,54 @@
+/******************************************************************************
+ * Title                 :   Store Contigiuous Data
+ * Filename              :   circular_buffer.c
+ * Author                :   Irreq
+ * Origin Date           :   120/06/2023
+ * Version               :   1.0.0
+ * Compiler              :   gcc (GCC) 9.5.0
+ * Target                :   x86_64 GNU/Linux
+ * Notes                 :   None
+ ******************************************************************************
+
+ Functions to store scalar data efficiently in a circular buffer.
+
+ USAGE:
+
+ #include "circular_buffer.h"
+
+ ring_buffer *rb = (ring_buffer *)calloc(1, sizeof(ring_buffer));
+ rb->index = 0:
+
+ write_buffer(rb, ptr, N, 0);
+
+ read_buffer_mcpy(rb, &out[0]);
+
+*/
+
 #include <stdlib.h>
 #include <string.h> // memcpy
 
 #include "config.h"
 #include "circular_buffer.h"
 
+
 /*
-
-USAGE:
-
-ring_buffer *rb = (ring_buffer *)calloc(1, sizeof(ring_buffer));
-rb->index = 0:
-
-write_buffer(rb, ptr, N, 0);
-
-read_buffer_mcpy(rb, &out[0]);
-
-*/
-
-// typedef struct _ring_buffer
-// {
-//     int index;
-//     float data[BUFFER_LENGTH];
-// } ring_buffer;
-
-/**
 Write data from an address `in` to a ring buffer you can specify offset
 but most of the times, it will probably just be 0
 */
 void write_buffer(ring_buffer *rb, float *in, int length, int offset)
 {
-    // -1 for our binary modulo in a moment
     int buffer_length = BUFFER_LENGTH - 1;
     int previous_item = rb->index;
 
     int idx;
     for (int i = 0; i < length; ++i)
     {
-        // modulo will automagically wrap around our index
-        idx = (i + previous_item) & buffer_length;
+        
+        idx = (i + previous_item) & buffer_length; // Wrap around
         rb->data[idx] = in[i + offset];
     }
 
-    // Update the current index of our ring buffer.
+    // Sync current index
     rb->index += length;
     rb->index &= BUFFER_LENGTH - 1;
 }
@@ -77,7 +84,7 @@ void read_buffer(ring_buffer *rb, float *out, int length, int offset)
 }
 
 /*
-Almost 100 times faster than the code above
+Almost 100 times faster than the code above but does the same
 */
 void read_buffer_mcpy(ring_buffer *rb, float *out)
 {

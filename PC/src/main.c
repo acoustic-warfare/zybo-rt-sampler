@@ -51,6 +51,6 @@ int main(int argc, char const *argv[])
 {
     printf("Hello World! Number of samples: %d\n", N_SAMPLES);
 
-    test_rb();
+    // test_rb();
     return 0;
 }

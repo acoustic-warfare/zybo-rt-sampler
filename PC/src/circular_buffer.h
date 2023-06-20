@@ -1,4 +1,21 @@
+/******************************************************************************
+ * Title                 :   Store Contigiuous Data
+ * Filename              :   circular_buffer.h
+ * Author                :   Irreq
+ * Origin Date           :   120/06/2023
+ * Version               :   1.0.0
+ * Compiler              :   gcc (GCC) 9.5.0
+ * Target                :   x86_64 GNU/Linux
+ * Notes                 :   None
+ ******************************************************************************
+
+ Functions to store scalar data efficiently in a circular buffer.
+
+*/
+
 #include "config.h"
+
+
 
 typedef struct _ring_buffer
 {
