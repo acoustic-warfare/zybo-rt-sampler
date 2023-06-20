@@ -56,3 +56,7 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb);
 /// @param socket_desc A socket file descriptor.
 /// @return -1 if error occured.
 int close_socket(int socket_desc);
+
+
+
+int receive_and_write_to_buffer_test(int socket_desc, struct ringba *rb);

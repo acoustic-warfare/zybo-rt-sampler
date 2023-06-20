@@ -134,3 +134,36 @@ void read_buffer_mcpy(ring_buffer *rb, float *out)
     memcpy(out, (void *)(data_ptr + rb->index), sizeof(float) * first_partition);
     memcpy(out + first_partition, (void *)(data_ptr), sizeof(float) * rb->index);
 }
+
+
+/*
+Write data from an address `in` to a ring buffer you can specify offset
+but most of the times, it will probably just be 0
+*/
+void write_int32(struct ringba *rb, int32_t *in, int length, int offset)
+{
+    int buffer_length = BUFFER_LENGTH - 1;
+    int previous_item = rb->index;
+
+    int idx;
+    for (int i = 0; i < length; ++i)
+    {
+        
+        idx = (i + previous_item) & buffer_length; // Wrap around
+        rb->data[idx] = (float)in[i + offset];
+    }
+
+    // Sync current index
+    rb->index += length;
+    rb->index &= BUFFER_LENGTH - 1;
+}
+
+void read_mcpy(struct ringba *rb, float *out)
+{
+    int first_partition = BUFFER_LENGTH - rb->index;
+
+    float *data_ptr = &rb->data[0];
+
+    memcpy(out, (void *)(data_ptr + rb->index), sizeof(float) * first_partition);
+    memcpy(out + first_partition, (void *)(data_ptr), sizeof(float) * rb->index);
+}

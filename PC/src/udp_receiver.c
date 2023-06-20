@@ -89,21 +89,41 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb){
     return 0;
 }
 
+int receive_and_write_to_buffer_test(int socket_desc, struct ringba *rb){
+    // Create buffer
+    msg *client_msg = (msg *)calloc(1, sizeof(msg));
+    float message[64];
+
+    printf("Listening for incoming messages...\n\n");
+    
+    // Receive client's message:
+    while(true){
+        if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0){
+            printf("Couldn't receive\n");
+            return -1;
+        }
+        write_int32(rb, client_msg->stream, N_MICROPHONES, 0);
+    }
+
+    free(client_msg);
+    return 0;
+}
+
 int close_socket(int socket_desc){
     return close(socket_desc);
 }
 
-int main(void){
-    // Create UDP socket:
-    int socket_desc = create_and_bind_socket();
-
-    //Create a ring buffer
-    ring_buffer* rb = create_ring_buffer();
-
-    receive_and_write_to_buffer(socket_desc, rb);
-
-    //receive_and_print(socket_desc);
-    // Close the socket:
-    close_socket(socket_desc);
-    return 0;
-}
+// int main(void){
+//     // Create UDP socket:
+//     int socket_desc = create_and_bind_socket();
+// 
+//     //Create a ring buffer
+//     ring_buffer* rb = create_ring_buffer();
+// 
+//     receive_and_write_to_buffer(socket_desc, rb);
+// 
+//     //receive_and_print(socket_desc);
+//     // Close the socket:
+//     close_socket(socket_desc);
+//     return 0;
+// }

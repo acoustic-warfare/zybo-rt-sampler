@@ -37,6 +37,9 @@ build/main.o:
 build/circular_buffer.o:
 	$(CC) $(CFLAGS) -c src/circular_buffer.c -o build/circular_buffer.o
 
+build/udp.o:
+	$(CC) $(CFLAGS) -c src/udp_receiver.c -o build/udp.o
+
 build/antenna.o:
 	$(CC) $(CFLAGS) -c src/antenna/antenna.c -o build/antenna.o
 
@@ -50,9 +53,9 @@ build/sampler.o: src/receiver.c
 lib/libsampler.so: build/sampler.o build/antenna.o
 	$(CC) $(CFLAGS) -lm -shared -o lib/libsampler.so build/sampler.o build/antenna.o -fPIC
 
-run: build/main.o build/circular_buffer.o # build/cy_api.o 
-	$(CC) build/main.o build/circular_buffer.o $(LFLAGS) -o $(BIN)
-
+run: build/main.o build/circular_buffer.o build/udp.o# build/cy_api.o 
+	$(CC) build/main.o build/circular_buffer.o build/udp.o $(LFLAGS) -o $(BIN)
+	# $(CC) build/main.o $(LFLAGS) -o $(BIN)
 .PHONY: clean
 
 # $(BUILD)/*.c $(BUILD)/*.h
