@@ -33,6 +33,10 @@ all: lib/libsampler.so run
 build/main.o:
 	# cp src/main.c build/main.c # Force adding main.c to build
 	$(CC) $(CFLAGS) -c src/main.c -o build/main.o
+	
+build/circular_buffer.o:
+	$(CC) $(CFLAGS) -c src/circular_buffer.c -o build/circular_buffer.o
+
 # 
 # lib/beamformer.so: build/main.o build/cy_api.o
 # 	$(CC) ${CFLAGS} -lm -shared -o lib/beamformer.so build/main.o build/cy_api.o -fPIC
@@ -43,8 +47,8 @@ build/sampler.o: src/receiver.c
 lib/libsampler.so: build/sampler.o
 	$(CC) $(CFLAGS) -lm -shared -o lib/libsampler.so build/sampler.o -fPIC
 
-run: build/main.o # build/cy_api.o 
-	$(CC) build/main.o $(LFLAGS) -o $(BIN)
+run: build/main.o build/circular_buffer.o # build/cy_api.o 
+	$(CC) build/main.o build/circular_buffer.o $(LFLAGS) -o $(BIN)
 
 .PHONY: clean
 
