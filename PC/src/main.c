@@ -21,20 +21,23 @@
 #include "udp_receiver.h"
 #include "config.h"
 
-
 #define KEY 1234
+
+#define BUFFER_LENGTH 10
+
+// typedef struct _rb
+// {
+//     float data[BUFFER_LENGTH];
+//     int index;
+// } ring_buffer;
+
+ring_buffer *rb;
 
 int shmid; // Shared memory ID
 
-// struct ring_buffer* buffer;
-
-struct ringba* rob;
-
-// ring_buffer *rb = (ring_buffer *) calloc(1, sizeof(ring_buffer));
-
-int semid; // Semaphore ID
-struct sembuf sem_wait = {0, -1, SEM_UNDO}; // Wait operation
-struct sembuf sem_signal = {0, 1, SEM_UNDO}; // Sig operation
+int semid;                                      // Semaphore ID
+struct sembuf my_sem_wait = {0, -1, SEM_UNDO};  // Wait operation
+struct sembuf my_sem_signal = {0, 1, SEM_UNDO}; // Sig operation
 
 /*
 Create a shared memory ring buffer
@@ -42,41 +45,37 @@ Create a shared memory ring buffer
 void init_shared_memory()
 {
     // Create
-    shmid = shmget(KEY, sizeof(struct ringba), IPC_CREAT);
+    shmid = shmget(KEY, sizeof(ring_buffer), IPC_CREAT);
 
-    if (shmid == -1) {
+    if (shmid == -1)
+    {
         perror("shmget not working");
         exit(1);
     }
 
-    rob = (struct ringba*)shmat(shmid, NULL, 0);
+    rb = (ring_buffer *)shmat(shmid, NULL, 0);
 
-    if (rob == (struct ringba *)-1)
+    if (rb == (ring_buffer *)-1)
     {
         perror("shmat not working");
         exit(1);
     }
 
-    rob->index = 0;
-
-    // Init mem
-    // rb->read_pos = 0;
-    // rb->write_pos = 0;
+    rb->index = 0;
 }
 
-/*
-Create interprocess semaphore
-*/
 void init_semaphore()
 {
     semid = semget(KEY, 1, IPC_CREAT);
 
-    if (semid == -1) {
+    if (semid == -1)
+    {
         perror("semget");
         exit(1);
     }
 
-    union semun {
+    union semun
+    {
         int val;
         struct semid_ds *buf;
         short *array;
@@ -91,70 +90,55 @@ void init_semaphore()
     }
 }
 
-// void test_rb()
-// {
-//     // Initialize the ring buffer
-//     ring_buffer *myRingBuffer = (ring_buffer *)calloc(1, sizeof(ring_buffer));
-//     myRingBuffer->index = 0;
-// 
-//     // float d[10] = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
-// 
-//     float d[BUFFER_LENGTH * 2];
-// 
-//     for (int i = 0; i < BUFFER_LENGTH * 2; i++)
-//     {
-//         d[i] = (float)(i + 1);
-//     }
-// 
-//     float *ptr = d;
-// 
-//     write_buffer(myRingBuffer, ptr, BUFFER_LENGTH, 0);
-// 
-//     write_buffer(myRingBuffer, ptr, BUFFER_LENGTH - 4, 0);
-// 
-//     float out[BUFFER_LENGTH] = {0.0};
-// 
-//     for (size_t i = 0; i < BUFFER_LENGTH; i++)
-//     {
-//         out[i] = 0.0;
-//     }
-// 
-//     // convolve_avx_unrolled_vector_unaligned_fma()
-// 
-//     read_buffer_mcpy(myRingBuffer, &out[0]);
-// 
-//     for (int i = 0; i < BUFFER_LENGTH; i++)
-//     {
-//         printf("%f ", out[i]);
-//     }
-// 
-//     printf("\n");
-// }
+void _myread()
+{
+    semop(semid, &my_sem_wait, 1);
 
-//void get_data(float *out) {
-//    if (semop(semid, &sem_wait, 1) == -1)
-//    {
-//        perror("semop");
-//        exit(1);
-//    }
-//
-//    read_mcpy(rob, out);
-//
-//    if (semop(semid, &sem_signal, 1) == -1)
-//    {
-//        perror("semop");
-//        exit(1);
-//    }
-//}
+    float rout[BUFFER_LENGTH];
+
+    float *out = &rout[0];
+
+    int first_partition = BUFFER_LENGTH - rb->index;
+
+    float *data_ptr = &rb->data[0];
+
+    memcpy(out, (void *)(data_ptr + rb->index), sizeof(float) * first_partition);
+    memcpy(out + first_partition, (void *)(data_ptr), sizeof(float) * rb->index);
+
+    printf("\n");
+    for (int i = 0; i < BUFFER_LENGTH; i++)
+    {
+        printf("%f ", rout[i]);
+    }
+
+    printf("\n");
+
+    semop(semid, &my_sem_signal, 1);
+}
+
+void myread()
+{
+    semop(semid, &my_sem_wait, 1);
+    printf("\n");
+    for (int i = 0; i < BUFFER_LENGTH; i++)
+    {
+        printf("%f ", rb->data[i]);
+    }
+
+    printf("\n");
+
+    semop(semid, &my_sem_signal, 1);
+}
 
 int main(int argc, char const *argv[])
 {
-    
     init_shared_memory();
 
-    init_semaphore();
+    for (int i = 0; i < BUFFER_LENGTH; i++) {
+        rb->data[i] = 0.0;
+    }
 
-    
+    init_semaphore();
 
     pid_t pid = fork(); // Fork child
 
@@ -164,70 +148,82 @@ int main(int argc, char const *argv[])
         perror("fork");
         exit(1);
     }
-    else if (pid == 0)
-    { // Child
-
+    else if (pid == 0) // Child
+    {
         // Create UDP socket:
         int socket_desc = create_and_bind_socket();
 
+        msg *client_msg = (msg *)calloc(1, sizeof(msg));
+
+        //int counter = 0;
+
         while (1)
         {
-            if (semop(semid, &sem_wait, 1) == -1)
+            if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0)
             {
-                perror("semop");
-                exit(1);
+                printf("Couldn't receive\n");
+                return -1;
             }
+            //client_msg->stream[0] = client_msg->counter;
 
-            receive_and_write_to_buffer_test(socket_desc, rob);
-            printf("\nWriting\n");
-            // Signal unlock (DONE)
-            if (semop(semid, &sem_signal, 1) == -1)
-            {
-                perror("semop");
-                exit(1);
-            }
+            semop(semid, &my_sem_wait, 1);
+
+            //for (int i = 0; i < 1; i++)
+            //{
+            //    rb->data[rb->index] = (float)client_msg->stream[i];
+// //
+            //    rb->index = (rb->index + 1) % BUFFER_LENGTH;
+            //}
+
+            rb->data[rb->index] = (float)client_msg->counter;
+
+            int buffer_length = BUFFER_LENGTH - 1;
+            int previous_item = rb->index;
+
+            int idx = (previous_item) & buffer_length; // Wrap around
+
+            // rb->data[idx] = (double)client_msg->counter;
+
+            // rb->data[idx] = (float)client_msg->counter;
+
+            
+
+            printf("WRITER %f %f %d\n", rb->data[idx], (float)client_msg->counter, rb->index);
+
+            // Sync current index
+            // rb->index += 1;
+            // rb->index &= BUFFER_LENGTH - 1;
+            //for (int i = 0; i < BUFFER_LENGTH; i++)
+            //{
+            //    printf("%f ", rb->data[i]);
+            //}
+//
+            //printf("\n");
+            //
+            // //rb->data[rb->index] = (float)counter;
+
+            // printf("%f %d %d\n", rb->data[rb->index], rb->index, client_msg->counter);
+            // 
+            rb->index = (rb->index + 1) % BUFFER_LENGTH;
+
+            // printf("\n%d\n", rb->index);
+
+            semop(semid, &my_sem_signal, 1);
         }
+
+        free(client_msg);
 
         close_socket(socket_desc);
     }
     else
     {
-        float out[BUFFER_LENGTH] = {0.0};
-
-        for (size_t i = 0; i < BUFFER_LENGTH; i++)
-        {
-            out[i] = 0.0;
-        }
-
         while (1)
         {
-            if (semop(semid, &sem_wait, 1) == -1)
-            {
-                perror("semop");
-                exit(1);
-            }
-
-            read_mcpy(rob, &out[0]);
-
-            if (semop(semid, &sem_signal, 1) == -1)
-            {
-                perror("semop");
-                exit(1);
-            }
-
-            for (int i = 0; i < 20; i++)
-            {
-                printf("%f ", out[i]);
-            }
-
-            printf("Reading\n");
-
-            sleep(1);
+            myread();
+            // sleep(1);
+            //printf("%d\n", rb->index);
         }
     }
 
-    
-
-    // test_rb();
     return 0;
 }
