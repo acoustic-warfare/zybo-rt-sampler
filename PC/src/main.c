@@ -21,9 +21,9 @@
 #include "udp_receiver.h"
 #include "config.h"
 
-#define KEY 1234
+#define KEY 1235
 
-#define BUFFER_LENGTH 10
+// #define BUFFER_LENGTH 10
 
 // typedef struct _rb
 // {
@@ -45,7 +45,7 @@ Create a shared memory ring buffer
 void init_shared_memory()
 {
     // Create
-    shmid = shmget(KEY, sizeof(ring_buffer), IPC_CREAT);
+    shmid = shmget(KEY, sizeof(ring_buffer), IPC_CREAT | 0666);
 
     if (shmid == -1)
     {
@@ -66,7 +66,7 @@ void init_shared_memory()
 
 void init_semaphore()
 {
-    semid = semget(KEY, 1, IPC_CREAT);
+    semid = semget(KEY, 1, IPC_CREAT | 0666);
 
     if (semid == -1)
     {
@@ -116,25 +116,52 @@ void _myread()
     semop(semid, &my_sem_signal, 1);
 }
 
-void myread()
+void __myread()
 {
+    
+    
+
+    int length = BUFFER_LENGTH;
+    int offset = 0;
+
+    float out[BUFFER_LENGTH];
+
+    int index = 0;
     semop(semid, &my_sem_wait, 1);
+
+    int first_partition = BUFFER_LENGTH - rb->index;
+
+    float *data_ptr = &rb->data[0];
+
+    memcpy(out, (void *)(data_ptr + rb->index), sizeof(float) * first_partition);
+    memcpy(out + first_partition, (void *)(data_ptr), sizeof(float) * rb->index);
+
+    semop(semid, &my_sem_signal, 1);
+
     printf("\n");
     for (int i = 0; i < BUFFER_LENGTH; i++)
     {
-        printf("%f ", rb->data[i]);
+        printf("%f ", out[i]);
     }
 
     printf("\n");
+}
+
+void myread(float *out)
+{
+    semop(semid, &my_sem_wait, 1);
+
+    read_buffer_mcpy(rb, out);
 
     semop(semid, &my_sem_signal, 1);
 }
 
-int main(int argc, char const *argv[])
+int load()
 {
     init_shared_memory();
 
-    for (int i = 0; i < BUFFER_LENGTH; i++) {
+    for (int i = 0; i < BUFFER_LENGTH; i++)
+    {
         rb->data[i] = 0.0;
     }
 
@@ -155,7 +182,7 @@ int main(int argc, char const *argv[])
 
         msg *client_msg = (msg *)calloc(1, sizeof(msg));
 
-        //int counter = 0;
+        // int counter = 0;
 
         while (1)
         {
@@ -164,49 +191,22 @@ int main(int argc, char const *argv[])
                 printf("Couldn't receive\n");
                 return -1;
             }
-            //client_msg->stream[0] = client_msg->counter;
+            // client_msg->stream[0] = client_msg->counter;
 
             semop(semid, &my_sem_wait, 1);
 
-            //for (int i = 0; i < 1; i++)
+            // for (int i = 0; i < 1; i++)
             //{
-            //    rb->data[rb->index] = (float)client_msg->stream[i];
-// //
+            //     rb->data[rb->index] = (float)client_msg->stream[i];
+            // //
             //    rb->index = (rb->index + 1) % BUFFER_LENGTH;
             //}
 
-            rb->data[rb->index] = (float)client_msg->counter;
+            write_buffer_int32(rb, client_msg->stream, N_MICROPHONES, 0);
 
-            int buffer_length = BUFFER_LENGTH - 1;
-            int previous_item = rb->index;
+            // rb->data[rb->index] = (float)client_msg->counter;
 
-            int idx = (previous_item) & buffer_length; // Wrap around
-
-            // rb->data[idx] = (double)client_msg->counter;
-
-            // rb->data[idx] = (float)client_msg->counter;
-
-            
-
-            printf("WRITER %f %f %d\n", rb->data[idx], (float)client_msg->counter, rb->index);
-
-            // Sync current index
-            // rb->index += 1;
-            // rb->index &= BUFFER_LENGTH - 1;
-            //for (int i = 0; i < BUFFER_LENGTH; i++)
-            //{
-            //    printf("%f ", rb->data[i]);
-            //}
-//
-            //printf("\n");
-            //
-            // //rb->data[rb->index] = (float)counter;
-
-            // printf("%f %d %d\n", rb->data[rb->index], rb->index, client_msg->counter);
-            // 
-            rb->index = (rb->index + 1) % BUFFER_LENGTH;
-
-            // printf("\n%d\n", rb->index);
+            // rb->index = (rb->index + 1) % BUFFER_LENGTH;
 
             semop(semid, &my_sem_signal, 1);
         }
@@ -215,15 +215,85 @@ int main(int argc, char const *argv[])
 
         close_socket(socket_desc);
     }
-    else
-    {
-        while (1)
-        {
-            myread();
-            // sleep(1);
-            //printf("%d\n", rb->index);
-        }
-    }
+
+    return 0;
+}
+
+int main(int argc, char const *argv[])
+{
+    //init_shared_memory();
+//
+    //for (int i = 0; i < BUFFER_LENGTH; i++) {
+    //    rb->data[i] = 0.0;
+    //}
+//
+    //init_semaphore();
+//
+    //pid_t pid = fork(); // Fork child
+//
+    //if (pid == -1)
+    //{
+    //    // printf("lonk\n");
+    //    perror("fork");
+    //    exit(1);
+    //}
+    //else if (pid == 0) // Child
+    //{
+    //    // Create UDP socket:
+    //    int socket_desc = create_and_bind_socket();
+//
+    //    msg *client_msg = (msg *)calloc(1, sizeof(msg));
+//
+    //    //int counter = 0;
+//
+    //    while (1)
+    //    {
+    //        if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0)
+    //        {
+    //            printf("Couldn't receive\n");
+    //            return -1;
+    //        }
+    //        //client_msg->stream[0] = client_msg->counter;
+//
+    //        semop(semid, &my_sem_wait, 1);
+//
+    //        //for (int i = 0; i < 1; i++)
+    //        //{
+    //        //    rb->data[rb->index] = (float)client_msg->stream[i];
+// ////
+    //        //    rb->index = (rb->index + 1) % BUFFER_LENGTH;
+    //        //}
+//
+    //        write_buffer_int32(rb, client_msg->stream, N_MICROPHONES, 0);
+//
+    //        rb->data[rb->index] = (float)client_msg->counter;
+//
+    //        // rb->index = (rb->index + 1) % BUFFER_LENGTH;
+//
+    //        semop(semid, &my_sem_signal, 1);
+    //    }
+//
+    //    free(client_msg);
+//
+    //    close_socket(socket_desc);
+    //}
+    //else
+    //{
+    //    float out[BUFFER_LENGTH];
+    //    while (1)
+    //    {
+    //        myread(&out[0]);
+//
+    //        //for (int i=0; i<BUFFER_LENGTH; i+=N_SAMPLES)
+    //        //{
+    //        //    printf("%f ", out[i]);
+    //        //}
+//
+    //        printf("%f \n", out[0]);
+    //        // sleep(1);
+    //        //printf("%d\n", rb->index);
+    //    }
+    //}
 
     return 0;
 }

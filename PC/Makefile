@@ -47,11 +47,18 @@ build/antenna.o:
 # lib/beamformer.so: build/main.o build/cy_api.o
 # 	$(CC) ${CFLAGS} -lm -shared -o lib/beamformer.so build/main.o build/cy_api.o -fPIC
 
-build/sampler.o: src/receiver.c
-	$(CC) $(CFLAGS) -lm -c -o build/sampler.o src/receiver.c
+# build/sampler.o: src/receiver.c
+# 	$(CC) $(CFLAGS) -lm -c -o build/sampler.o src/receiver.c
+# 
+# lib/libsampler.so: build/sampler.o build/antenna.o
+# 	$(CC) $(CFLAGS) -lm -shared -o lib/libsampler.so build/sampler.o build/antenna.o -fPIC
 
-lib/libsampler.so: build/sampler.o build/antenna.o
-	$(CC) $(CFLAGS) -lm -shared -o lib/libsampler.so build/sampler.o build/antenna.o -fPIC
+build/sampler.o: src/main.c
+	$(CC) $(CFLAGS) -lm -c -o build/sampler.o src/main.c
+
+lib/libsampler.so: build/sampler.o build/antenna.o build/circular_buffer.o build/udp.o
+	$(CC) $(CFLAGS) -lm -shared -o lib/libsampler.so build/sampler.o build/antenna.o build/udp.o build/circular_buffer.o -fPIC
+
 
 run: build/main.o build/circular_buffer.o build/udp.o# build/cy_api.o 
 	$(CC) build/main.o build/circular_buffer.o build/udp.o $(LFLAGS) -o $(BIN)
