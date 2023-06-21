@@ -97,13 +97,11 @@ int receive_and_write_to_buffer_test(int socket_desc, struct ringba *rb){
     printf("Listening for incoming messages...\n\n");
     
     // Receive client's message:
-    while(true){
-        if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0){
-            printf("Couldn't receive\n");
-            return -1;
-        }
-        write_int32(rb, client_msg->stream, N_MICROPHONES, 0);
+    if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0){
+        printf("Couldn't receive\n");
+        return -1;
     }
+    write_int32(rb, client_msg->stream, N_MICROPHONES, 0);
 
     free(client_msg);
     return 0;
