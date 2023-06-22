@@ -40,8 +40,8 @@ def get_antenna_data():
 
 f = get_antenna_data()
 
+samples = 256 
 samples = 1024
-#samples = 2048
 
 signals = np.zeros(samples * 64, dtype=np.float32)
 
@@ -58,7 +58,7 @@ out_pointer = out.ctypes.data_as(
 #    ctypes.POINTER(ctypes.c_double))
 
 t = (1 / 48828) * samples 
-n = 4
+n = 100
 
 
 import socket
@@ -94,12 +94,12 @@ N_MICROPHONES = 64
 
 
 import pyaudio
-p = pyaudio.PyAudio()
-stream = p.open(format=pyaudio.paFloat32,
-                channels=1,
-                rate=48828, #44100, #48828,
-                output=True) #, #,)
-                #frames_per_buffer=samples*n)
+#p = pyaudio.PyAudio()
+#stream = p.open(format=pyaudio.paFloat32,
+#                channels=1,
+#                rate=48828, #44100, #48828,
+#                output=True) #, #,)
+#                #frames_per_buffer=samples*n)
 
 #stream = p.open(format=pyaudio.paFloat32,
 #                channels=1,
@@ -156,7 +156,52 @@ le = 512
 #
 #sock.close()
 #exit()
-for _ in range(100):
+
+
+
+p = pyaudio.PyAudio()
+
+#rms = None
+def this_callback(in_data, frame_count, time_info, status):
+    # print(in_data)     # takes too long in callback
+    #global rms
+    #rms = audioop.rms(in_data, WIDTH)  # compute audio power
+    # print(rms)  # new # takes too long in callback
+    f(out_pointer)
+    b = out.reshape((samples, 64))
+    #time.sleep(t/1024)
+    sound = b[:,4] / 2**15
+
+    #print(sound.dtype)
+
+    #print(round(abs(np.sum(sound)/sound.shape[0]), 2))
+
+    return sound, pyaudio.paContinue
+    return in_data, pyaudio.paContinue
+
+
+stream = p.open(format=pyaudio.paFloat32,
+                channels=1,
+                rate=48828,
+                input=False,
+                output=True,
+                stream_callback=this_callback,
+                frames_per_buffer=samples)
+
+stream.start_stream()
+
+while stream.is_active():  # <--------------------------------------------
+    #print(rms)    # may be losing some values if sleeping too long, didn't check
+    time.sleep(0.1)
+
+stream.stop_stream()
+stream.close()
+
+p.terminate()
+
+exit()
+
+for _ in range(1):
     #suu = np.zeros(samples, dtype=np.float32)
     #f(out_pointer)
     #b = out.reshape((samples, 64))
@@ -170,7 +215,7 @@ for _ in range(100):
     for i in range(n-1):
         f(out_pointer)
         b = out.reshape((samples, 64))
-        #time.sleep(t)
+        #time.sleep(t/1024)
         sound = b[:,4] / 2**14
 
         #sound = out[::64]
@@ -180,7 +225,7 @@ for _ in range(100):
         suu[i*samples:(i+1)*samples] = sound
 
     #sd.play(suu, 48828, blocking=False)
-    stream.write(suu, samples*n)
+    stream.write(suu)
     #stream.write(suu.astype(np.float64))
 
 

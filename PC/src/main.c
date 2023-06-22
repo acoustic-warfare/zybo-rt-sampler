@@ -21,7 +21,7 @@
 #include "udp_receiver.h"
 #include "config.h"
 
-#define KEY 1235
+#define KEY 1234
 
 #define THRESHOLD 256
 
@@ -155,7 +155,7 @@ void myread(float *out)
 
     semop(semid, &my_sem_wait, 1);
 
-    // read_buffer_mcpy(rb, out);
+    //read_buffer_mcpy(rb, out);
     memcpy(out, (void *)&rb->data[0], sizeof(float) * BUFFER_LENGTH);
 
     semop(semid, &my_sem_signal, 1);
@@ -228,8 +228,7 @@ int load()
             }
 
             semop(semid, &my_sem_signal, 1);
-
-            //continue;
+            continue;
 
             //if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0)
             //{
@@ -249,15 +248,15 @@ int load()
 //
             //// for (int i = 0; i < BUFFER_LENGTH; i+= N_SAMPLES)
 //
-            //for (int i = 0; i < BUFFER_LENGTH; i+=N_MICROPHONES)
-            //{
-            //    for (int k = 0; k < N_MICROPHONES; k++)
-            //    {
-//
-            //        //double mic = (double)(client_msg->stream[k]); // / 16000.0;
-            //        rb->data[i + k] = client_msg->stream[k]; //mic;
-            //    }
-            //}
+            ////for (int i = 0; i < BUFFER_LENGTH; i+=N_MICROPHONES)
+            ////{
+            ////    for (int k = 0; k < N_MICROPHONES; k++)
+            ////    {
+////
+            ////        //double mic = (double)(client_msg->stream[k]); // / 16000.0;
+            ////        rb->data[i + k] = client_msg->stream[k]; //mic;
+            ////    }
+            ////}
 //
             //// printf("%f\n", rb->data[0]);
 //
