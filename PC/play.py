@@ -170,7 +170,7 @@ def this_callback(in_data, frame_count, time_info, status):
     f(out_pointer)
     b = out.reshape((samples, 64))
     #time.sleep(t/1024)
-    sound = b[:,4] / 2**15
+    sound = b[:,4] / 1.0# / 32.0 #/ 2**15
 
     #print(sound.dtype)
 

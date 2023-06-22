@@ -221,9 +221,10 @@ int load()
 
                 for (int k = 0; k < N_MICROPHONES; k++)
                 {
-
-                    // double mic = (double)(client_msg->stream[k]); // / 16000.0;
-                    rb->data[i + k] = (float)client_msg->stream[k]; //  / 16384.0; // mic;
+                        
+                    double mic = (double)(client_msg->stream[k]) / 65536.0; // / 2097152.0; // 2^21 65536.0; /// 33554432.0; // 65536.0; //16384.0; // / 16000.0;
+                    rb->data[i + k] = (float)mic / 32.0;
+                    //rb->data[i + k] = (float)client_msg->stream[k]; //  / 16384.0; // mic;
                 }
             }
 
