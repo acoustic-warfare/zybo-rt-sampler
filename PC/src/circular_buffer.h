@@ -24,7 +24,8 @@ typedef struct _ring_buffer
 {
     int index;
     float data[BUFFER_LENGTH];
-    // double mydata[BUFFER_LENGTH];
+    //double mydata[BUFFER_LENGTH];
+    int counter;
 } ring_buffer;
 
 struct ringba

@@ -23,6 +23,8 @@
 
 #define KEY 1235
 
+#define THRESHOLD 256
+
 // #define BUFFER_LENGTH 10
 
 // typedef struct _rb
@@ -62,6 +64,7 @@ void init_shared_memory()
     }
 
     rb->index = 0;
+    rb->counter = 0;
 }
 
 void init_semaphore()
@@ -149,11 +152,30 @@ void __myread()
 
 void myread(float *out)
 {
+
     semop(semid, &my_sem_wait, 1);
 
-    read_buffer_mcpy(rb, out);
+    // read_buffer_mcpy(rb, out);
+    memcpy(out, (void *)&rb->data[0], sizeof(float) * BUFFER_LENGTH);
 
     semop(semid, &my_sem_signal, 1);
+
+    //while (1)
+    //{
+    //    semop(semid, &my_sem_wait, 1);
+//
+    //    if (rb->counter > THRESHOLD - 2)
+    //    {
+    //        read_buffer_mcpy(rb, out);
+    //        rb->counter = 0;
+    //        semop(semid, &my_sem_signal, 1);
+    //        break;
+//
+    //    }
+//
+    //    semop(semid, &my_sem_signal, 1);
+    //}
+    
 }
 
 int load()
@@ -186,29 +208,67 @@ int load()
 
         while (1)
         {
-            if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0)
-            {
-                printf("Couldn't receive\n");
-                return -1;
-            }
-            // client_msg->stream[0] = client_msg->counter;
 
             semop(semid, &my_sem_wait, 1);
 
-            // for (int i = 0; i < 1; i++)
-            //{
-            //     rb->data[rb->index] = (float)client_msg->stream[i];
-            // //
-            //    rb->index = (rb->index + 1) % BUFFER_LENGTH;
-            //}
+            for (int i = 0; i < BUFFER_LENGTH; i+=N_MICROPHONES)
+            {
+                if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0)
+                {
+                    printf("Couldn't receive\n");
+                    return -1;
+                }
 
-            write_buffer_int32(rb, client_msg->stream, N_MICROPHONES, 0);
+                for (int k = 0; k < N_MICROPHONES; k++)
+                {
 
-            // rb->data[rb->index] = (float)client_msg->counter;
-
-            // rb->index = (rb->index + 1) % BUFFER_LENGTH;
+                    // double mic = (double)(client_msg->stream[k]); // / 16000.0;
+                    rb->data[i + k] = (float)client_msg->stream[k]; //  / 16384.0; // mic;
+                }
+            }
 
             semop(semid, &my_sem_signal, 1);
+
+            //continue;
+
+            //if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0)
+            //{
+            //    printf("Couldn't receive\n");
+            //    return -1;
+            //}
+            //// client_msg->stream[0] = client_msg->counter;
+//
+            //semop(semid, &my_sem_wait, 1);
+//
+            //// for (int i = 0; i < 1; i++)
+            ////{
+            ////     rb->data[rb->index] = (float)client_msg->stream[i];
+            //// //
+            ////    rb->index = (rb->index + 1) % BUFFER_LENGTH;
+            ////}
+//
+            //// for (int i = 0; i < BUFFER_LENGTH; i+= N_SAMPLES)
+//
+            //for (int i = 0; i < BUFFER_LENGTH; i+=N_MICROPHONES)
+            //{
+            //    for (int k = 0; k < N_MICROPHONES; k++)
+            //    {
+//
+            //        //double mic = (double)(client_msg->stream[k]); // / 16000.0;
+            //        rb->data[i + k] = client_msg->stream[k]; //mic;
+            //    }
+            //}
+//
+            //// printf("%f\n", rb->data[0]);
+//
+            //write_buffer_int32(rb, client_msg->stream, N_MICROPHONES, 0);
+//
+            //rb->counter = rb->counter + 1;
+            //// rb->data[rb->index] = (float)client_msg->counter;
+//
+            //// rb->index = (rb->index + 1) % BUFFER_LENGTH;
+//
+            //semop(semid, &my_sem_signal, 1);
         }
 
         free(client_msg);
