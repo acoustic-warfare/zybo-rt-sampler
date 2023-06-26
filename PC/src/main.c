@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "circular_buffer.h"
 #include "udp_receiver.h"
@@ -41,6 +42,13 @@ int shmid; // Shared memory ID
 int semid;                                      // Semaphore ID
 struct sembuf my_sem_wait = {0, -1, SEM_UNDO};  // Wait operation
 struct sembuf my_sem_signal = {0, 1, SEM_UNDO}; // Sig operation
+
+void signal_handler(){
+    //Remove shared memory and semafores
+    shmctl(shmid, IPC_RMID, NULL);
+    semctl(semid, 0, IPC_RMID);
+    exit(-1);
+}
 
 /*
 Create a shared memory ring buffer
@@ -181,6 +189,10 @@ void myread(float *out)
 
 int load()
 {
+    signal(SIGINT, signal_handler);
+    signal(SIGKILL, signal_handler);
+    signal(SIGTERM, signal_handler);
+    
     init_shared_memory();
 
     for (int i = 0; i < BUFFER_LENGTH; i++)
