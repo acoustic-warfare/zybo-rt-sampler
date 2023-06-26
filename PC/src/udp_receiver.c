@@ -73,7 +73,7 @@ int receive_and_print(int socket_desc)
 int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb){
     // Create buffer
     msg *client_msg = (msg *)calloc(1, sizeof(msg));
-    float message[64];
+    //float message[64];
 
     printf("Listening for incoming messages...\n\n");
     
@@ -90,7 +90,7 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb){
 int receive_and_write_to_buffer_test(int socket_desc, struct ringba *rb){
     // Create buffer
     msg *client_msg = (msg *)calloc(1, sizeof(msg));
-    float message[64];
+    //float message[64];
 
     printf("Listening for incoming messages...\n\n");
     

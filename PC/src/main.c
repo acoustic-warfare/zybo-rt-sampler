@@ -11,6 +11,7 @@
 #include <sys/shm.h>
 #include <sys/ipc.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -123,13 +124,13 @@ void __myread()
 {
     
     
-
+/*
     int length = BUFFER_LENGTH;
     int offset = 0;
-
+*/
     float out[BUFFER_LENGTH];
 
-    int index = 0;
+//    int index = 0;
     semop(semid, &my_sem_wait, 1);
 
     int first_partition = BUFFER_LENGTH - rb->index;

@@ -46,6 +46,7 @@ Destroy a ring buffer
 ring_buffer *destroy_ring_buffer(ring_buffer *rb){
     free(rb);
     rb = NULL;
+    return rb;
 }
 
 /*
