@@ -1,7 +1,5 @@
 import numpy as np
 import ctypes
-import time
-import pyaudio
 
 def get_antenna_data():
     lib = ctypes.cdll.LoadLibrary("./lib/libsampler.so")
