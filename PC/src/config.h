@@ -1,4 +1,4 @@
-#define N_SAMPLES 256 //Less than 256 seems to not work
+#define N_SAMPLES 128 
 #define N_MICROPHONES 64
 #define BUFFER_LENGTH N_SAMPLES * N_MICROPHONES
 
