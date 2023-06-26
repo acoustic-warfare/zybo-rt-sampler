@@ -40,6 +40,8 @@ ring_buffer *rb;
 int shmid; // Shared memory ID
 
 int semid;                                      // Semaphore ID
+int socket_desc;
+
 struct sembuf my_sem_wait = {0, -1, SEM_UNDO};  // Wait operation
 struct sembuf my_sem_signal = {0, 1, SEM_UNDO}; // Sig operation
 
@@ -47,6 +49,7 @@ void signal_handler(){
     //Remove shared memory and semafores
     shmctl(shmid, IPC_RMID, NULL);
     semctl(semid, 0, IPC_RMID);
+    close_socket(socket_desc);
     exit(-1);
 }
 
@@ -213,7 +216,7 @@ int load()
     else if (pid == 0) // Child
     {
         // Create UDP socket:
-        int socket_desc = create_and_bind_socket();
+        socket_desc = create_and_bind_socket();
 
         msg *client_msg = (msg *)calloc(1, sizeof(msg));
 
