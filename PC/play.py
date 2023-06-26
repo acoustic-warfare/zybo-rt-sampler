@@ -24,7 +24,7 @@ def get_antenna_data():
 
 f = get_antenna_data()
 
-samples = 2048
+samples = 256
 
 N_MICROPHONES = 64
 N_SAMPLES = samples * N_MICROPHONES

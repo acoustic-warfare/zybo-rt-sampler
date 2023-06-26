@@ -22,7 +22,7 @@ def get_antenna_data():
 
 def get_samples():
     f = get_antenna_data()
-    samples = 1024
+    samples = 256
     N_SAMPLES = samples * 64
 
     out = np.empty(N_SAMPLES, dtype=np.float32)
