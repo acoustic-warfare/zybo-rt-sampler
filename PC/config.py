@@ -1,5 +1,8 @@
 # Antenna related
 N_MICROPHONES = 64
+N_SAMPLES = 128 
+BUFFER_LENGTH = N_SAMPLES * N_MICROPHONES
+
 azimuth = 0.0
 elevation = 0.0
 columns = 8

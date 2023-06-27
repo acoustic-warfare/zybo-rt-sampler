@@ -23,9 +23,6 @@
 #include "circular_buffer.h"
 #include "config.h"
 
-#define UDP_PORT 21844
-#define SERVER_IP "10.0.0.1"
-
 /// @brief FPGA Protocol
 typedef struct _msg
 {

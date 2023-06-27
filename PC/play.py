@@ -5,6 +5,7 @@ import ctypes
 #import sounddevice as sd
 import pyaudio
 import time
+import config
 
 def get_antenna_data():
     lib = ctypes.cdll.LoadLibrary("./lib/libsampler.so")
@@ -24,11 +25,8 @@ def get_antenna_data():
 
 f = get_antenna_data()
 
-samples = 128 #Less than 256 seems to not work
 
-N_MICROPHONES = 64
-N_SAMPLES = samples * N_MICROPHONES
-out = np.empty(N_SAMPLES, dtype=np.float32)
+out = np.empty(config.BUFFER_LENGTH, dtype=np.float32)
 out_pointer = out.ctypes.data_as(
     ctypes.POINTER(ctypes.c_float))
 
@@ -36,7 +34,7 @@ p = pyaudio.PyAudio()
 
 def this_callback(in_data, frame_count, time_info, status):
     f(out_pointer)
-    b = out.reshape((samples, 64))
+    b = out.reshape((config.N_SAMPLES, config.N_MICROPHONES))
     sound = b[:,4] / 1.0# / 32.0 #/ 2**15
 
     return sound, pyaudio.paContinue
@@ -48,7 +46,7 @@ stream = p.open(format=pyaudio.paFloat32,
                 input=False,
                 output=True,
                 stream_callback=this_callback,
-                frames_per_buffer=samples)
+                frames_per_buffer=config.N_SAMPLES)
 
 stream.start_stream()
 

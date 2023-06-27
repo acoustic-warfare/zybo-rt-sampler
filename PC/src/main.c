@@ -23,9 +23,6 @@
 #include "udp_receiver.h"
 #include "config.h"
 
-#define KEY 1234
-
-#define THRESHOLD 256
 
 // #define BUFFER_LENGTH 10
 
@@ -237,9 +234,8 @@ int load()
 
                 for (int k = 0; k < N_MICROPHONES; k++)
                 {
-                        
                     //double mic = ((double)(client_msg->stream[k]) / 2097152.0); // / 65536.0; // / 2097152.0; // 2^21 65536.0; /// 33554432.0; // 65536.0; //16384.0; // / 16000.0;
-                    rb->data[i + k] = (float)((double)(client_msg->stream[k]) / 262144); //2^18 seems good  4194304.0);// / 32.0;
+                    rb->data[i + k] = (float)((double)(client_msg->stream[k]) / NORM_FACTOR); //2^18 seems good  4194304.0);// / 32.0;
                     //rb->data[i + k] = (float)client_msg->stream[k]; //  / 16384.0; // mic;
                 }
             }

@@ -1,5 +1,6 @@
 import numpy as np
 import ctypes
+import config
 
 def get_antenna_data():
     lib = ctypes.cdll.LoadLibrary("./lib/libsampler.so")
@@ -20,16 +21,14 @@ def get_antenna_data():
 
 def get_samples():
     f = get_antenna_data()
-    samples = 256
-    N_SAMPLES = samples * 64
-
-    out = np.empty(N_SAMPLES, dtype=np.float32)
+    
+    out = np.empty(config.BUFFER_LENGTH, dtype=np.float32)
     out_pointer = out.ctypes.data_as(
         ctypes.POINTER(ctypes.c_float))
     
     while(True):
         f(out_pointer)
-        b = out.reshape((samples, 64))
+        b = out.reshape((config.N_SAMPLES, config.N_MICROPHONES))
         print(b[0])
 
 get_samples()
