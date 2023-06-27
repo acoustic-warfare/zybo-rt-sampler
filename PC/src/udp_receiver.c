@@ -37,7 +37,7 @@ int create_and_bind_socket(){
     // Set port and IP:
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(UDP_PORT);
-    server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
+    server_addr.sin_addr.s_addr = inet_addr(UDP_IP);
     
     // Bind to the set port and IP:
     if(bind(socket_desc, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0){

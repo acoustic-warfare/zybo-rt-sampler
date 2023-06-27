@@ -56,7 +56,10 @@ build/antenna.o:
 build/sampler.o: src/main.c
 	$(CC) $(CFLAGS) -lm -c -o build/sampler.o src/main.c
 
-lib/libsampler.so: build/sampler.o build/antenna.o build/circular_buffer.o build/udp.o
+build/config.o:
+	python3 ./src/build_config.py
+
+lib/libsampler.so: build/config.o build/sampler.o build/antenna.o build/circular_buffer.o build/udp.o 
 	$(CC) $(CFLAGS) -lm -shared -o lib/libsampler.so build/sampler.o build/antenna.o build/udp.o build/circular_buffer.o -fPIC
 
 
