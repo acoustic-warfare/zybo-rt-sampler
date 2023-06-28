@@ -23,19 +23,9 @@
 #include "udp_receiver.h"
 #include "config.h"
 
-
-// #define BUFFER_LENGTH 10
-
-// typedef struct _rb
-// {
-//     float data[BUFFER_LENGTH];
-//     int index;
-// } ring_buffer;
-
 ring_buffer *rb;
 
 int shmid; // Shared memory ID
-
 int semid;                                      // Semaphore ID
 int socket_desc;
 
@@ -106,62 +96,6 @@ void init_semaphore()
     }
 }
 
-void _myread()
-{
-    semop(semid, &my_sem_wait, 1);
-
-    float rout[BUFFER_LENGTH];
-
-    float *out = &rout[0];
-
-    int first_partition = BUFFER_LENGTH - rb->index;
-
-    float *data_ptr = &rb->data[0];
-
-    memcpy(out, (void *)(data_ptr + rb->index), sizeof(float) * first_partition);
-    memcpy(out + first_partition, (void *)(data_ptr), sizeof(float) * rb->index);
-
-    printf("\n");
-    for (int i = 0; i < BUFFER_LENGTH; i++)
-    {
-        printf("%f ", rout[i]);
-    }
-
-    printf("\n");
-
-    semop(semid, &my_sem_signal, 1);
-}
-
-void __myread()
-{
-    
-    
-/*
-    int length = BUFFER_LENGTH;
-    int offset = 0;
-*/
-    float out[BUFFER_LENGTH];
-
-//    int index = 0;
-    semop(semid, &my_sem_wait, 1);
-
-    int first_partition = BUFFER_LENGTH - rb->index;
-
-    float *data_ptr = &rb->data[0];
-
-    memcpy(out, (void *)(data_ptr + rb->index), sizeof(float) * first_partition);
-    memcpy(out + first_partition, (void *)(data_ptr), sizeof(float) * rb->index);
-
-    semop(semid, &my_sem_signal, 1);
-
-    printf("\n");
-    for (int i = 0; i < BUFFER_LENGTH; i++)
-    {
-        printf("%f ", out[i]);
-    }
-
-    printf("\n");
-}
 
 void myread(float *out)
 {
@@ -214,79 +148,5 @@ int load()
 
 int main(int argc, char const *argv[])
 {
-    //init_shared_memory();
-//
-    //for (int i = 0; i < BUFFER_LENGTH; i++) {
-    //    rb->data[i] = 0.0;
-    //}
-//
-    //init_semaphore();
-//
-    //pid_t pid = fork(); // Fork child
-//
-    //if (pid == -1)
-    //{
-    //    // printf("lonk\n");
-    //    perror("fork");
-    //    exit(1);
-    //}
-    //else if (pid == 0) // Child
-    //{
-    //    // Create UDP socket:
-    //    int socket_desc = create_and_bind_socket();
-//
-    //    msg *client_msg = (msg *)calloc(1, sizeof(msg));
-//
-    //    //int counter = 0;
-//
-    //    while (1)
-    //    {
-    //        if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0)
-    //        {
-    //            printf("Couldn't receive\n");
-    //            return -1;
-    //        }
-    //        //client_msg->stream[0] = client_msg->counter;
-//
-    //        semop(semid, &my_sem_wait, 1);
-//
-    //        //for (int i = 0; i < 1; i++)
-    //        //{
-    //        //    rb->data[rb->index] = (float)client_msg->stream[i];
-// ////
-    //        //    rb->index = (rb->index + 1) % BUFFER_LENGTH;
-    //        //}
-//
-    //        write_buffer_int32(rb, client_msg->stream, N_MICROPHONES, 0);
-//
-    //        rb->data[rb->index] = (float)client_msg->counter;
-//
-    //        // rb->index = (rb->index + 1) % BUFFER_LENGTH;
-//
-    //        semop(semid, &my_sem_signal, 1);
-    //    }
-//
-    //    free(client_msg);
-//
-    //    close_socket(socket_desc);
-    //}
-    //else
-    //{
-    //    float out[BUFFER_LENGTH];
-    //    while (1)
-    //    {
-    //        myread(&out[0]);
-//
-    //        //for (int i=0; i<BUFFER_LENGTH; i+=N_SAMPLES)
-    //        //{
-    //        //    printf("%f ", out[i]);
-    //        //}
-//
-    //        printf("%f \n", out[0]);
-    //        // sleep(1);
-    //        //printf("%d\n", rb->index);
-    //    }
-    //}
-
     return 0;
 }
