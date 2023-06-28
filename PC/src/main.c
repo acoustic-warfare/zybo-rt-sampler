@@ -224,18 +224,8 @@ int load()
 
             semop(semid, &my_sem_wait, 1);
 
-            for (int i = 0; i < BUFFER_LENGTH; i+=N_MICROPHONES)
-            {
-                if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0)
-                {
-                    printf("Couldn't receive\n");
-                    return -1;
-                }
-
-                for (int k = 0; k < N_MICROPHONES; k++)
-                {
-                    rb->data[i + k] = (float)((double)(client_msg->stream[k]) / NORM_FACTOR); //Can be calibrated in config.json
-                }
+            if(receive_and_write_to_buffer(socket_desc, rb, client_msg) == -1){
+                return -1;
             }
 
             semop(semid, &my_sem_signal, 1);

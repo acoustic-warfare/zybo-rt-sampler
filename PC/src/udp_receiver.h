@@ -44,8 +44,11 @@ typedef struct _msg_2
 } msg_2;
 
 msg *create_msg();
-
 msg *destroy_msg(msg *msg);
+
+
+msg_2 *create_msg_2();
+msg_2 *destroy_msg_2(msg_2 *msg);
 
 /// @brief Creates and binds the socket to a server ip and port.
 /// @pre Requires the SERVER_IP and UDP_PORT to be correctly specified in the header file.
@@ -61,7 +64,7 @@ int receive_and_print(int socket_desc);
 /// @param socket_desc A socket file descriptor
 /// @param rb A pointer to a ring buffer
 /// @return 0 if no errors and -1 if the message can't be received
-int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb);
+int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message);
 
 /// @brief Closes the socket descriptor.
 /// @param socket_desc A socket file descriptor.

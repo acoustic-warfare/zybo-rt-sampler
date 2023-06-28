@@ -31,6 +31,16 @@ msg *destroy_msg(msg *message){
     return message;
 }
 
+msg_2 *create_msg_2(){
+    return (msg_2 *)calloc(1, sizeof(msg_2));
+}
+
+msg_2 *destroy_msg_2(msg_2 *message){
+    free(message);
+    message = NULL;
+    return message;
+}
+
 int create_and_bind_socket(){
     int socket_desc;
     struct sockaddr_in server_addr;
@@ -79,20 +89,20 @@ int receive_and_print(int socket_desc)
     return 0;
 }
 
-int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb){
-    // Create buffer
-    msg *client_msg = (msg *)calloc(1, sizeof(msg));
-    //float message[64];
+int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message){
+    for (int i = 0; i < BUFFER_LENGTH; i+=N_MICROPHONES)
+    {
+        if (recv(socket_desc, message, sizeof(msg), 0) < 0)
+        {
+            printf("Couldn't receive\n");
+            return -1;
+        }
 
-    printf("Listening for incoming messages...\n\n");
-    
-    // Receive client's message:
-    if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0){
-        printf("Couldn't receive\n");
-        return -1;
+        for (int k = 0; k < N_MICROPHONES; k++)
+        {
+            rb->data[i + k] = (float)((double)(message->stream[k]) / NORM_FACTOR); //Can be calibrated in config.json
+        }
     }
-    write_buffer_int32(rb, client_msg->stream, N_MICROPHONES, 0);
-    free(client_msg);
     return 0;
 }
 
