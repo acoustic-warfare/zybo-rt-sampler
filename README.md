@@ -105,13 +105,20 @@ This is an installation for setting up data acquisition on the Zybo z7 developme
 
 Follow the steps in https://github.com/f4pga/symbiflow-xc7z-automatic-tester to create a bootable image for the Zybo z7
 
-## Building
+## Baremetal
+1. Run configure.sh from ./zybo/baremetal
+2. Copy boot.scr from out/boot to boot partition of SD-card
+3. Copy your bitstream and ps.elf to /data/tftp
+4. Power up Zybo
 
-TODO
+## ARCH Linux
+### Setup
+1. Run compile_bootscript.sh from ./zybo
+2. Copy ./zybo/boot.scr to boot partition of SD-card
+3. Power up Zybo
+4. Connect to serial monitor
 
-## Steps
-
-## Connecting to the Zybo via SSH
+### Connecting to the Zybo via SSH
 1. Wait for the process "crng init" to finish. Usually takes between 5 to 15 minutes.
 2. Enable SSHD:
 ```bash
@@ -123,14 +130,14 @@ systemctl enable sshd.service
 ssh root@ip_address
 ```
 
-## Known Issues
+### Known Issues
 
-### "A start job is running for Network Name Resolution"
+#### "A start job is running for Network Name Resolution"
 A bug was found during boot of Arch linux on the Zybo: "A start job is running for Network Name Resolution" which prevented the system from booting. A solution was found by removing the service:
 
 1. In the /root/ folder, disable /etc/systemd/system/sysinit.target.wants/systemd-resolved.service by removing the symlink
 
-## TODO
+### TODO
 
 Set ip address in arch:
 
