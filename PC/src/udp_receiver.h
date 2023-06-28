@@ -63,8 +63,16 @@ int receive_and_print(int socket_desc);
 /// @brief Receives messages from UDP client forever and writes to a ring buffer
 /// @param socket_desc A socket file descriptor
 /// @param rb A pointer to a ring buffer
+/// @param message A pointer for temporarily storing received message
 /// @return 0 if no errors and -1 if the message can't be received
 int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message);
+
+/// @brief Receives messages from UDP client forever and writes to a ring buffer with the FPGA Protocol version 2
+/// @param socket_desc A socket file descriptor
+/// @param rb A pointer to a ring buffer
+/// @param message A pointer for temporarily storing received message
+/// @return 0 if no errors and -1 if the message can't be received
+int receive_and_write_to_buffer_2(int socket_desc, ring_buffer *rb, msg_2 *message);
 
 /// @brief Closes the socket descriptor.
 /// @param socket_desc A socket file descriptor.

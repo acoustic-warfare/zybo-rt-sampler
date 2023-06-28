@@ -106,6 +106,23 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message){
     return 0;
 }
 
+int receive_and_write_to_buffer_2(int socket_desc, ring_buffer *rb, msg_2 *message){
+    for (int i = 0; i < BUFFER_LENGTH; i+=N_MICROPHONES)
+    {
+        if (recv(socket_desc, message, sizeof(msg_2), 0) < 0)
+        {
+            printf("Couldn't receive\n");
+            return -1;
+        }
+
+        for (int k = 0; k < N_MICROPHONES; k++)
+        {
+            rb->data[i + k] = (float)((double)(message->stream[k]) / NORM_FACTOR); //Can be calibrated in config.json
+        }
+    }
+    return 0;
+}
+
 int receive_and_write_to_buffer_test(int socket_desc, struct ringba *rb){
     // Create buffer
     msg *client_msg = (msg *)calloc(1, sizeof(msg));
