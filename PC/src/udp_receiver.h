@@ -43,6 +43,10 @@ typedef struct _msg_2
     int32_t stream[N_MICROPHONES];
 } msg_2;
 
+msg *create_msg();
+
+msg *destroy_msg(msg *msg);
+
 /// @brief Creates and binds the socket to a server ip and port.
 /// @pre Requires the SERVER_IP and UDP_PORT to be correctly specified in the header file.
 /// @return A socket descriptor if successfully created and bound. -1 if an error occured.

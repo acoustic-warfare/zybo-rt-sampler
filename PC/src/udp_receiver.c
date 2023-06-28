@@ -21,6 +21,15 @@
 #include <stdbool.h>
 #include "udp_receiver.h"
 
+msg *create_msg(){
+    return (msg *)calloc(1, sizeof(msg));
+}
+
+msg *destroy_msg(msg *message){
+    free(message);
+    message = NULL;
+    return message;
+}
 
 int create_and_bind_socket(){
     int socket_desc;

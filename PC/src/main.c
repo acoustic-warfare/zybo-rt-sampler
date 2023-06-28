@@ -215,7 +215,7 @@ int load()
         // Create UDP socket:
         socket_desc = create_and_bind_socket();
 
-        msg *client_msg = (msg *)calloc(1, sizeof(msg));
+        msg *client_msg = create_msg();
 
         // int counter = 0;
 
@@ -234,56 +234,15 @@ int load()
 
                 for (int k = 0; k < N_MICROPHONES; k++)
                 {
-                    //double mic = ((double)(client_msg->stream[k]) / 2097152.0); // / 65536.0; // / 2097152.0; // 2^21 65536.0; /// 33554432.0; // 65536.0; //16384.0; // / 16000.0;
-                    rb->data[i + k] = (float)((double)(client_msg->stream[k]) / NORM_FACTOR); //2^18 seems good  4194304.0);// / 32.0;
-                    //rb->data[i + k] = (float)client_msg->stream[k]; //  / 16384.0; // mic;
+                    rb->data[i + k] = (float)((double)(client_msg->stream[k]) / NORM_FACTOR); //Can be calibrated in config.json
                 }
             }
 
             semop(semid, &my_sem_signal, 1);
             continue;
-
-            //if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0)
-            //{
-            //    printf("Couldn't receive\n");
-            //    return -1;
-            //}
-            //// client_msg->stream[0] = client_msg->counter;
-//
-            //semop(semid, &my_sem_wait, 1);
-//
-            //// for (int i = 0; i < 1; i++)
-            ////{
-            ////     rb->data[rb->index] = (float)client_msg->stream[i];
-            //// //
-            ////    rb->index = (rb->index + 1) % BUFFER_LENGTH;
-            ////}
-//
-            //// for (int i = 0; i < BUFFER_LENGTH; i+= N_SAMPLES)
-//
-            ////for (int i = 0; i < BUFFER_LENGTH; i+=N_MICROPHONES)
-            ////{
-            ////    for (int k = 0; k < N_MICROPHONES; k++)
-            ////    {
-////
-            ////        //double mic = (double)(client_msg->stream[k]); // / 16000.0;
-            ////        rb->data[i + k] = client_msg->stream[k]; //mic;
-            ////    }
-            ////}
-//
-            //// printf("%f\n", rb->data[0]);
-//
-            //write_buffer_int32(rb, client_msg->stream, N_MICROPHONES, 0);
-//
-            //rb->counter = rb->counter + 1;
-            //// rb->data[rb->index] = (float)client_msg->counter;
-//
-            //// rb->index = (rb->index + 1) % BUFFER_LENGTH;
-//
-            //semop(semid, &my_sem_signal, 1);
         }
 
-        free(client_msg);
+        destroy_msg(client_msg);
 
         close_socket(socket_desc);
     }
