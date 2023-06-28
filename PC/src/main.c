@@ -74,6 +74,10 @@ void init_shared_memory()
 
     rb->index = 0;
     rb->counter = 0;
+    for (int i = 0; i < BUFFER_LENGTH; i++)
+    {
+        rb->data[i] = 0.0;
+    }
 }
 
 void init_semaphore()
@@ -194,12 +198,6 @@ int load()
     signal(SIGTERM, signal_handler);
     
     init_shared_memory();
-
-    for (int i = 0; i < BUFFER_LENGTH; i++)
-    {
-        rb->data[i] = 0.0;
-    }
-
     init_semaphore();
 
     pid_t pid = fork(); // Fork child
@@ -214,14 +212,10 @@ int load()
     {
         // Create UDP socket:
         socket_desc = create_and_bind_socket();
-
         msg *client_msg = create_msg();
-
-        // int counter = 0;
 
         while (1)
         {
-
             semop(semid, &my_sem_wait, 1);
 
             if(receive_and_write_to_buffer(socket_desc, rb, client_msg) == -1){
@@ -233,7 +227,6 @@ int load()
         }
 
         destroy_msg(client_msg);
-
         close_socket(socket_desc);
     }
 

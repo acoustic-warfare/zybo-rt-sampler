@@ -37,6 +37,10 @@ Create a ring buffer
 ring_buffer *create_ring_buffer(){
     ring_buffer *rb = (ring_buffer *)calloc(1, sizeof(ring_buffer));
     rb->index = 0;
+    for (int i = 0; i < BUFFER_LENGTH; i++)
+    {
+        rb->data[i] = 0.0;
+    }
     return rb;
 }
 
