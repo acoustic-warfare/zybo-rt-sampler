@@ -165,30 +165,9 @@ void __myread()
 
 void myread(float *out)
 {
-
     semop(semid, &my_sem_wait, 1);
-
-    //read_buffer_mcpy(rb, out);
     memcpy(out, (void *)&rb->data[0], sizeof(float) * BUFFER_LENGTH);
-
     semop(semid, &my_sem_signal, 1);
-
-    //while (1)
-    //{
-    //    semop(semid, &my_sem_wait, 1);
-//
-    //    if (rb->counter > THRESHOLD - 2)
-    //    {
-    //        read_buffer_mcpy(rb, out);
-    //        rb->counter = 0;
-    //        semop(semid, &my_sem_signal, 1);
-    //        break;
-//
-    //    }
-//
-    //    semop(semid, &my_sem_signal, 1);
-    //}
-    
 }
 
 int load()
