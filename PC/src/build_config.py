@@ -8,6 +8,10 @@ py_config = open('./config.py', "w")
 cfg = open('./src/config.json')
 data = json.load(cfg)
 
+pre = "Do not edit this config file! Add constants and expressions in config.json and build with make."
+c_config.write("//" + pre + "\n")
+py_config.write("#" + pre + "\n")
+
 for constants in data["general"].items():
     if constants[0] == "expression":
         for expression in constants[1].items():

@@ -1,3 +1,4 @@
+//Do not edit this config file! Add constants and expressions in config.json and build with make.
 #define N_MICROPHONES 64
 #define N_SAMPLES 128
 #define UDP_PORT 21844

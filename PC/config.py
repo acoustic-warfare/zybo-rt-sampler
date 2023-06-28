@@ -1,3 +1,4 @@
+#Do not edit this config file! Add constants and expressions in config.json and build with make.
 N_MICROPHONES = 64
 N_SAMPLES = 128
 UDP_PORT = 21844
