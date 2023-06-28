@@ -33,6 +33,16 @@ typedef struct _msg
     int32_t stream[N_MICROPHONES]; 
 } msg;
 
+/// @brief FPGA Protocol Version 2
+typedef struct _msg_2
+{
+    int8_t protocol_ver;
+    int8_t n_arrays;
+    int16_t frequency;
+    int32_t counter;
+    int32_t stream[N_MICROPHONES];
+} msg_2;
+
 /// @brief Creates and binds the socket to a server ip and port.
 /// @pre Requires the SERVER_IP and UDP_PORT to be correctly specified in the header file.
 /// @return A socket descriptor if successfully created and bound. -1 if an error occured.

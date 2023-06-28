@@ -63,3 +63,4 @@ for constants in data["c"].items():
 #Close file descriptors
 c_config.close()
 py_config.close()
+cfg.close()
