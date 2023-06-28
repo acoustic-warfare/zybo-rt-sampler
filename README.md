@@ -90,6 +90,11 @@ chmod +x configure.sh
 ./configure.sh
 ```
 
+### 4. Set a static IP-address
+Set the ip address of the ethernet port that the zybo is connected to:
+IPv4 address: 10.0.0.1
+Netmask: 255.255.255.0
+Gateway: 192.168.1.1
 
 # TODO
 
