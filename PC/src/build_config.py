@@ -36,28 +36,41 @@ for constants in data["general"].items():
         py_config.write(line)
 
 for constants in data["python"].items():
-    if constants[0] == "ctypes":
-        py_config.write("import ctypes\n")
-        for ctype_constants in constants[1].items():
-            line = ctype_constants[0] + " = " + ctype_constants[1] + "\n"
-            py_config.write(line)
+    #Imports
+    if constants[0] == "imports":
+        for lib in constants[1]:
+            py_config.write("import " + lib + "\n")
     else:
-        line = constants[0] + " = "
+    #Expression handler
+        if constants[0] == "expression":
+            for expr in constants[1].items():
+                line = expr[0] + " = " + expr[1] + "\n"
+                py_config.write(line)
+        else:
+        #String, Int and float declarations
+            line = constants[0] + " = "
+            if isinstance(constants[1], str):
+                line += "\"" + constants[1] + "\""
+            else:
+                line += str(constants[1])
+            line += "\n"
+            py_config.write(line)
+
+for constants in data["c"].items():
+    #Expression handler
+    if constants[0] == "expression":
+        for expression in constants[1].items():
+            line = "#define " + expression[0] + " " + expression[1] + "\n"
+            c_config.write(line)
+    else:
+        #String, int and float handler
+        line = "#define " + constants[0] + " "
         if isinstance(constants[1], str):
             line += "\"" + constants[1] + "\""
         else:
             line += str(constants[1])
         line += "\n"
-        py_config.write(line)
-
-for constants in data["c"].items():
-    line = "#define " + constants[0] + " "
-    if isinstance(constants[1], str):
-        line += "\"" + constants[1] + "\""
-    else:
-        line += str(constants[1])
-    line += "\n"
-    c_config.write(line)
+        c_config.write(line)
 
 
 #Close file descriptors
