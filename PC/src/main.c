@@ -146,5 +146,12 @@ int load()
 
 int main(int argc, char const *argv[])
 {
+    load();
+    float out[BUFFER_LENGTH] = {0.0};
+    while(1){
+        myread(&out[0]);
+        printf("%f", out[0]);
+    }
+    
     return 0;
 }
