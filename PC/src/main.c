@@ -24,7 +24,7 @@
 #include "config.h"
 
 ring_buffer *rb;
-
+msg *client_msg;
 int shmid; // Shared memory ID
 int semid;                                      // Semaphore ID
 int socket_desc;
@@ -37,6 +37,7 @@ void signal_handler(){
     shmctl(shmid, IPC_RMID, NULL);
     semctl(semid, 0, IPC_RMID);
     close_socket(socket_desc);
+    destroy_msg(client_msg);
     exit(-1);
 }
 
@@ -125,7 +126,7 @@ int load()
     {
         // Create UDP socket:
         socket_desc = create_and_bind_socket();
-        msg *client_msg = create_msg();
+        client_msg = create_msg();
 
         while (1)
         {
@@ -138,9 +139,6 @@ int load()
             semop(semid, &my_sem_signal, 1);
             continue;
         }
-
-        destroy_msg(client_msg);
-        close_socket(socket_desc);
     }
 
     return 0;
