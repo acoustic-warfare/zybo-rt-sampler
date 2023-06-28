@@ -42,7 +42,7 @@ def this_callback(in_data, frame_count, time_info, status):
 
 stream = p.open(format=pyaudio.paFloat32,
                 channels=1,
-                rate=48828,
+                rate=config.fs,
                 input=False,
                 output=True,
                 stream_callback=this_callback,
