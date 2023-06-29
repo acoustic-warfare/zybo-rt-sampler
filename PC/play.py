@@ -30,7 +30,6 @@ out = np.empty(config.BUFFER_LENGTH, dtype=np.float32)
 out_pointer = out.ctypes.data_as(
     ctypes.POINTER(ctypes.c_float))
 
-p = pyaudio.PyAudio()
 
 #choice = int(input("Choose mic"))
 def this_callback(in_data, frame_count, time_info, status):
@@ -41,6 +40,7 @@ def this_callback(in_data, frame_count, time_info, status):
     return sound, pyaudio.paContinue
 
 def play_sound():
+    p = pyaudio.PyAudio()
     stream = p.open(format=pyaudio.paFloat32,
                     channels=1,
                     rate=config.fs,
@@ -62,4 +62,4 @@ def play_sound():
 
     exit()
 
-play_sound()
+#play_sound()

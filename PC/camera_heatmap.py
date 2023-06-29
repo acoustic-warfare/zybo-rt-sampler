@@ -16,13 +16,12 @@ colors = [light_blue, blue, dark_blue, yellow, orange, green]
 shape = (30, 32, 3)
 small_heatmap = np.zeros(shape, dtype=np.uint8)
 
-# Very unoptimized. Use numpy functionalities for writing the pixels
+# Very unoptimized. Use numpy functionalities
 def simulate_heatmap():
+    random_heatmap = np.random.randint(0, 6, (30, 32), dtype=np.uint8)
     for i in range(30):
         for j in range(32):
-            #Generate random colors
-            index = random.randint(0, 5)
-            small_heatmap[i][j] = colors[index]
+            small_heatmap[i][j] = colors[random_heatmap[i][j]]
     
     heatmap = cv2.resize(small_heatmap, (1280, 720))
     return heatmap
@@ -54,7 +53,7 @@ def display_camera_and_sound():
     display.start()
     sound.start()
     display.join()
-    sound.join()    
-#display_camera()
+    sound.join()       
+    
 
 display_camera_and_sound()
