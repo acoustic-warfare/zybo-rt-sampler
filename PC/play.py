@@ -61,3 +61,5 @@ def play_sound():
     p.terminate()
 
     exit()
+
+play_sound()
