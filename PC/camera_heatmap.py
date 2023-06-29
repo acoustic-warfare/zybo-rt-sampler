@@ -5,12 +5,12 @@ import random
 from play import play_sound
 from multiprocessing import Process
 
-light_blue = [27, 170, 222]
-blue = [66, 106, 253]
-dark_blue = [60, 40, 170]
-yellow = [250, 250, 20]
-orange = [244, 185, 60]
-green = [100, 200, 100]
+light_blue = [27,  170, 222]
+blue       = [66,  106, 253]
+dark_blue  = [60,   40, 170]
+yellow     = [250, 250,  20]
+orange     = [244, 185,  60]
+green      = [100, 200, 100]
 colors = [light_blue, blue, dark_blue, yellow, orange, green]
 
 shape = (30, 32, 3)
