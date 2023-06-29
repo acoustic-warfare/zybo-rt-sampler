@@ -32,32 +32,32 @@ out_pointer = out.ctypes.data_as(
 
 p = pyaudio.PyAudio()
 
-choice = int(input("Choose mic"))
+#choice = int(input("Choose mic"))
 def this_callback(in_data, frame_count, time_info, status):
     f(out_pointer)
     b = out.reshape((config.N_SAMPLES, config.N_MICROPHONES))
-    sound = b[:,choice] / 1.0# / 32.0 #/ 2**15
+    sound = b[:,4] / 1.0# / 32.0 #/ 2**15
 
     return sound, pyaudio.paContinue
 
+def play_sound():
+    stream = p.open(format=pyaudio.paFloat32,
+                    channels=1,
+                    rate=config.fs,
+                    input=False,
+                    output=True,
+                    stream_callback=this_callback,
+                    frames_per_buffer=config.N_SAMPLES)
 
-stream = p.open(format=pyaudio.paFloat32,
-                channels=1,
-                rate=config.fs,
-                input=False,
-                output=True,
-                stream_callback=this_callback,
-                frames_per_buffer=config.N_SAMPLES)
+    stream.start_stream()
 
-stream.start_stream()
+    while stream.is_active():  # <--------------------------------------------
+        #print(rms)    # may be losing some values if sleeping too long, didn't check
+        time.sleep(0.1)
 
-while stream.is_active():  # <--------------------------------------------
-    #print(rms)    # may be losing some values if sleeping too long, didn't check
-    time.sleep(0.1)
+    stream.stop_stream()
+    stream.close()
 
-stream.stop_stream()
-stream.close()
+    p.terminate()
 
-p.terminate()
-
-exit()
+    exit()
