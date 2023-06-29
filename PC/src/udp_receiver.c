@@ -31,16 +31,6 @@ msg *destroy_msg(msg *message){
     return message;
 }
 
-msg_2 *create_msg_2(){
-    return (msg_2 *)calloc(1, sizeof(msg_2));
-}
-
-msg_2 *destroy_msg_2(msg_2 *message){
-    free(message);
-    message = NULL;
-    return message;
-}
-
 int create_and_bind_socket(){
     int socket_desc;
     struct sockaddr_in server_addr;
@@ -93,23 +83,6 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message){
     for (int i = 0; i < BUFFER_LENGTH; i+=N_MICROPHONES)
     {
         if (recv(socket_desc, message, sizeof(msg), 0) < 0)
-        {
-            printf("Couldn't receive\n");
-            return -1;
-        }
-
-        for (int k = 0; k < N_MICROPHONES; k++)
-        {
-            rb->data[i + k] = (float)((double)(message->stream[k]) / NORM_FACTOR); //Can be calibrated in config.json
-        }
-    }
-    return 0;
-}
-
-int receive_and_write_to_buffer_2(int socket_desc, ring_buffer *rb, msg_2 *message){
-    for (int i = 0; i < BUFFER_LENGTH; i+=N_MICROPHONES)
-    {
-        if (recv(socket_desc, message, sizeof(msg_2), 0) < 0)
         {
             printf("Couldn't receive\n");
             return -1;

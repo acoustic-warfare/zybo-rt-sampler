@@ -23,32 +23,19 @@
 #include "circular_buffer.h"
 #include "config.h"
 
-/// @brief FPGA Protocol
-typedef struct _msg
-{
-    int32_t array_id;
-    int32_t version;
-    int32_t frequency;
-    int32_t counter;
-    int32_t stream[N_MICROPHONES]; 
-} msg;
 
 /// @brief FPGA Protocol Version 2
-typedef struct _msg_2
+typedef struct _msg
 {
     int8_t protocol_ver;
     int8_t n_arrays;
     int16_t frequency;
     int32_t counter;
     int32_t stream[N_MICROPHONES];
-} msg_2;
+} msg;
 
 msg *create_msg();
 msg *destroy_msg(msg *msg);
-
-
-msg_2 *create_msg_2();
-msg_2 *destroy_msg_2(msg_2 *msg);
 
 /// @brief Creates and binds the socket to a server ip and port.
 /// @pre Requires the SERVER_IP and UDP_PORT to be correctly specified in the header file.
@@ -60,19 +47,12 @@ int create_and_bind_socket();
 /// @return -1 if error occured.
 int receive_and_print(int socket_desc);
 
-/// @brief Receives messages from UDP client forever and writes to a ring buffer
-/// @param socket_desc A socket file descriptor
-/// @param rb A pointer to a ring buffer
-/// @param message A pointer for temporarily storing received message
-/// @return 0 if no errors and -1 if the message can't be received
-int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message);
-
 /// @brief Receives messages from UDP client forever and writes to a ring buffer with the FPGA Protocol version 2
 /// @param socket_desc A socket file descriptor
 /// @param rb A pointer to a ring buffer
 /// @param message A pointer for temporarily storing received message
 /// @return 0 if no errors and -1 if the message can't be received
-int receive_and_write_to_buffer_2(int socket_desc, ring_buffer *rb, msg_2 *message);
+int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message);
 
 /// @brief Closes the socket descriptor.
 /// @param socket_desc A socket file descriptor.
