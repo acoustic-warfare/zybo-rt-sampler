@@ -32,10 +32,11 @@ out_pointer = out.ctypes.data_as(
 
 p = pyaudio.PyAudio()
 
+choice = int(input("Choose mic"))
 def this_callback(in_data, frame_count, time_info, status):
     f(out_pointer)
     b = out.reshape((config.N_SAMPLES, config.N_MICROPHONES))
-    sound = b[:,4] / 1.0# / 32.0 #/ 2**15
+    sound = b[:,choice] / 1.0# / 32.0 #/ 2**15
 
     return sound, pyaudio.paContinue
 
