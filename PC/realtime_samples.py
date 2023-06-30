@@ -26,19 +26,10 @@ def get_samples():
     out = np.empty(config.BUFFER_LENGTH, dtype=np.float32)
     out_pointer = out.ctypes.data_as(
         ctypes.POINTER(ctypes.c_float))
-    #times = np.linspace(0, config.N_SAMPLES/config.fs, num=config.N_SAMPLES)
     while(True):
         f(out_pointer)
         b = out.reshape((config.N_SAMPLES, config.N_MICROPHONES))
         print(b[0])
-        #plt.figure(figsize=(15, 5))
-        #plt.plot(times, b[:,4])
-        #plt.title('Left Channel')
-        #plt.ylabel('Signal Value')
-        #plt.xlabel('Time (s)')
-        #plt.xlim(0, config.N_SAMPLES/config.fs)
-        #plt.show()    
-        #break;  
 
 get_samples()
 exit()
