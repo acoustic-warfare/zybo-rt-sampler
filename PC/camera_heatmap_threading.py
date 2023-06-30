@@ -35,6 +35,7 @@ class ThreadedCamera(object):
     def show_frame(self):
         dst = cv2.addWeighted(self.frame, 0.6, self.simulate_heatmap(), 0.4, 0)
         cv2.imshow('frame', dst)
+        cv2.setMouseCallback('frame', self.mouse_click_handler)
         cv2.waitKey(self.FPS_MS)
 
     # Very unoptimized. Use numpy functionalities
@@ -46,10 +47,15 @@ class ThreadedCamera(object):
         
         heatmap = cv2.resize(self.small_heatmap, (1280, 720), interpolation=cv2.INTER_LINEAR)
         return heatmap
+    
+    def mouse_click_handler(meh, event, x, y, flags, params):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            print("x: " + str(x) + ", y: " + str(y))
 
 
 if __name__ == '__main__':
     threaded_camera = ThreadedCamera()
+    [print(i) for i in dir(cv2) if 'EVENT' in i]
     while True:
         try:
             threaded_camera.show_frame()
