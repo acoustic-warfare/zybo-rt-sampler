@@ -8,75 +8,67 @@ py_config = open('./config.py', "w")
 cfg = open('./src/config.json')
 data = json.load(cfg)
 
-pre = "Do not edit this config file! Add constants and expressions in config.json and build with make."
-c_config.write("//" + pre + "\n")
-py_config.write("#" + pre + "\n")
+py_data = "#Do not edit this config file! Add constants and expressions in config.json and build with make. \n"
+c_data = "//Do not edit this config file! Add constants and expressions in config.json and build with make. \n"
 
 for constants in data["general"].items():
     if constants[0] == "expression":
         for expression in constants[1].items():
-            c_line = "#define " + expression[0] + " " + expression[1] + "\n"
-            py_line = expression[0] + " = " + expression[1] + "\n"
+            c_data += "#define " + expression[0] + " " + expression[1] + "\n"
+            py_data += expression[0] + " = " + expression[1] + "\n"
 
-            c_config.write(c_line)
-            py_config.write(py_line)
     else: 
         #For c header config
-        line = "#define " + constants[0] + " "
+        c_data += "#define " + constants[0] + " "
         if isinstance(constants[1], str):
-            line += "\"" + constants[1] + "\""
+            c_data += "\"" + constants[1] + "\""
         else:
-            line += str(constants[1])
-        line += "\n"
-        c_config.write(line)
+            c_data += str(constants[1])
+        c_data += "\n"
 
         #For python config
-        line = constants[0] + " = "
+        py_data += constants[0] + " = "
         if isinstance(constants[1], str):
-            line += "\"" + constants[1] + "\""
+            py_data += "\"" + constants[1] + "\""
         else:
-            line += str(constants[1])
-        line += "\n"
-        py_config.write(line)
+            py_data += str(constants[1])
+        py_data += "\n"
 
 for constants in data["python"].items():
     #Imports
     if constants[0] == "imports":
         for lib in constants[1]:
-            py_config.write("import " + lib + "\n")
+            py_data = "import " + lib + "\n" + py_data
     else:
     #Expression handler
         if constants[0] == "expression":
             for expr in constants[1].items():
-                line = expr[0] + " = " + expr[1] + "\n"
-                py_config.write(line)
+                py_data += expr[0] + " = " + expr[1] + "\n"
         else:
         #String, Int and float declarations
-            line = constants[0] + " = "
+            py_data += constants[0] + " = "
             if isinstance(constants[1], str):
-                line += "\"" + constants[1] + "\""
+                py_data += "\"" + constants[1] + "\""
             else:
-                line += str(constants[1])
-            line += "\n"
-            py_config.write(line)
+                py_data += str(constants[1])
+            py_data += "\n"
 
 for constants in data["c"].items():
     #Expression handler
     if constants[0] == "expression":
         for expression in constants[1].items():
-            line = "#define " + expression[0] + " " + expression[1] + "\n"
-            c_config.write(line)
+            c_data += "#define " + expression[0] + " " + expression[1] + "\n"
     else:
         #String, int and float handler
-        line = "#define " + constants[0] + " "
+        c_data += "#define " + constants[0] + " "
         if isinstance(constants[1], str):
-            line += "\"" + constants[1] + "\""
+            c_data += "\"" + constants[1] + "\""
         else:
-            line += str(constants[1])
-        line += "\n"
-        c_config.write(line)
+            c_data += str(constants[1])
+        c_data += "\n"
 
-
+c_config.write(c_data)
+py_config.write(py_data)
 #Close file descriptors
 c_config.close()
 py_config.close()

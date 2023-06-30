@@ -23,7 +23,7 @@ def simulate_heatmap():
         for j in range(32):
             small_heatmap[i][j] = colors[random_heatmap[i][j]]
     
-    heatmap = cv2.resize(small_heatmap, (1280, 720))
+    heatmap = cv2.resize(small_heatmap, (1280, 720), interpolation=cv2.INTER_LINEAR)
     return heatmap
 
 def display_camera():
