@@ -29,7 +29,6 @@ def simulate_heatmap():
 def display_camera():
     # Setup camera
     cap = cv2.VideoCapture(0)
-
 #    print("IMPORTANT: YOU NEED PHOTO PERMISSION IF YOU ARE AT A SECURE/VITAL INSTALLATION!!!")
  #   if input("Do you have a valid photo permission? (Y/n)") == "Y":
     while True:
