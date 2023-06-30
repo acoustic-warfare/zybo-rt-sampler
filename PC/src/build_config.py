@@ -11,6 +11,7 @@ data = json.load(cfg)
 py_data = "#Do not edit this config file! Add constants and expressions in config.json and build with make. \n"
 c_data = "//Do not edit this config file! Add constants and expressions in config.json and build with make. \n"
 
+py_data += "\n#General constants for both c and python.\n"
 for constants in data["general"].items():
     if constants[0] == "expression":
         for expression in constants[1].items():
@@ -34,6 +35,7 @@ for constants in data["general"].items():
             py_data += str(constants[1])
         py_data += "\n"
 
+py_data += "\n#Python specific constants\n"
 for constants in data["python"].items():
     #Imports
     if constants[0] == "imports":
@@ -53,6 +55,7 @@ for constants in data["python"].items():
                 py_data += str(constants[1])
             py_data += "\n"
 
+py_data += "\n#C specific constants\n"
 for constants in data["c"].items():
     #Expression handler
     if constants[0] == "expression":
@@ -67,8 +70,10 @@ for constants in data["c"].items():
             c_data += str(constants[1])
         c_data += "\n"
 
+#Write to config.h and config.h
 c_config.write(c_data)
 py_config.write(py_data)
+
 #Close file descriptors
 c_config.close()
 py_config.close()
