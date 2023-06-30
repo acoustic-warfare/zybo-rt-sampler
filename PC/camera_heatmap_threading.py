@@ -1,6 +1,7 @@
 from threading import Thread
 import cv2, time
 import numpy as np
+from play import RealtimeSoundplayer 
 
 class ThreadedCamera(object):
     def __init__(self, src=0):
@@ -25,6 +26,11 @@ class ThreadedCamera(object):
         self.thread = Thread(target=self.update, args=())
         self.thread.daemon = True
         self.thread.start()
+
+        # Start playing sound on another thread
+        self.thread2 = Thread(target=self.play_sound, args=())
+        self.thread2.daemon = True
+        self.thread2.start()
         
     def update(self):
         while True:
@@ -52,10 +58,12 @@ class ThreadedCamera(object):
         if event == cv2.EVENT_LBUTTONDOWN:
             print("x: " + str(x) + ", y: " + str(y))
 
+    def play_sound(self):
+        sound_player = RealtimeSoundplayer()
+        sound_player.play_sound()
 
 if __name__ == '__main__':
     threaded_camera = ThreadedCamera()
-    [print(i) for i in dir(cv2) if 'EVENT' in i]
     while True:
         try:
             threaded_camera.show_frame()

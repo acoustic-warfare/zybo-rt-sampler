@@ -23,43 +23,44 @@ def get_antenna_data():
     
     return get_data
 
-f = get_antenna_data()
+
+class RealtimeSoundplayer(object):
+    def __init__(self):
+        self.f = get_antenna_data()
+        self.out = np.empty(config.BUFFER_LENGTH, dtype=np.float32)
+        self.out_pointer = self.out.ctypes.data_as(
+            ctypes.POINTER(ctypes.c_float))
 
 
-out = np.empty(config.BUFFER_LENGTH, dtype=np.float32)
-out_pointer = out.ctypes.data_as(
-    ctypes.POINTER(ctypes.c_float))
+#choice =    int(input("Choose mic"))
+    def this_callback(self, in_data, frame_count, time_info, status):
+        self.f(self.out_pointer)
+        b = self.out.reshape((config.N_SAMPLES, config.N_MICROPHONES))
+        sound = b[:,4] / 1.0# / 32.0 #/ 2**15
 
+        return sound, pyaudio.paContinue
 
-#choice = int(input("Choose mic"))
-def this_callback(in_data, frame_count, time_info, status):
-    f(out_pointer)
-    b = out.reshape((config.N_SAMPLES, config.N_MICROPHONES))
-    sound = b[:,4] / 1.0# / 32.0 #/ 2**15
+    def play_sound(self):
+        p = pyaudio.PyAudio()
+        stream = p.open(format=pyaudio.paFloat32,
+                        channels=1,
+                        rate=config.fs,
+                        input=False,
+                        output=True,
+                        stream_callback=self.this_callback,
+                        frames_per_buffer=config.N_SAMPLES)
 
-    return sound, pyaudio.paContinue
+        stream.start_stream()
 
-def play_sound():
-    p = pyaudio.PyAudio()
-    stream = p.open(format=pyaudio.paFloat32,
-                    channels=1,
-                    rate=config.fs,
-                    input=False,
-                    output=True,
-                    stream_callback=this_callback,
-                    frames_per_buffer=config.N_SAMPLES)
+        while stream.is_active():  # <--------------------------------------------
+            #print(rms)    # may be losing some values if sleeping too long, didn't check
+            time.sleep(0.1)
 
-    stream.start_stream()
+        stream.stop_stream()
+        stream.close()
 
-    while stream.is_active():  # <--------------------------------------------
-        #print(rms)    # may be losing some values if sleeping too long, didn't check
-        time.sleep(0.1)
+        p.terminate()
 
-    stream.stop_stream()
-    stream.close()
-
-    p.terminate()
-
-    exit()
+        exit()
 
 #play_sound()
