@@ -8,7 +8,7 @@ import time
 import config
 
 def get_antenna_data():
-    lib = ctypes.cdll.LoadLibrary("./lib/libsampler.so")
+    lib = ctypes.cdll.LoadLibrary("../lib/libsampler.so")
 
     init = lib.load
     init.restype = int

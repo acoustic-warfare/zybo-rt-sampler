@@ -2,7 +2,7 @@ import json
 
 "Create and open a config files"
 c_config = open('./src/config.h', "w")
-py_config = open('./config.py', "w")
+py_config = open('./interface/config.py', "w")
 
 #Open config JSON file
 cfg = open('./src/config.json')

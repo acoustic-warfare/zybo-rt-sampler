@@ -1,6 +1,6 @@
 import queue
 
-import config
+import PC.interface.config as config
 
 import socket
 import signal

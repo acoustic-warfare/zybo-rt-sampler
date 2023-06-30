@@ -1,10 +1,10 @@
 import numpy as np
 import ctypes
-import config
+import config 
 import matplotlib.pyplot as plt
 
 def get_antenna_data():
-    lib = ctypes.cdll.LoadLibrary("./lib/libsampler.so")
+    lib = ctypes.cdll.LoadLibrary("../lib/libsampler.so")
 
     init = lib.load
     init.restype = int
