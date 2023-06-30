@@ -18,5 +18,3 @@ fs = 48828
 propagation_speed = 340.0
 TIMEOUT = 30
 DTYPE = ctypes.c_int32
-
-#C specific constants

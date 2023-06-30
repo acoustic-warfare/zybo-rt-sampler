@@ -12,6 +12,7 @@ py_data = "#Do not edit this config file! Add constants and expressions in confi
 c_data = "//Do not edit this config file! Add constants and expressions in config.json and build with make. \n"
 
 py_data += "\n#General constants for both c and python.\n"
+c_data += "\n//General constants for both c and python.\n"
 for constants in data["general"].items():
     if constants[0] == "expression":
         for expression in constants[1].items():
@@ -55,7 +56,7 @@ for constants in data["python"].items():
                 py_data += str(constants[1])
             py_data += "\n"
 
-py_data += "\n#C specific constants\n"
+c_data += "\n//C specific constants\n"
 for constants in data["c"].items():
     #Expression handler
     if constants[0] == "expression":
