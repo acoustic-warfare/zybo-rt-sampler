@@ -1,11 +1,16 @@
-import numpy as np
+import time
 import ctypes
-#import matplotlib.pyplot as plt
 
 import pyaudio
-import time
+
+import numpy as np
+
+# Local
 import config
 
+MICROPHONE_INDEX = 4 # 0 - 63
+
+# Load shared library, make sure to compile using make command
 def get_antenna_data():
     lib = ctypes.cdll.LoadLibrary("../lib/libsampler.so")
 
@@ -18,6 +23,7 @@ def get_antenna_data():
         ctypes.POINTER(ctypes.c_float)
     ]
 
+    # Initiate antenna from the C side
     init()
     
     return get_data
@@ -30,16 +36,13 @@ class RealtimeSoundplayer(object):
         self.out_pointer = self.out.ctypes.data_as(
             ctypes.POINTER(ctypes.c_float))
 
-
-#choice =    int(input("Choose mic"))
     def this_callback(self, in_data, frame_count, time_info, status):
+        """This is a pyaudio callback when an output is finished and new data should be gathered"""
         self.f(self.out_pointer)
-        b = self.out.reshape((config.N_SAMPLES, config.N_MICROPHONES))
 
+        antenna_array = self.out.reshape((config.N_SAMPLES, config.N_MICROPHONES))
 
-        #sound = b[:,4] / 1.0# / 32.0 #/ 2**15
-
-        sound = np.ascontiguousarray(b[:,4])
+        sound = np.ascontiguousarray(antenna_array[:, MICROPHONE_INDEX])
 
         return sound, pyaudio.paContinue
 
@@ -55,8 +58,8 @@ class RealtimeSoundplayer(object):
 
         stream.start_stream()
 
-        while stream.is_active():  # <--------------------------------------------
-            #print(rms)    # may be losing some values if sleeping too long, didn't check
+        while stream.is_active():
+            # Do nothing for some time
             time.sleep(0.1)
 
         stream.stop_stream()
