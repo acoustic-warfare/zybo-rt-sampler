@@ -4,7 +4,7 @@ import ctypes
 
 #General constants for both c and python.
 N_MICROPHONES = 192
-N_SAMPLES = 128
+N_SAMPLES = 1024
 UDP_PORT = 21844
 UDP_IP = "10.0.0.1"
 BUFFER_LENGTH = N_SAMPLES * N_MICROPHONES

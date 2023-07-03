@@ -30,20 +30,28 @@ def get_antenna_data():
 
 
 class RealtimeSoundplayer(object):
-    def __init__(self):
+    def __init__(self, mic_index = 4):
         self.f = get_antenna_data()
         self.out = np.empty(config.BUFFER_LENGTH, dtype=config.NP_DTYPE)
         self.out_pointer = self.out.ctypes.data_as(
             ctypes.POINTER(ctypes.c_float))
-
+        self.mic_index = mic_index
+    
     def this_callback(self, in_data, frame_count, time_info, status):
         """This is a pyaudio callback when an output is finished and new data should be gathered"""
         self.f(self.out_pointer)
 
         antenna_array = self.out.reshape((config.N_SAMPLES, config.N_MICROPHONES))
+        sound = self.simple_beamforming(antenna_array) 
+        #sound = np.ascontiguousarray(antenna_array[:, self.mic_index])
+        #level = np.sum(np.abs(sound2**2))/sound2.shape[0]
 
-        sound = np.ascontiguousarray(antenna_array[:, MICROPHONE_INDEX])
+        #first = min(int(level*50*30), 50)
 
+        #print("="*first+" "*(50-first), end="\r")
+
+        #print(level, end="\r")
+        #print(sound)
         return sound, pyaudio.paContinue
 
     def play_sound(self):
@@ -69,7 +77,13 @@ class RealtimeSoundplayer(object):
 
         exit()
 
+    def simple_beamforming(self, antenna_array):
+        sum_array = antenna_array.sum(axis=1) / 54
+        sound = np.ascontiguousarray(sum_array)
+        return sound
+
 
 if __name__ == "__main__":
-    rtsp = RealtimeSoundplayer()
+    mic = 4 #int(input("Mic index"))
+    rtsp = RealtimeSoundplayer(mic)
     rtsp.play_sound()
