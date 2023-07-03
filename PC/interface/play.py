@@ -2,7 +2,6 @@ import numpy as np
 import ctypes
 #import matplotlib.pyplot as plt
 
-#import sounddevice as sd
 import pyaudio
 import time
 import config
@@ -27,7 +26,7 @@ def get_antenna_data():
 class RealtimeSoundplayer(object):
     def __init__(self):
         self.f = get_antenna_data()
-        self.out = np.empty(config.BUFFER_LENGTH, dtype=np.float32)
+        self.out = np.empty(config.BUFFER_LENGTH, dtype=config.NP_DTYPE)
         self.out_pointer = self.out.ctypes.data_as(
             ctypes.POINTER(ctypes.c_float))
 
@@ -36,7 +35,11 @@ class RealtimeSoundplayer(object):
     def this_callback(self, in_data, frame_count, time_info, status):
         self.f(self.out_pointer)
         b = self.out.reshape((config.N_SAMPLES, config.N_MICROPHONES))
-        sound = b[:,4] / 1.0# / 32.0 #/ 2**15
+
+
+        #sound = b[:,4] / 1.0# / 32.0 #/ 2**15
+
+        sound = np.ascontiguousarray(b[:,4])
 
         return sound, pyaudio.paContinue
 
@@ -63,4 +66,7 @@ class RealtimeSoundplayer(object):
 
         exit()
 
-#play_sound()
+
+if __name__ == "__main__":
+    rtsp = RealtimeSoundplayer()
+    rtsp.play_sound()

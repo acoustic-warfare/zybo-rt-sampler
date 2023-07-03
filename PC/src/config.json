@@ -12,7 +12,8 @@
     "python":
         {
             "imports":[
-                "ctypes"
+                "ctypes",
+                "numpy"
             ],
             "azimuth": 0.0,
             "elevation": 0.0,
@@ -24,7 +25,8 @@
             "TIMEOUT": 30,
             "expression":
                 {
-                    "DTYPE": "ctypes.c_int32" 
+                    "DTYPE": "ctypes.c_int32",
+                    "NP_DTYPE": "numpy.float32"
                 }
         },
     "c":

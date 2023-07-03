@@ -1,3 +1,4 @@
+import numpy
 import ctypes
 #Do not edit this config file! Add constants and expressions in config.json and build with make. 
 
@@ -18,3 +19,4 @@ fs = 48828
 propagation_speed = 340.0
 TIMEOUT = 30
 DTYPE = ctypes.c_int32
+NP_DTYPE = numpy.float32
