@@ -22,7 +22,7 @@ BUILD = build
 
 .PHONY: all
 
-all: lib/libsampler.so run
+all: lib/libsampler.so run lib/libmiso.so
 
 # build/cy_api.c:
 # 	$(CYCC) -o build/cy_api.c src/cy_api.pyx
@@ -59,8 +59,21 @@ build/sampler.o: src/main.c
 build/config.o:
 	python3 ./src/build_config.py
 
+build/delay.o:
+	$(CC) $(CFLAGS) -lm -c -o build/delay.o src/antenna/delay.c
+
+build/miso.o:
+	$(CC) $(CFLAGS) -lm -c -o build/miso.o src/antenna/miso.c
+
+build/antenna.o:
+	$(CC) $(CFLAGS) -lm -c -o build/antenna.o src/antenna/antenna.c
+
 lib/libsampler.so: build/config.o build/sampler.o build/antenna.o build/circular_buffer.o build/udp.o 
 	$(CC) $(CFLAGS) -lm -shared -o lib/libsampler.so build/sampler.o build/antenna.o build/udp.o build/circular_buffer.o -fPIC
+
+
+lib/libmiso.so: build/config.o build/miso.o build/antenna.o build/circular_buffer.o build/udp.o build/delay.o
+	$(CC) $(CFLAGS) -lm -shared -o lib/libmiso.so build/miso.o build/antenna.o build/circular_buffer.o build/udp.o build/delay.o -fPIC
 
 
 run: build/main.o build/circular_buffer.o build/udp.o# build/cy_api.o 

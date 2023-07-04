@@ -1,0 +1,1 @@
+void delay_vectorized_add(float *signal, float *h, float *out);

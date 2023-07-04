@@ -41,17 +41,10 @@ class RealtimeSoundplayer(object):
         """This is a pyaudio callback when an output is finished and new data should be gathered"""
         self.f(self.out_pointer)
 
-        antenna_array = self.out.reshape((config.N_SAMPLES, config.N_MICROPHONES))
-        sound = self.simple_beamforming(antenna_array) 
-        #sound = np.ascontiguousarray(antenna_array[:, self.mic_index])
-        #level = np.sum(np.abs(sound2**2))/sound2.shape[0]
+        antenna_array = self.out.reshape((config.N_MICROPHONES, config.N_SAMPLES))
 
-        #first = min(int(level*50*30), 50)
-
-        #print("="*first+" "*(50-first), end="\r")
-
-        #print(level, end="\r")
-        #print(sound)
+        sound = np.ascontiguousarray(antenna_array[self.mic_index])
+ 
         return sound, pyaudio.paContinue
 
     def play_sound(self):
@@ -84,6 +77,5 @@ class RealtimeSoundplayer(object):
 
 
 if __name__ == "__main__":
-    mic = 4 #int(input("Mic index"))
-    rtsp = RealtimeSoundplayer(mic)
+    rtsp = RealtimeSoundplayer(MICROPHONE_INDEX)
     rtsp.play_sound()

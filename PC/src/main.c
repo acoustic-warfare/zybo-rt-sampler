@@ -118,7 +118,6 @@ int load()
 
     if (pid == -1)
     {
-        // printf("lonk\n");
         perror("fork");
         exit(1);
     }

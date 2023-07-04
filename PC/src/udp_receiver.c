@@ -80,6 +80,7 @@ int receive_and_print(int socket_desc)
 }
 
 int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message){
+    int step = 0;
     for (int i = 0; i < BUFFER_LENGTH; i+=N_MICROPHONES)
     {
         if (recv(socket_desc, message, sizeof(msg), 0) < 0)
@@ -88,10 +89,44 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message){
             return -1;
         }
 
-        for (int k = 0; k < N_MICROPHONES; k++)
+        /*
+        Fixes ordering such that the microphone data will be (microphone, data)
+
+        with indexes as following:
+
+        [0 1 2 3
+         4 5 6 7
+         8 9 ...]
+        
+        */
+
+        int s = 0;
+
+        for (int n = 0; n < 3; n++)
         {
-            rb->data[i + k] = (float)((double)(message->stream[k]) / NORM_FACTOR); //Can be calibrated in config.json
+            for (int y = 0; y < ROWS; y++)
+            {
+                int row = n * ROWS * COLUMNS + y * COLUMNS;
+                if ((y % 2) == 0)
+                {
+                    for (int x = 0; x < COLUMNS; x++)
+                    {
+                        rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[row + x]) / NORM_FACTOR);
+                        s++;
+                    }
+                } else {
+                    for (int x = 0; x < COLUMNS; x++)
+                    {
+                        rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[row + COLUMNS - x]) / NORM_FACTOR);
+                        s++;
+                    }
+                }
+                
+            }
         }
+
+        step++;
+
     }
     return 0;
 }
