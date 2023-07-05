@@ -7,7 +7,7 @@
 #define COLUMNS 8
 #define ROWS 8
 #define UDP_PORT 21844
-#define UDP_IP "10.0.0.1"
+#define UDP_IP "127.0.0.1"
 #define BUFFER_LENGTH N_SAMPLES * N_MICROPHONES
 
 //C specific constants

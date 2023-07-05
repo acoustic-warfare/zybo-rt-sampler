@@ -4,7 +4,7 @@ import numpy as np
 from play import RealtimeSoundplayer 
 
 class ThreadedCamera(object):
-    def __init__(self, src=0):
+    def __init__(self, src=3):
         self.light_blue = [27,  170, 222]
         self.blue       = [66,  106, 253]
         self.dark_blue  = [60,   40, 170]
@@ -13,8 +13,11 @@ class ThreadedCamera(object):
         self.green      = [100, 200, 100]
         self.colors = [self.light_blue, self.blue, self.dark_blue, self.yellow, self.orange, self.green]
 
-        self.capture = cv2.VideoCapture(src)
+        self.capture = cv2.VideoCapture(src, cv2.CAP_V4L2)
         self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+        #self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        #self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
         self.shape = (30, 32, 3)
         self.small_heatmap = np.zeros(self.shape, dtype=np.uint8)
         # FPS = 1/self.eeeeeellllll......ffffffffffff......X
@@ -51,7 +54,7 @@ class ThreadedCamera(object):
             for j in range(32):
                 self.small_heatmap[i][j] = self.colors[random_heatmap[i][j]]
         
-        heatmap = cv2.resize(self.small_heatmap, (1280, 720), interpolation=cv2.INTER_LINEAR)
+        heatmap = cv2.resize(self.small_heatmap, (640, 480), interpolation=cv2.INTER_LINEAR)
         return heatmap
     
     def mouse_click_handler(meh, event, x, y, flags, params):
