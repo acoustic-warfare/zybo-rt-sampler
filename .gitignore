@@ -5,6 +5,7 @@
 *.slo
 *.lo
 *.o
+*.so
 *.obj
 
 # Precompiled Headers
@@ -32,3 +33,7 @@
 *.app
 
 *.pcap
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
