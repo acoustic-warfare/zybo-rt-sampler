@@ -1,3 +1,18 @@
+/******************************************************************************
+ * Title                 :   Perform a delay of a signal
+ * Filename              :   antenna/delay.c
+ * Author                :   Irreq
+ * Origin Date           :   20/06/2023
+ * Version               :   3.0.0
+ * Compiler              :   gcc (GCC) 9.5.0
+ * Target                :   x86_64 GNU/Linux
+ * Notes                 :   None
+ ******************************************************************************
+
+ Functions to delay signals
+
+*/
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,12 +29,9 @@ gcc delay.c -ffinite-math-only -lm -march=native -mavx2 -O3 -o run && ./run
 
 */
 
-//#define N_TAPS 64 // 256 // 16
 #define OFFSET N_TAPS / 2
 
 #define PI 3.14159265359
-
-//#define N_SAMPLES 512 // 64 // 1024 // 128 // 65536 // 2^16
 
 #define SSE_SIMD_LENGTH 4
 #define AVX_SIMD_LENGTH 8
@@ -65,7 +77,7 @@ void delay_naive(float *signal, float *h, float *out)
 void delay_vectorized(float *signal, float *h, float *out)
 {
     __m256 data_block __attribute__((aligned(ALIGNMENT)));
-    __m256 kernel_block __attribute__((aligned(ALIGNMENT)));
+    // __m256 kernel_block __attribute__((aligned(ALIGNMENT)));
 
     __m256 aligned_kernel[N_TAPS] __attribute__((aligned(ALIGNMENT)));
 

@@ -1,3 +1,19 @@
+/******************************************************************************
+ * Title                 :   A beamformer application
+ * Filename              :   src/beamformer.c
+ * Author                :   Irreq
+ * Origin Date           :   05/07/2023
+ * Version               :   1.0.0
+ * Compiler              :   gcc (GCC) 9.5.0
+ * Target                :   x86_64 GNU/Linux
+ * Notes                 :   None
+ ******************************************************************************
+
+ The backend for handling UDP messages and perform beamforming on the incoming
+ signals.
+
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -160,89 +176,10 @@ void miso(float *out)
     }
 }
 
-void mimo(float *image)
-{
-    float data[BUFFER_LENGTH];
-    semop(semid, &sem_wait, 1);
-    memcpy(&data[0], (void *)&rb->data[0], sizeof(float) * BUFFER_LENGTH);
-    semop(semid, &sem_signal, 1);
-
-    float _out[N_SAMPLES] = {0.0};
-    float *out = &_out[0];
-
-    // memcpy(miso, &data[0], sizeof(float) * N_SAMPLES);
-
-    // printf("\x1b[H\x1b[J");
-
-    for (int y = 0; y < MAX_RES; y++)
-    {
-        for (int x = 0; x < MAX_RES; x++)
-        {
-
-            memset(out, 0, (N_SAMPLES) * sizeof(float));
-
-            // delay_vectorized_add(&data[0 * N_SAMPLES], all_coefficients[x][y][0], out);
-            // delay_vectorized_add(&data[7 * N_SAMPLES], all_coefficients[x][y][7], out);
-            // delay_vectorized_add(&data[55 * N_SAMPLES], all_coefficients[x][y][55], out);
-            // delay_vectorized_add(&data[63 * N_SAMPLES], all_coefficients[x][y][63], out);
-            for (int i = 0; i < 64; i++)
-            {
-                if (i == 1)
-                {
-                    continue;
-                }
-                // delay_vectorized_add(&data[i * N_SAMPLES], tmp_coefficients[i], out);
-                delay_vectorized_add(&data[i * N_SAMPLES], all_coefficients[x][y][i], out);
-            }
-            float sum = 0.0;
-            for (int k = 0; k < N_SAMPLES; k++)
-            {
-                out[k] /= 63.0;
-                // out[k] /= 31.0;
-                sum += powf((float)fabs((double)out[k]), 5);
-            }
-
-            sum /= (float)N_SAMPLES;
-
-            image[y * MAX_RES + x] = sum;
-
-            // if (sum > 2.0)
-            //{
-            //     printf("#");
-            // } else {
-            //     printf(" ");
-            // }
-        }
-
-        // printf("\n");
-    }
-
-    // for (int x = 0; x < MAX_RES; x++)
-    //{
-    //     for (int y = 0; y < MAX_RES; y++)
-    //     {
-    //         memset(out, 0, (N_SAMPLES) * sizeof(float));
-    //         for (int i = 2; i < 64; i++)
-    //         {
-    //             delay_vectorized_add(&data[i * N_SAMPLES], tmp_coefficients[i], out);
-    //         }
-    //         float sum = 0.0;
-    //         for (int k = 0; k < N_SAMPLES; k++)
-    //         {
-    //             sum += powf((float)fabs((double)out[k] / 62), 2);
-    //         }
-    //
-    //        //image[y * MAX_RES + x] = sum;
-    //        printf("%d,%d = %f\n", x, y, sum);
-    //    }
-    //
-    //}
-}
-
 /*
 Get power-level in multiple directions
 */
-void mimo2(float *image)
+void mimo(float *image)
 {
     float data[BUFFER_LENGTH];
 
@@ -263,7 +200,7 @@ void mimo2(float *image)
             // Reset the output for the new direction
             memset(out, 0, (N_SAMPLES) * sizeof(float));
 
-            for (int i = 0; i < N_MICROPHONES; i++)
+            for (int i = 0; i < ROWS * COLUMNS; i++)
             {
                 // TODO mic 1 does not work
                 if (i == 1)
@@ -279,15 +216,13 @@ void mimo2(float *image)
             float sum = 0.0;
             for (int k = 0; k < N_SAMPLES; k++)
             {
-                out[k] /= ROWS * COLUMNS - 1;
+                out[k] /= (float)(ROWS * COLUMNS - 1);
                 sum += powf((float)fabs((double)out[k]), MISO_POWER);
             }
 
             sum /= (float)N_SAMPLES;
 
             image[y * MAX_RES + x] = sum;
-
-            printf("SUM: %f\n", sum);
         }
     }
 }
@@ -363,8 +298,6 @@ int load()
 
     calculate_mimo_coefficients();
     calculate_miso_coefficients();
-
-    printf("MISO: %f\n", miso_coefficients[0][0]);
 
     pid_t pid = fork(); // Fork child
 
