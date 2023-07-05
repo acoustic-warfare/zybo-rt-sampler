@@ -22,7 +22,7 @@ BUILD = build
 
 .PHONY: all
 
-all: lib/libsampler.so run lib/libmiso.so
+all: lib/beamformer.so # lib/libsampler.so run lib/libmiso.so lib/beamformer.so
 
 # build/cy_api.c:
 # 	$(CYCC) -o build/cy_api.c src/cy_api.pyx
@@ -68,6 +68,9 @@ build/miso.o:
 build/antenna.o:
 	$(CC) $(CFLAGS) -lm -c -o build/antenna.o src/antenna/antenna.c
 
+build/beamformer.o:
+	$(CC) $(CFLAGS) -lm -c -o build/beamformer.o src/beamformer.c
+
 lib/libsampler.so: build/config.o build/sampler.o build/antenna.o build/circular_buffer.o build/udp.o 
 	$(CC) $(CFLAGS) -lm -shared -o lib/libsampler.so build/sampler.o build/antenna.o build/udp.o build/circular_buffer.o -fPIC
 
@@ -75,6 +78,8 @@ lib/libsampler.so: build/config.o build/sampler.o build/antenna.o build/circular
 lib/libmiso.so: build/config.o build/miso.o build/antenna.o build/circular_buffer.o build/udp.o build/delay.o
 	$(CC) $(CFLAGS) -lm -shared -o lib/libmiso.so build/miso.o build/antenna.o build/circular_buffer.o build/udp.o build/delay.o -fPIC
 
+lib/beamformer.so: build/config.o build/beamformer.o build/antenna.o build/delay.o build/circular_buffer.o build/udp.o 
+	$(CC) $(CFLAGS) -lm -shared -o lib/beamformer.so build/beamformer.o build/antenna.o build/udp.o build/circular_buffer.o build/delay.o -fPIC
 
 run: build/main.o build/circular_buffer.o build/udp.o# build/cy_api.o 
 	$(CC) build/main.o build/circular_buffer.o build/udp.o $(LFLAGS) -o $(BIN)

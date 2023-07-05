@@ -97,6 +97,11 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message){
         [0 1 2 3
          4 5 6 7
          8 9 ...]
+
+        The array orders:
+             ···
+        15 14 13 12 11 10 9 8
+         0  1  2  3  4  5 6 7
         
         */
 
@@ -152,18 +157,3 @@ int receive_and_write_to_buffer_test(int socket_desc, struct ringba *rb){
 int close_socket(int socket_desc){
     return close(socket_desc);
 }
-
-// int main(void){
-//     // Create UDP socket:
-//     int socket_desc = create_and_bind_socket();
-// 
-//     //Create a ring buffer
-//     ring_buffer* rb = create_ring_buffer();
-// 
-//     receive_and_write_to_buffer(socket_desc, rb);
-// 
-//     //receive_and_print(socket_desc);
-//     // Close the socket:
-//     close_socket(socket_desc);
-//     return 0;
-// }

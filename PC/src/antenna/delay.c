@@ -6,18 +6,20 @@
 
 #include <immintrin.h>
 
+#include "../config.h"
+
 /*
 
 gcc delay.c -ffinite-math-only -lm -march=native -mavx2 -O3 -o run && ./run
 
 */
 
-#define N_TAPS 64 // 256 // 16
+//#define N_TAPS 64 // 256 // 16
 #define OFFSET N_TAPS / 2
 
 #define PI 3.14159265359
 
-#define N_SAMPLES 512 // 64 // 1024 // 128 // 65536 // 2^16
+//#define N_SAMPLES 512 // 64 // 1024 // 128 // 65536 // 2^16
 
 #define SSE_SIMD_LENGTH 4
 #define AVX_SIMD_LENGTH 8
