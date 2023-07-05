@@ -1,20 +1,24 @@
 # import the opencv library
 import cv2
-
+import numpy as np
 
 # define a video capture object
-vid = cv2.VideoCapture(3, cv2.CAP_V4L2)
-#vid.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-#vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+vid = cv2.VideoCapture(2, cv2.CAP_V4L2)
 
+vid.set(cv2.CAP_PROP_FRAME_WIDTH, 1600)
+vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 896)
 while(True):
 
     # Capture the video frame
 
     # by frame
     ret, frame = vid.read()
-    print(frame.shape)
+    # print(frame.shape)
+    #frame = cv2.resize(frame, (1920, 1080))
     # Display the resulting frame
+   # frame = np.random.randint(0,255, (1000, 1000), dtype='uint8')
+    #print(frame)
+    #frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
     cv2.imshow('frame', frame)
 
     # the 'q' button is set as the
