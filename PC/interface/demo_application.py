@@ -140,8 +140,6 @@ class ThreadedCamera(object):
         """"""
         get_image(image)
 
-        print(image)
-
         lmax = np.max(image)
         for i in range(config.MAX_RES):
             for j in range(config.MAX_RES):
