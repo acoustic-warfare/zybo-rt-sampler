@@ -53,9 +53,42 @@ int socket_desc;
 struct sembuf sem_wait = {0, -1, SEM_UNDO};  // Wait operation
 struct sembuf sem_signal = {0, 1, SEM_UNDO}; // Sig operation
 
-float ****all_coefficients; // TODO fix this to more healthier
+float ****mimo_coefficients; // TODO fix this to more healthier
 
 float **miso_coefficients;
+
+/*
+Post memory cleanup
+*/
+void free_coefficients()
+{
+
+    printf("Freeing memory\n");
+
+    for (int x = 0; x < MAX_RES; x++)
+    {
+        for (int y = 0; y < MAX_RES; y++)
+        {
+            for (int i = 0; i < N_MICROPHONES; i++)
+            {
+                free(mimo_coefficients[x][y][i]);
+            }
+
+            free(mimo_coefficients[x][y]);
+        }
+
+        free(mimo_coefficients[x]);
+    }
+
+    free(mimo_coefficients);
+
+    for (int i = 0; i < N_MICROPHONES; i++)
+    {
+        free(miso_coefficients[i]);
+    }
+
+    free(miso_coefficients);
+}
 
 /*
 Remove shared memory and semafores
@@ -66,6 +99,7 @@ void signal_handler()
     semctl(semid, 0, IPC_RMID);
     close_socket(socket_desc);
     destroy_msg(client_msg);
+    free_coefficients();
     exit(-1);
 }
 
@@ -210,7 +244,7 @@ void mimo(float *image)
                 }
 
                 // Delay using the EPIC delay function ;)
-                delay_vectorized_add(&data[i * N_SAMPLES], all_coefficients[x][y][i], out);
+                delay_vectorized_add(&data[i * N_SAMPLES], mimo_coefficients[x][y][i], out);
             }
 
             // Compute the power-level
@@ -233,19 +267,19 @@ TODO Fix too many nested mallocs
 */
 void calculate_mimo_coefficients()
 {
-    all_coefficients = (float ****)malloc((MAX_RES) * sizeof(float ***));
+    mimo_coefficients = (float ****)malloc((MAX_RES) * sizeof(float ***));
 
     for (int x = 0; x < MAX_RES; x++)
     {
-        all_coefficients[x] = (float ***)malloc(MAX_RES * sizeof(float **));
+        mimo_coefficients[x] = (float ***)malloc(MAX_RES * sizeof(float **));
 
         for (int y = 0; y < MAX_RES; y++)
         {
-            all_coefficients[x][y] = (float **)malloc((N_MICROPHONES) * sizeof(float *));
+            mimo_coefficients[x][y] = (float **)malloc((N_MICROPHONES) * sizeof(float *));
 
             for (int i = 0; i < N_MICROPHONES; i++)
             {
-                all_coefficients[x][y][i] = (float *)malloc(N_TAPS * sizeof(float));
+                mimo_coefficients[x][y][i] = (float *)malloc(N_TAPS * sizeof(float));
             }
 
             float horizontal = (x / (float)MAX_RES) * 2.0 * MAX_ANGLE - MAX_ANGLE;
@@ -258,7 +292,7 @@ void calculate_mimo_coefficients()
                                                    ELEMENT_DISTANCE, // Distance between elements
                                                    SAMPLE_RATE,
                                                    PROPAGATION_SPEED,
-                                                   all_coefficients[x][y]);
+                                                   mimo_coefficients[x][y]);
         }
     }
 }
