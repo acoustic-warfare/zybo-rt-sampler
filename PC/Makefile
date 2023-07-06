@@ -24,21 +24,21 @@ BUILD = build
 
 .PHONY: all
 
-all: run lib/beamformer.so lib/libsampler.so #run lib/libmiso.so lib/beamformer.so
+all: lib/beamformer.so lib/libsampler.so #run lib/libmiso.so lib/beamformer.so
 
 
-# Cython stuff
-build/cy_api.c:
-	cp src/data/*.c build/
-	$(CYCC) -o build/cy_api.c src/data/cy_api.pyx
-
-build/cy_api.o: build/cy_api.c
-	#cp src/data/*.c build/
-	$(CC) $(CFLAGS) -c build/cy_api.c -o build/cy_api.o
-
-build/cy_main.o:
-	#cp src/data/cy_main.c build/cy_main.c
-	$(CC) $(CFLAGS) -c src/data/cy_main.c -o build/cy_main.o
+## Cython stuff
+#build/cy_api.c:
+#	cp src/data/*.c build/
+#	$(CYCC) -o build/cy_api.c src/data/cy_api.pyx
+#
+#build/cy_api.o: build/cy_api.c
+#	#cp src/data/*.c build/
+#	$(CC) $(CFLAGS) -c build/cy_api.c -o build/cy_api.o
+#
+#build/cy_main.o:
+#	#cp src/data/cy_main.c build/cy_main.c
+#	$(CC) $(CFLAGS) -c src/data/cy_main.c -o build/cy_main.o
 
 build/main.o:
 	# cp src/main.c build/main.c # Force adding main.c to build
@@ -95,8 +95,8 @@ lib/beamformer.so: build/config.o build/beamformer.o build/antenna.o build/delay
 #	$(CC) build/main.o build/circular_buffer.o build/udp.o $(LFLAGS) -o $(BIN)
 #	# $(CC) build/main.o $(LFLAGS) -o bin/$(BIN)
 
-run: build/cy_api.o build/cy_main.o
-	$(CC) build/cy_main.o build/cy_api.o $(LFLAGS) -o $(BIN)/$(EXECUTABLE)
+#run: build/cy_api.o build/cy_main.o
+#	$(CC) build/cy_main.o build/cy_api.o $(LFLAGS) -o $(BIN)/$(EXECUTABLE)
 
 
 cython_project:
