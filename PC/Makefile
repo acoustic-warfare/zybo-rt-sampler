@@ -16,9 +16,11 @@ CFLAGS += $(PYTHON_MODULES)
 LFLAGS = `python3-config --embed --ldflags` # Must be --embed for >python3.8
 
 LFLAGS += $(PYTHON_MODULES)
-BIN = run
+BIN = bin
+EXECUTABLE = run
 
 BUILD = build
+
 
 .PHONY: all
 
@@ -83,7 +85,7 @@ lib/beamformer.so: build/config.o build/beamformer.o build/antenna.o build/delay
 
 run: build/main.o build/circular_buffer.o build/udp.o# build/cy_api.o 
 	$(CC) build/main.o build/circular_buffer.o build/udp.o $(LFLAGS) -o $(BIN)
-	# $(CC) build/main.o $(LFLAGS) -o $(BIN)
+	# $(CC) build/main.o $(LFLAGS) -o bin/$(BIN)
 .PHONY: clean
 
 # $(BUILD)/*.c $(BUILD)/*.h
@@ -92,8 +94,8 @@ clean:
 	
 	rm $(BUILD)/*.o 
 
-	echo "Removing Binaries"
-	rm $(BIN)
-
 	echo "Removing Libraries"
 	rm lib/*.so
+
+	echo "Removing Binaries"
+	rm bin/$(EXECUTABLE)
