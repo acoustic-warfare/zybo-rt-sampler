@@ -160,7 +160,7 @@ class ThreadedCamera(object):
             cv2.setMouseCallback(config.APPLICATION_NAME, self.mouse_click_handler)
             if cv2.waitKey(self.FPS_MS) & 0xFF == ord('q'):
                 break
-
+            ##TODO KILL PYTHON
         # After the loop release the cap object
         self.capture.release()
         # Destroy all the windows
