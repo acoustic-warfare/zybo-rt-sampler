@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <signal.h>
 
@@ -287,7 +288,7 @@ void calculate_miso_coefficients()
 /*
 Main initialization function
 */
-int load()
+int load(bool replay_mode)
 {
     signal(SIGINT, signal_handler);
     signal(SIGKILL, signal_handler);
@@ -309,7 +310,7 @@ int load()
     else if (pid == 0) // Child
     {
         // Create UDP socket:
-        socket_desc = create_and_bind_socket();
+        socket_desc = create_and_bind_socket(replay_mode);
         client_msg = create_msg();
 
         while (1)

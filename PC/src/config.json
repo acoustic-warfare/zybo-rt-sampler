@@ -12,7 +12,7 @@
         "ELEMENT_DISTANCE": 0.02,
         "PROPAGATION_SPEED": 340.0,
         "UDP_IP": "10.0.0.1",
-        "UDP_REPLAY_IP": "10.0.0.1",
+        "UDP_REPLAY_IP": "127.0.0.1",
         "expression": {
             "BUFFER_LENGTH": "N_SAMPLES * N_MICROPHONES"
         }

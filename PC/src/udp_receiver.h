@@ -22,7 +22,7 @@
 
 #include "circular_buffer.h"
 #include "config.h"
-
+#include <stdbool.h>
 
 /// @brief FPGA Protocol Version 2
 typedef struct _msg
@@ -40,7 +40,7 @@ msg *destroy_msg(msg *msg);
 /// @brief Creates and binds the socket to a server ip and port.
 /// @pre Requires the SERVER_IP and UDP_PORT to be correctly specified in the header file.
 /// @return A socket descriptor if successfully created and bound. -1 if an error occured.
-int create_and_bind_socket();
+int create_and_bind_socket(bool replay_mode);
 
 /// @brief Receives messages from the UDP client forever and prints the messages.
 /// @param socket_desc A socket file descriptor

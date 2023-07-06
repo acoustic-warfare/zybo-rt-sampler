@@ -105,7 +105,7 @@ void myread(float *out)
     semop(semid, &my_sem_signal, 1);
 }
 
-int load()
+int load(bool replay_mode)
 {
     signal(SIGINT, signal_handler);
     signal(SIGKILL, signal_handler);
@@ -124,7 +124,7 @@ int load()
     else if (pid == 0) // Child
     {
         // Create UDP socket:
-        socket_desc = create_and_bind_socket();
+        socket_desc = create_and_bind_socket(replay_mode);
         client_msg = create_msg();
 
         while (1)
@@ -145,7 +145,8 @@ int load()
 
 int main(int argc, char const *argv[])
 {
-    load();
+    bool replay_mode = false;
+    load(replay_mode);
     float out[BUFFER_LENGTH] = {0.0};
     while(1){
         myread(&out[0]);

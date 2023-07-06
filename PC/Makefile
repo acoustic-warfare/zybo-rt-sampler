@@ -22,7 +22,7 @@ BUILD = build
 
 .PHONY: all
 
-all: lib/beamformer.so # lib/libsampler.so run lib/libmiso.so lib/beamformer.so
+all: lib/beamformer.so lib/libsampler.so #run lib/libmiso.so lib/beamformer.so
 
 # build/cy_api.c:
 # 	$(CYCC) -o build/cy_api.c src/cy_api.pyx

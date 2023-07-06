@@ -5,19 +5,21 @@ import numpy as np
 import ctypes
 
 import pyaudio
-
+import sys
 
 # Local
 import config
 
 
 # Load shared library, make sure to compile using make command
-def get_antenna_data():
+def get_antenna_data(replay_mode=False):
     lib = ctypes.cdll.LoadLibrary("../lib/beamformer.so")
 
     init = lib.load
     init.restype = int
-
+    init.argtypes = [
+        ctypes.c_bool
+    ]
     # MISO
     get_data = lib.miso
     get_data.restype = None
@@ -43,13 +45,10 @@ def get_antenna_data():
     ]
 
     # Initiate antenna from the C side
-    init()
+    init(replay_mode)
     
     return get_data, steer, get_image
 
-get_data, steer, get_image = get_antenna_data()
-
-image = np.empty((config.MAX_RES, config.MAX_RES), dtype=config.NP_DTYPE)
 
 
 class RealtimeSoundplayer(object):
@@ -139,20 +138,20 @@ class ThreadedCamera(object):
     def calculate_heatmap(self):
         """"""
         get_image(image)
-
         lmax = np.max(image)
-        for i in range(config.MAX_RES):
-            for j in range(config.MAX_RES):
-                val = int(255 * image[i][j]/lmax)
+        if lmax != 0.0:
+            for i in range(config.MAX_RES):
+                for j in range(config.MAX_RES):
+                    val = int(255 * image[i][j]/lmax)
 
-                if (lmax < 0.0000001):
-                    val = 0
-
-                else:
-                    if val < 220:
+                    if (lmax < 0.0000001):
                         val = 0
 
-                self.small_heatmap[i][j] = [val, 0, 0]
+                    else:
+                        if val < 220:
+                            val = 0
+
+                    self.small_heatmap[i][j] = [val, 0, 0]
 
         heatmap = cv2.resize(self.small_heatmap, config.WINDOW_SIZE, interpolation=cv2.INTER_LINEAR)
 
@@ -193,6 +192,11 @@ def test_sound():
         get_image(image)
 
 if __name__ == '__main__':
+    if len(sys.argv) == 2 and sys.argv[1] == "replay":
+            get_data, steer, get_image = get_antenna_data(True)
+    else:
+        get_data, steer, get_image = get_antenna_data()
+    image = np.empty((config.MAX_RES, config.MAX_RES), dtype=config.NP_DTYPE)
     test_camera()
     
     

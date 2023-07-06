@@ -3,10 +3,11 @@ import cv2
 import numpy as np
 
 # define a video capture object
-vid = cv2.VideoCapture(2, cv2.CAP_V4L2)
+vid = cv2.VideoCapture(2, 200)
 
-vid.set(cv2.CAP_PROP_FRAME_WIDTH, 1600)
-vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 896)
+#vid.set(cv2.CAP_PROP_FRAME_WIDTH, 1600)
+#vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 896)
+print(cv2.videoio_registry.getCameraBackends())
 while(True):
 
     # Capture the video frame
