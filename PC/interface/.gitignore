@@ -33,11 +33,7 @@
 *.app
 
 *.pcap
-*.avi
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-
-PC/build/
-PC/lib/
