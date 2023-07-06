@@ -9,10 +9,12 @@ import sys
 
 # Local
 import config
-
+import os
+rogue_child_stopper = False
 
 # Load shared library, make sure to compile using make command
 def get_antenna_data(replay_mode=False):
+    
     lib = ctypes.cdll.LoadLibrary("../lib/beamformer.so")
 
     init = lib.load
@@ -43,10 +45,10 @@ def get_antenna_data(replay_mode=False):
         ctypes.c_float,
         ctypes.c_float
     ]
-
     # Initiate antenna from the C side
-    init(replay_mode)
     
+    init(replay_mode)
+
     return get_data, steer, get_image
 
 
@@ -89,7 +91,7 @@ class RealtimeSoundplayer(object):
 
 
 class ThreadedCamera(object):
-    def __init__(self, src=0):
+    def __init__(self, src=0, replay_mode=False, sound_command=""):
         self.X, self.Y = config.WINDOW_SIZE
 
         self.light_blue = [27,  170, 222]
@@ -99,8 +101,13 @@ class ThreadedCamera(object):
         self.orange     = [244, 185,  60]
         self.green      = [100, 200, 100]
         self.colors = [self.light_blue, self.blue, self.dark_blue, self.yellow, self.orange, self.green]
+        if replay_mode:
+            self.capture = cv2.VideoCapture(src)
+        else:
+            self.capture = cv2.VideoCapture(src, 200)
 
-        self.capture = cv2.VideoCapture(src)
+        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
+        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
         self.shape = (config.MAX_RES, config.MAX_RES, 3)
         self.small_heatmap = np.zeros(self.shape, dtype=np.uint8)
@@ -109,16 +116,25 @@ class ThreadedCamera(object):
         # X = desired FPS
         self.FPS = 1/256
         self.FPS_MS = int(self.FPS * 1000)
-        
-        # Start frame retrieval thread
-        self.thread = Thread(target=self.update, args=())
-        self.thread.daemon = True
-        self.thread.start()
+        self.sound_command = sound_command
+
+       # if(not replay_mode):
+            #print("HEHHEHHE")
+            ## Start frame retrieval thread
+            #self.thread = Thread(target=self.update, args=())
+            #self.thread.daemon = True
+            #self.thread.start()
 
         # Start playing sound on another thread
         self.thread2 = Thread(target=self.play_sound, args=())
         self.thread2.daemon = True
         self.thread2.start()
+
+        
+
+    def replay_sound(self):
+        time.sleep(6)
+        os.system(sound_command)
         
     def update(self):
         """Retrieve camera image"""
@@ -133,6 +149,22 @@ class ThreadedCamera(object):
         cv2.imshow(config.APPLICATION_NAME, dst)
         cv2.setMouseCallback(config.APPLICATION_NAME, self.mouse_click_handler)
         cv2.waitKey(1)
+
+    def replay(self):
+        while True:
+            self.status, self.frame = self.capture.read()
+            frame = cv2.resize(self.frame, config.WINDOW_SIZE)
+            dst = cv2.addWeighted(frame, 0.6, self.calculate_heatmap(), 0.8, 0)
+
+            cv2.imshow(config.APPLICATION_NAME, dst)
+            cv2.setMouseCallback(config.APPLICATION_NAME, self.mouse_click_handler)
+            if cv2.waitKey(self.FPS_MS) & 0xFF == ord('q'):
+                break
+
+        # After the loop release the cap object
+        self.capture.release()
+        # Destroy all the windows
+        cv2.destroyAllWindows()
 
     # Very unoptimized. Use numpy functionalities
     def calculate_heatmap(self):
@@ -173,14 +205,16 @@ class ThreadedCamera(object):
         sound_player = RealtimeSoundplayer()
         sound_player.play_sound()
 
+def test_camera(src, replay_mode, sound_command = ""):
+    threaded_camera = ThreadedCamera(src, replay_mode, sound_command)
+    
+    if replay_mode:
+        thread3 = Thread(target=threaded_camera.replay_sound, args=())
+        thread3.daemon = True
+        thread3.start()
 
-def test_camera():
-    threaded_camera = ThreadedCamera()
-    while True:
-        try:
-            threaded_camera.show_frame()
-        except AttributeError:
-            pass
+    threaded_camera.replay()
+        
 
 def test_sound():
     """Play sound in the current direction"""
@@ -192,11 +226,17 @@ def test_sound():
         get_image(image)
 
 if __name__ == '__main__':
-    if len(sys.argv) == 2 and sys.argv[1] == "replay":
-            get_data, steer, get_image = get_antenna_data(True)
-    else:
-        get_data, steer, get_image = get_antenna_data()
     image = np.empty((config.MAX_RES, config.MAX_RES), dtype=config.NP_DTYPE)
-    test_camera()
+    src = 0
+    replay_mode = False
+    sound_command = ""
+    if len(sys.argv) > 1 and sys.argv[1] == "replay":
+        replay_mode = True
+        if len(sys.argv) == 3:
+            src = "../replays/" + str(sys.argv[2]) + "/replay.avi"
+            sound_command = "udpreplay -i lo ../replays/"+ str(sys.argv[2]) + "/replay.pcap"
+
+    get_data, steer, get_image = get_antenna_data(replay_mode)
+    test_camera(src, replay_mode, sound_command)
     
     

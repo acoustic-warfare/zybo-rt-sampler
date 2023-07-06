@@ -1,2 +1,2 @@
 #!/bin/sh
-udpreplay -i lo ./src/replay_data.pcap
+udpreplay -i lo ./replays/replay1/replay_data.pcap
