@@ -8,8 +8,17 @@
 
 # Main API for C functions
 
-from .utils import test
+from .utils import *
+
+
+cdef public main():
+    cdef int n = n_microphones
+
+    for i in range(n):
+        print(i)
 
 def entrypoint():
-    print("Working")
-    test()
+    main()
+    #print("Working")
+    #print(n_microphones)
+    #test()
