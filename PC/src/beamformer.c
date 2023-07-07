@@ -247,17 +247,23 @@ void mimo(float *image)
                 delay_vectorized_add(&data[i * N_SAMPLES], mimo_coefficients[x][y][i], out);
             }
 
+            //delay_vectorized_add(&data[2 * N_SAMPLES], mimo_coefficients[x][y][2], out);
+            //delay_vectorized_add(&data[7 * N_SAMPLES], mimo_coefficients[x][y][7], out);
+            //delay_vectorized_add(&data[58 * N_SAMPLES], mimo_coefficients[x][y][58], out);
+            //delay_vectorized_add(&data[63 * N_SAMPLES], mimo_coefficients[x][y][63], out);
+
             // Compute the power-level
             float sum = 0.0;
             for (int k = 0; k < N_SAMPLES; k++)
             {
                 out[k] /= (float)(ROWS * COLUMNS - 1);
-                sum += powf((float)fabs((double)out[k]), MISO_POWER);
+                //out[k] /= (float)4;
+                sum += powf((float)fabs((double)out[k]), 2);
             }
 
             sum /= (float)N_SAMPLES;
 
-            image[y * MAX_RES + x] = sum;
+            image[y * MAX_RES + x] = powf(sum, 5*MISO_POWER);
         }
     }
 }

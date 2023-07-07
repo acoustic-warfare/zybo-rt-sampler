@@ -31,6 +31,7 @@
         "propagation_speed": 340.0,
         "APPLICATION_NAME": "BEEEEEAAAAAAM FOOOOOOORMING",
         "TIMEOUT": 30,
+        "FLIP_IMAGE": true,
         "expression": {
             "DTYPE": "ctypes.c_int32",
             "NP_DTYPE": "numpy.float32",
