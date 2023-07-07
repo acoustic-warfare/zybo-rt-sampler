@@ -258,12 +258,13 @@ void mimo(float *image)
             {
                 out[k] /= (float)(ROWS * COLUMNS - 1);
                 //out[k] /= (float)4;
-                sum += powf((float)fabs((double)out[k]), 2);
+                //sum += powf((float)fabs((double)out[k]), 2);
+                sum += powf(out[k], 2);
             }
 
             sum /= (float)N_SAMPLES;
 
-            image[y * MAX_RES + x] = powf(sum, 5*MISO_POWER);
+            image[y * MAX_RES + x] = powf(sum, 2*MISO_POWER);
         }
     }
 }

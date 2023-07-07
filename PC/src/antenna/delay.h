@@ -4,6 +4,8 @@
 
 #include <immintrin.h>
 
+void delay_naive_add(float *signal, float *h, float *out);
+
 void delay_vectorized_add(float *signal, float *h, float *out);
 
 float sum8(__m256 x);

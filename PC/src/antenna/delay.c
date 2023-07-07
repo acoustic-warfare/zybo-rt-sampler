@@ -74,6 +74,35 @@ void delay_naive(float *signal, float *h, float *out)
     free(padded);
 }
 
+
+void delay_naive_add(float *signal, float *h, float *out)
+{
+    float *padded = malloc((N_SAMPLES + N_TAPS) * sizeof(float));
+
+    // Zero entire buffer
+    for (int i = 0; i < N_SAMPLES + N_TAPS; i++)
+    {
+        padded[i] = 0.0;
+    }
+
+    // Load offset signal to buffer
+    for (int i = 0; i < N_SAMPLES; i++)
+    {
+        padded[i + OFFSET] = signal[i];
+    }
+
+    // 1D backwards convolution
+    for (int i = 0; i < N_SAMPLES; i++)
+    {
+        for (int k = 0; k < N_TAPS; k++)
+        {
+            out[i] += h[k] * padded[i + k];
+        }
+    }
+
+    free(padded);
+}
+
 void delay_vectorized(float *signal, float *h, float *out)
 {
     __m256 data_block __attribute__((aligned(ALIGNMENT)));
@@ -286,20 +315,20 @@ void bench_mark(float *signal, float *h)
     printf("Vetctorized code is %f times faster\n", naive_time/vectorized_time);
 }
 
-int main(int argc, char const *argv[])
-{
-    float *signal = malloc(N_SAMPLES * sizeof(float));
-    for (int i = 0; i < N_SAMPLES; i++)
-    {
-        signal[i] = (float)i;
-    }
-
-    float *h = malloc(N_TAPS * sizeof(float));
-
-    generate_coefficients(0.5, h);
-
-    validate(signal, h);
-    bench_mark(signal, h);
-
-    return 0;
-}
+//int main(int argc, char const *argv[])
+//{
+//    float *signal = malloc(N_SAMPLES * sizeof(float));
+//    for (int i = 0; i < N_SAMPLES; i++)
+//    {
+//        signal[i] = (float)i;
+//    }
+//
+//    float *h = malloc(N_TAPS * sizeof(float));
+//
+//    generate_coefficients(0.5, h);
+//
+//    validate(signal, h);
+//    bench_mark(signal, h);
+//
+//    return 0;
+//}
