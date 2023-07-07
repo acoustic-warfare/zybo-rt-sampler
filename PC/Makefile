@@ -89,7 +89,7 @@ lib/libmiso.so: build/config.o build/miso.o build/antenna.o build/circular_buffe
 	$(CC) $(CFLAGS) -lm -shared -o lib/libmiso.so build/miso.o build/antenna.o build/circular_buffer.o build/udp.o build/delay.o -fPIC
 
 lib/beamformer.so: build/config.o build/beamformer.o build/antenna.o build/delay.o build/circular_buffer.o build/udp.o 
-	$(CC) $(CFLAGS) -lm -shared -o lib/beamformer.so build/beamformer.o build/antenna.o build/udp.o build/circular_buffer.o build/delay.o -fPIC
+	$(CC) $(CFLAGS) -O3 -march=native -mavx2 -lm -shared -o lib/beamformer.so build/beamformer.o build/antenna.o build/udp.o build/circular_buffer.o build/delay.o -fPIC
 
 #run: build/main.o build/circular_buffer.o build/udp.o# build/cy_api.o 
 #	$(CC) build/main.o build/circular_buffer.o build/udp.o $(LFLAGS) -o $(BIN)

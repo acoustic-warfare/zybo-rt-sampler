@@ -38,8 +38,8 @@ void directional_antenna_delay_coefficients(double azimuth,   // Horizontal
     double theta = azimuth * -(double)PI / 180.0;
     double phi = elevation * -(double)PI / 180.0;
 
-    float x_factor = (float)(sin(theta) * cos(phi));
-    float y_factor = (float)(cos(theta) * sin(phi));
+    float x_factor = (float)(sin(theta));
+    float y_factor = (float)(sin(phi));
 
     // Allocate antenna array
     float *antenna_array = malloc((columns * rows) * sizeof(float));
