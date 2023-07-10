@@ -121,13 +121,13 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message){
                 {
                     for (int x = 0; x < COLUMNS; x++)
                     {
-                        rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[row + x]) / NORM_FACTOR);
+                        rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[2+row + x]) / NORM_FACTOR);
                         s++;
                     }
                 } else {
                     for (int x = 0; x < COLUMNS; x++)
                     {
-                        rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[row + COLUMNS - x]) / NORM_FACTOR);
+                        rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[2+row + COLUMNS - x]) / NORM_FACTOR);
                         s++;
                     }
                 }

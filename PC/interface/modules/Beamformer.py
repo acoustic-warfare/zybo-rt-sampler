@@ -2,6 +2,12 @@ import ctypes
 import config
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
+
+cmap = plt.cm.get_cmap("jet")
+
+#print(cmap.N, cmap(100))
+#exit()
 
 class Beamformer(object):
     def __init__(self, replay_mode=False): 
@@ -64,23 +70,27 @@ class Beamformer(object):
         lmax = np.max(self.image)
 
         #print(lmax)
+        #lmax = 1e-6
 
         #if 
         #lmax = 1.0
-        if lmax > 200**2:
+        if 1>lmax>1e-7:
+        #if True:
             for i in range(config.MAX_RES):
                 for j in range(config.MAX_RES):
-                    val = min(int(255 * self.image[i][j] / lmax), 255)
-                    #print(lmax)
+                    val = min(int(255 * (self.image[i][j] / lmax) ** 20), 255)
 
-                    #if (lmax < 0.0000001):
-                    #    val = 0
-    #
-                    #else:
-                    #    if val < 220:
-                    #        val = 0
 
-                    self.small_heatmap[i][j] = [0, val, val]
+                    if val < 5:
+                        color = np.zeros(3)
+
+                    else:
+
+                        color = np.array(cmap(255 - val)[:3]) * 255
+
+                    self.small_heatmap[i][j] = color.astype(np.uint8)
+
+                    #self.small_heatmap[i][j] = [0, val, val]
 
         else:
             self.small_heatmap = np.zeros(self.shape, dtype=np.uint8)

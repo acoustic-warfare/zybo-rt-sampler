@@ -35,6 +35,7 @@
         "APPLICATION_NAME": "BEEEEEAAAAAAM FOOOOOOORMING",
         "TIMEOUT": 30,
         "FLIP_IMAGE": true,
+        "CAMERA_SOURCE": 2,
         "expression": {
             "DTYPE": "ctypes.c_int32",
             "NP_DTYPE": "numpy.float32",
@@ -42,7 +43,7 @@
         }
     },
     "c": {
-        "NORM_FACTOR": 2048,
+        "NORM_FACTOR": 16777216.0,
         "MISO_POWER": 5,
         "KEY": 1234,
         "expression": {}

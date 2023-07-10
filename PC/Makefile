@@ -27,6 +27,9 @@ BUILD = build
 all: lib/beamformer.so lib/libsampler.so #run lib/libmiso.so lib/beamformer.so
 
 
+config:
+	python3 ./src/build_config.py
+
 ## Cython stuff
 #build/cy_api.c:
 #	cp src/data/*.c build/

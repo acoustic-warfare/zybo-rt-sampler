@@ -264,7 +264,7 @@ void mimo(float *image)
 
             sum /= (float)N_SAMPLES;
 
-            image[y * MAX_RES + x] = powf(sum, 2*MISO_POWER);
+            image[y * MAX_RES + x] = sum; //powf(sum, 2*MISO_POWER);
         }
     }
 }

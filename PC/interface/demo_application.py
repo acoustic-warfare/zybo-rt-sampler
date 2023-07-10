@@ -42,7 +42,7 @@ def display_video_sound_heatmap(src, beamformer, replay_mode, sound_command = ""
 
 if __name__ == '__main__':
     print(config.FLIP_IMAGE)
-    src = 2
+    src = config.CAMERA_SOURCE
     replay_mode = False
     sound_command = ""
     if len(sys.argv) > 1 and sys.argv[1] == "replay":

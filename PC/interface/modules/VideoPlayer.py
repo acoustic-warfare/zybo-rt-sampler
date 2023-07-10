@@ -41,7 +41,7 @@ class VideoPlayer(object):
             dst = cv2.addWeighted(frame, 0.6, self.beamformer.calculate_heatmap(), 0.8, 0)
             if config.FLIP_IMAGE:
                 dst = cv2.flip(dst, 1)
-            dst = cv2.resize(dst, (1920, 1080))
+            #dst = cv2.resize(dst, (1920, 1080))
             cv2.imshow(config.APPLICATION_NAME, dst)
             cv2.setMouseCallback(config.APPLICATION_NAME, self.mouse_click_handler)
             if cv2.waitKey(self.FPS_MS) & 0xFF == ord('q'):
