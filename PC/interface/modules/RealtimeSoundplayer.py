@@ -1,46 +1,25 @@
 import time
 import ctypes
-
 import pyaudio
-
 import numpy as np
-
+import os
 # Local
 import config
-
 MICROPHONE_INDEX = 4 # 0 - 63
 
-# Load shared library, make sure to compile using make command
-def get_antenna_data():
-    lib = ctypes.cdll.LoadLibrary("../lib/libsampler.so")
-
-    init = lib.load
-    init.restype = int
-
-    get_data = lib.myread
-    get_data.restype = None
-    get_data.argtypes = [
-        ctypes.POINTER(ctypes.c_float)
-    ]
-
-    # Initiate antenna from the C side
-    init()
-    
-    return get_data
-
-
 class RealtimeSoundplayer(object):
-    def __init__(self, mic_index = 4):
-        self.f = get_antenna_data()
+    def __init__(self, beamformer, mic_index = 4, sound_command=""):
+        self.f = beamformer.get_sound_data()
         self.out = np.empty(config.BUFFER_LENGTH, dtype=config.NP_DTYPE)
         self.out_pointer = self.out.ctypes.data_as(
             ctypes.POINTER(ctypes.c_float))
         self.mic_index = mic_index
+        self.sound_command = sound_command
     
     def this_callback(self, in_data, frame_count, time_info, status):
         """This is a pyaudio callback when an output is finished and new data should be gathered"""
         self.f(self.out_pointer)
-
+        #TODO: Maybe remove these two lines below
         antenna_array = self.out.reshape((config.N_MICROPHONES, config.N_SAMPLES))
 
         sound = np.ascontiguousarray(antenna_array[self.mic_index])
@@ -74,6 +53,10 @@ class RealtimeSoundplayer(object):
         sum_array = antenna_array.sum(axis=1) / 54
         sound = np.ascontiguousarray(sum_array)
         return sound
+    
+    def replay_sound(self):
+        time.sleep(6)
+        os.system(self.sound_command)
 
 
 if __name__ == "__main__":

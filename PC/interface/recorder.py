@@ -1,9 +1,6 @@
 # Python program to save a
 # video using OpenCV
-
-
 import cv2
-
 
 # Create an object to read
 # from camera
