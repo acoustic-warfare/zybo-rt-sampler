@@ -12,11 +12,6 @@ import sys
 # Local
 import config
 import os
-rogue_child_stopper = False
-
-def play_sound():
-    sound_player = RealtimeSoundplayer()
-    sound_player.play_sound()
 
 def display_video_sound_heatmap(src, beamformer, replay_mode, sound_command = ""):
     videoPlayer = VideoPlayer(beamformer, src, replay_mode)
@@ -29,7 +24,16 @@ def display_video_sound_heatmap(src, beamformer, replay_mode, sound_command = ""
 
     videoPlayer.display()
 
-        
+def parse_arguments():
+    src = config.CAMERA_SOURCE
+    replay_mode = False
+    sound_command = ""
+    if len(sys.argv) > 1 and sys.argv[1] == "replay":
+        replay_mode = True
+        if len(sys.argv) == 3:
+            src = "../replays/" + str(sys.argv[2]) + "/replay.avi"
+            sound_command = "udpreplay -i lo ../replays/"+ str(sys.argv[2]) + "/replay.pcap"
+    return src, replay_mode, sound_command
 
 #def test_sound():
     #"""Play sound in the current direction"""
@@ -41,15 +45,7 @@ def display_video_sound_heatmap(src, beamformer, replay_mode, sound_command = ""
         #get_image(image)
 
 if __name__ == '__main__':
-    print(config.FLIP_IMAGE)
-    src = config.CAMERA_SOURCE
-    replay_mode = False
-    sound_command = ""
-    if len(sys.argv) > 1 and sys.argv[1] == "replay":
-        replay_mode = True
-        if len(sys.argv) == 3:
-            src = "../replays/" + str(sys.argv[2]) + "/replay.avi"
-            sound_command = "udpreplay -i lo ../replays/"+ str(sys.argv[2]) + "/replay.pcap"
+    src, replay_mode, sound_command = parse_arguments()
     
     beamformer = Beamformer(replay_mode)
     display_video_sound_heatmap(src, beamformer, replay_mode, sound_command)
