@@ -4,6 +4,8 @@ import numpy as np
 import os
 import signal
 
+#TODO: Signal handler
+
 class VideoPlayer(object):
     def __init__(self, beamformer, src=2, replay_mode=False):
         self.X, self.Y = config.WINDOW_SIZE
@@ -38,7 +40,11 @@ class VideoPlayer(object):
     def display(self):
         while True:
             self.status, self.frame = self.capture.read()
-            frame = cv2.resize(self.frame, config.WINDOW_SIZE)
+            try:
+                frame = cv2.resize(self.frame, config.WINDOW_SIZE)
+            except cv2.error as e:
+                print("An error ocurred with image processing! Check if camera and antenna connected properly")
+                os.system("killall python3")
             dst = cv2.addWeighted(frame, 0.6, self.beamformer.calculate_heatmap(), 0.8, 0)
             if config.FLIP_IMAGE:
                 dst = cv2.flip(dst, 1)
