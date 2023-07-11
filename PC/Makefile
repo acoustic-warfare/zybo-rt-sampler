@@ -114,6 +114,8 @@ cython_project:
 	echo "cy_api.entrypoint()" >> run
 	chmod +x run
 
+	cp interface/config.py config.py
+
 .PHONY: clean
 
 # $(BUILD)/*.c $(BUILD)/*.h
