@@ -197,11 +197,6 @@ void miso(float *out)
 
     for (int i = 0; i < ROWS * COLUMNS; i++)
     {
-        // TODO Magic number since mic 1 does not work properly
-        if (i == 1)
-        {
-            continue;
-        }
         delay_vectorized_add(&data[i * N_SAMPLES], miso_coefficients[i], out);
     }
 
