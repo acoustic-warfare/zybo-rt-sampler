@@ -2,7 +2,7 @@ import time
 import ctypes
 import pyaudio
 import numpy as np
-import os
+import os, signal, sys
 # Local
 import config
 MICROPHONE_INDEX = 4 # 0 - 63
@@ -15,6 +15,7 @@ class RealtimeSoundplayer(object):
             ctypes.POINTER(ctypes.c_float))
         self.mic_index = mic_index
         self.sound_command = sound_command
+        signal.signal(signal.SIGINT, signal_handler)
     
     def this_callback(self, in_data, frame_count, time_info, status):
         """This is a pyaudio callback when an output is finished and new data should be gathered"""
@@ -57,6 +58,9 @@ class RealtimeSoundplayer(object):
     def replay_sound(self):
         time.sleep(6)
         os.system(self.sound_command)
+
+def signal_handler(signum, frame):
+    sys.exit()
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ import cv2, time
 import config
 import numpy as np
 import os
+import signal
 
 class VideoPlayer(object):
     def __init__(self, beamformer, src=2, replay_mode=False):
@@ -44,13 +45,7 @@ class VideoPlayer(object):
             #dst = cv2.resize(dst, (1920, 1080))
             cv2.imshow(config.APPLICATION_NAME, dst)
             cv2.setMouseCallback(config.APPLICATION_NAME, self.mouse_click_handler)
-            if cv2.waitKey(self.FPS_MS) & 0xFF == ord('q'):
-                break
-            ##TODO KILL PYTHON
-        # After the loop release the cap object
-        self.capture.release()
-        # Destroy all the windows
-        cv2.destroyAllWindows()
+            cv2.waitKey(self.FPS_MS)
 
     
     def mouse_click_handler(self, event, x, y, flags, params):

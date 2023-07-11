@@ -352,6 +352,9 @@ int load(bool replay_mode)
     {
         // Create UDP socket:
         socket_desc = create_and_bind_socket(replay_mode);
+        if(socket_desc == -1){
+            return -1;
+        }
         client_msg = create_msg();
 
         while (1)
