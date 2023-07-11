@@ -78,10 +78,10 @@ class Beamformer(object):
         #if True:
             for i in range(config.MAX_RES):
                 for j in range(config.MAX_RES):
-                    val = min(int(255 * (self.image[i][j] / lmax) ** 20), 255)
+                    val = min(int(255 * (self.image[i][j] / lmax) ** 25), 255)
 
 
-                    if val < 5:
+                    if val < 15:
                         color = np.zeros(3)
 
                     else:
