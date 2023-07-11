@@ -9,17 +9,17 @@ MICROPHONE_INDEX = 4 # 0 - 63
 
 class RealtimeSoundplayer(object):
     def __init__(self, beamformer, mic_index = 4, sound_command=""):
-        self.f = beamformer.get_sound_data()
+        self.f = beamformer.get_antenna_data()[0]
         self.out = np.empty(config.BUFFER_LENGTH, dtype=config.NP_DTYPE)
         self.out_pointer = self.out.ctypes.data_as(
             ctypes.POINTER(ctypes.c_float))
         self.mic_index = mic_index
         self.sound_command = sound_command
-        signal.signal(signal.SIGINT, signal_handler)
     
     def this_callback(self, in_data, frame_count, time_info, status):
         """This is a pyaudio callback when an output is finished and new data should be gathered"""
         self.f(self.out_pointer)
+        
         #TODO: Maybe remove these two lines below
         antenna_array = self.out.reshape((config.N_MICROPHONES, config.N_SAMPLES))
 
@@ -58,6 +58,18 @@ class RealtimeSoundplayer(object):
     def replay_sound(self):
         time.sleep(6)
         os.system(self.sound_command)
+
+    def get_samples(self):
+        print("HEJ")
+        self.f(self.out_pointer)
+        
+        out = np.empty(config.BUFFER_LENGTH, dtype=np.float32)
+        out_pointer = out.ctypes.data_as(
+            ctypes.POINTER(ctypes.c_float))
+        while(True):
+            self.f(out_pointer)
+            b = out.reshape((config.N_SAMPLES, config.N_MICROPHONES))
+            print(b[0])
 
 def signal_handler(signum, frame):
     sys.exit()
