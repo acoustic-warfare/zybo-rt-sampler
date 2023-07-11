@@ -20,9 +20,7 @@ class RealtimeSoundplayer(object):
         """This is a pyaudio callback when an output is finished and new data should be gathered"""
         self.f(self.out_pointer)
         
-        #TODO: Maybe remove these two lines below
         antenna_array = self.out.reshape((config.N_MICROPHONES, config.N_SAMPLES))
-
         sound = np.ascontiguousarray(antenna_array[self.mic_index])
  
         return sound, pyaudio.paContinue
