@@ -39,7 +39,7 @@ sudo systemctl restart tftpd-hpa
 ```
 
 ### 2. Configured SD-card
-1. Follow the steps in https://github.com/f4pga/symbiflow-xc7z-automatic-tester to create a bootable image for the Zybo z7
+1. Follow the steps in https://github.com/f4pga/symbiflow-xc7z-automatic-tester to configure the SD card with U-Boot
 
 2. Run the script
 ```
