@@ -7,48 +7,7 @@ You may copy the contents of `out/` to the SD-card with `out/boot/` on the boot 
 
 ## Prerequisites (Ubuntu)
 
-### 1. A DHCP Server
-
-Install the DHCP server:
-
-```
-sudo apt install isc-dhcp-server
-```
-
-Determine correct interface by looking at `ip a` and check for you interface e.g. `enh0`
-
-Configure `/etc/default/isc-dhcp-server` by setting `INTERFACESv4=<YOUR_INTERFACE>`
-
-Modify `/etc/dhcp/dhcpd.conf` to:
-
-```
-# a simple /etc/dhcp/dhcpd.conf
-default-lease-time 600;
-max-lease-time 7200;
-authoritative;
-
-subnet 10.0.0.0 netmask 255.255.255.0 {
- range 10.0.0.2 10.0.0.20;
-}
-```
-
-Set your server IP address:
-
-```
-sudo ifconfig <YOUR_INTERFACE> 10.0.0.1
-```
-
-Enable and restart the server:
-
-```
-sudo systemctl enable isc-dhcp-server
-sudo systemctl restart isc-dhcp-server
-```
-
-
-
-
-### 2. A TFTP Server
+### 1. A TFTP Server
 
 Install the FTP server:
 
@@ -82,71 +41,43 @@ sudo systemctl restart tftpd-hpa
 ```
 
 ### 3. Configured SD-card
+1. Follow the steps in https://github.com/f4pga/symbiflow-xc7z-automatic-tester to create a bootable image for the Zybo z7
 
-Run the script
-
+2. Run the script
 ```
-chmod +x configure.sh
-./configure.sh
+./zybo/baremetal/configure.sh
 ```
+3. Copy ./out/boot.scr to boot partition of SD-card
 
-### 4. Set a static IP-address
+### 4. Bitstream and ELF
+Copy your bitstream and ps.elf file to /data/tftp on your computer
+
+### 5. Set a static IP-address
 Set the ip address of the ethernet port that the zybo is connected to:
 ```
 IPv4 address: 10.0.0.1
 Netmask: 255.255.255.0
 Gateway: 192.168.1.1
 ```
-# TODO
 
-This is an installation for setting up data acquisition on the Zybo z7 development board using U-Boot and Linux
+### 6. Requirements
+python3
+cython3
+gcc
+make
 
-## Requirements
+### 7. Cofig
+Edit the config.json file in ./PC/src to your desired values
 
-Follow the steps in https://github.com/f4pga/symbiflow-xc7z-automatic-tester to create a bootable image for the Zybo z7
-
-## Baremetal
-1. Run configure.sh from ./zybo/baremetal
-2. Copy boot.scr from out/boot to boot partition of SD-card
-3. Copy your bitstream and ps.elf to /data/tftp
-4. Power up Zybo
-
-## ARCH Linux
-### Setup
-1. Run compile_bootscript.sh from ./zybo
-2. Copy ./zybo/boot.scr to boot partition of SD-card
-3. Power up Zybo
-4. Connect to serial monitor
-
-### Connecting to the Zybo via SSH
-1. Wait for the process "crng init" to finish. Usually takes between 5 to 15 minutes.
-2. Enable SSHD:
-```bash
-systemctl enable sshd
-systemctl enable sshd.service
+### 8. Make
+Run:
 ```
-3. Connect to the Zybo with 
-```bash
-ssh root@ip_address
+make clean
+make
 ```
 
-### Known Issues
+### 9. Connections
+Connect the zybo to the USB and ethernet port
 
-#### "A start job is running for Network Name Resolution"
-A bug was found during boot of Arch linux on the Zybo: "A start job is running for Network Name Resolution" which prevented the system from booting. A solution was found by removing the service:
-
-1. In the /root/ folder, disable /etc/systemd/system/sysinit.target.wants/systemd-resolved.service by removing the symlink
-
-### TODO
-
-Set ip address in arch:
-
-```bash
-ip address add 10.0.0.2/24 dev end0
-```
-
-```bash
-arm-none-eabi-gcc -lgcc -lc -lm demo.c --specs=nosys.specs -o demo.elf
-arm-none-eabi-objcopy -O binary demo.out demo.bin
-cp demo.bin /data/tftp/
-```
+### 10. Run your desired program
+Run your desired program from ./PC/interface
