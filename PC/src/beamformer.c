@@ -374,3 +374,26 @@ int load(bool replay_mode)
     // Return to parent
     return 0;
 }
+
+float h[8];
+
+void foo(float *signal)
+{
+    for (int i = 0; i < 6; i++)
+    {
+        h[i] = signal[i];
+        printf("%f ", signal[i]);
+    }
+
+    printf("\n");
+}
+
+void bar()
+{
+    for (int i = 0; i < 8; i++)
+    {
+        printf("%f ", h[i]);
+    }
+
+    printf("\n");
+}

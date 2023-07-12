@@ -20,15 +20,27 @@ BIN = bin
 EXECUTABLE = run
 
 BUILD = build
-
+PYTHON_PATH = `python3 -c "import distutils.sysconfig;print(distutils.sysconfig.get_python_inc())"`
 
 .PHONY: all
 
-all: lib/beamformer.so lib/libsampler.so #run lib/libmiso.so lib/beamformer.so
+all: cybeamformer lib/beamformer.so lib/libsampler.so #run lib/libmiso.so lib/beamformer.so
 
 
 config:
 	python3 ./src/build_config.py
+
+build/config.o:
+	python3 ./src/build_config.py
+
+cybeamformer: build/config.o
+	cp -r src/* build/
+	
+	$(CC) -O3 --shared -fPIC -march=native -mavx2 -lm `ls build/*.c | grep -xv "build/main.c"` build/antenna/*.c -o build/delay.so
+	
+	$(CYCC) src/wrapper.pyx -o build/wrapper.c
+	$(CC) -shared -pthread -fPIC -fwrapv -O3 -Wall -fno-strict-aliasing -lm -march=native -mavx2 -I $(PYTHON_PATH) -o lib/wrapper.so build/wrapper.c build/delay.so
+	#python3 -c "from lib.wrapper import *;main()"
 
 ## Cython stuff
 #build/cy_api.c:
@@ -118,8 +130,12 @@ cython_project:
 
 .PHONY: clean
 
-# $(BUILD)/*.c $(BUILD)/*.h
 clean:
+	echo "Removing Generated Build Files"
+	ls $(BUILD)/ | grep -xv ".gitignore" | xargs -I {} sh -c "rm -r $(BUILD)/{}"
+
+# $(BUILD)/*.c $(BUILD)/*.h
+clean_old:
 	echo "Removing Generated Build Files"
 
 	#ls $(BUILD)/ | grep -xv ".gitignore" | xargs rm

@@ -20,6 +20,9 @@
  close_socket();
 */
 
+#ifndef _UDP_RECEIVER_H_
+#define _UDP_RECEIVER_H_
+
 #include "circular_buffer.h"
 #include "config.h"
 #include <stdbool.h>
@@ -66,3 +69,5 @@ int close_socket(int socket_desc);
 int receive_header_data(int socket_desc);
 
 int receive_and_write_to_buffer_test(int socket_desc, struct ringba *rb);
+
+#endif
