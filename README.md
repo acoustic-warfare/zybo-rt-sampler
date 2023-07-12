@@ -3,7 +3,7 @@
 Rapid Development on the Zybo using Baremetal uBoot
 
 
-## Prerequisites (Ubuntu)
+## Setup (Ubuntu)
 
 ### 1. A TFTP Server
 
