@@ -27,9 +27,9 @@
 /// @brief FPGA Protocol Version 2
 typedef struct _msg
 {
-    int8_t protocol_ver;
-    int8_t n_arrays;
     int16_t frequency;
+    int8_t n_arrays;
+    int8_t protocol_ver;
     int32_t counter;
     int32_t stream[N_MICROPHONES];
 } msg;
@@ -51,14 +51,18 @@ int receive_and_print(int socket_desc);
 /// @param socket_desc A socket file descriptor
 /// @param rb A pointer to a ring buffer
 /// @param message A pointer for temporarily storing received message
+/// @param n_arrays Number of connected arrays
 /// @return 0 if no errors and -1 if the message can't be received
-int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message);
+int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, int n_arrays);
 
 /// @brief Closes the socket descriptor.
 /// @param socket_desc A socket file descriptor.
 /// @return -1 if error occured.
 int close_socket(int socket_desc);
 
-
+/// @brief Receives the first message and returns the number of arrays
+/// @param socket_desc 
+/// @return The number of connected arrays
+int receive_header_data(int socket_desc);
 
 int receive_and_write_to_buffer_test(int socket_desc, struct ringba *rb);

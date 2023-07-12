@@ -131,7 +131,7 @@ int load(bool replay_mode)
         {
             semop(semid, &my_sem_wait, 1);
 
-            if(receive_and_write_to_buffer(socket_desc, rb, client_msg) == -1){
+            if(receive_and_write_to_buffer(socket_desc, rb, client_msg, 1) == -1){
                 return -1;
             }
 

@@ -351,16 +351,21 @@ int load(bool replay_mode)
             return -1;
         }
         client_msg = create_msg();
+        bool first_time_read = true;
 
         while (1)
         {
             semop(semid, &sem_wait, 1);
-
-            if (receive_and_write_to_buffer(socket_desc, rb, client_msg) == -1)
+            //Read first time header data
+            int n_arrays;
+            if(first_time_read){
+                n_arrays = receive_header_data(socket_desc);
+                first_time_read = false;
+            }
+            if (receive_and_write_to_buffer(socket_desc, rb, client_msg, n_arrays) == -1)
             {
                 return -1;
             }
-
             semop(semid, &sem_signal, 1);
             continue;
         }

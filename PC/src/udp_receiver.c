@@ -84,7 +84,7 @@ int receive_and_print(int socket_desc)
     return 0;
 }
 
-int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message){
+int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, int n_arrays){
     int step = 0;
     for (int i = 0; i < BUFFER_LENGTH; i+=N_MICROPHONES)
     {
@@ -112,7 +112,7 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message){
 
         int s = 0;
 
-        for (int n = 0; n < 3; n++)
+        for (int n = 0; n < n_arrays; n++)
         {
             for (int y = 0; y < ROWS; y++)
             {
@@ -131,7 +131,6 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message){
                         s++;
                     }
                 }
-                
             }
         }
 
@@ -139,6 +138,17 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message){
 
     }
     return 0;
+}
+
+int receive_header_data(int socket_desc){
+    msg *client_msg = (msg *)calloc(1, sizeof(msg));
+    if (recv(socket_desc, client_msg, sizeof(msg), 0) < 0){
+        printf("Couldn't receive\n");
+        return -1;
+    }
+    int8_t n_arrays = client_msg->n_arrays; 
+    free(client_msg);
+    return n_arrays;
 }
 
 int receive_and_write_to_buffer_test(int socket_desc, struct ringba *rb){
