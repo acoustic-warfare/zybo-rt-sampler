@@ -66,8 +66,8 @@ def calculate_delays():
     alpha = 180  # total scanning angle (bildvinkel) in theta-direction [degrees], from config
     z_scan = 10  # distance to scanning window, from config
 
-    x_res = 31  # resolution in x, from config
-    y_res = 11  # resolution in y, from config
+    x_res = config.MAX_RES_X  # resolution in x, from config
+    y_res = config.MAX_RES_Y  # resolution in y, from config
     AS = 16/9   # aspect ratio, from config
 
     # Calculations for time delay starts below
@@ -97,6 +97,26 @@ def calculate_delays():
     active_mics, n_active_mics = active_microphones()
 
 
+def get_h(delay, N=8):
+    tau = - delay  # Fractional delay [samples].
+    epsilon = 1e-9
+    n = np.arange(N)
+
+    sinc = n - (8 - 1) / 2 - (0.5 + tau) + epsilon
+
+    h = np.sin(sinc*np.pi)/(sinc*np.pi)
+
+    blackman = 0.42 - 0.5 * np.cos(2*np.pi * n / 8) + 0.08 * np.cos(4 * np.pi * n / 8)
+
+    h *= blackman
+    
+    # Normalize to get unity gain.
+    h /= np.sum(h)
+
+    return h
+
+#import matplotlib.pyplot as plt
+
 def calculate_coefficients():
 
     samp_delay = calculate_delays()
@@ -104,13 +124,19 @@ def calculate_coefficients():
     whole_sample_delay = samp_delay.astype(np.int32)
     fractional_sample_delay = samp_delay - whole_sample_delay
 
-    return whole_sample_delay, fractional_sample_delay
+    h = np.zeros((config.MAX_RES_X, config.MAX_RES_Y, 64, 8), dtype=config.NP_DTYPE)
 
+    for x in range(config.MAX_RES_X):
+        for y in range(config.MAX_RES_Y):
+            for i in range(64):
+                h[x, y, i] = get_h(fractional_sample_delay[x, y, i])
+    
+    return whole_sample_delay, h
 
 cdef public main():
     cdef int n = n_microphones
 
-    print(calculate_coefficients())
+    #print(calculate_coefficients())
 
     #for i in range(n):
     #    print(i)
