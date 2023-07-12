@@ -40,7 +40,7 @@ sudo systemctl enable tftpd-hpa
 sudo systemctl restart tftpd-hpa
 ```
 
-### 3. Configured SD-card
+### 2. Configured SD-card
 1. Follow the steps in https://github.com/f4pga/symbiflow-xc7z-automatic-tester to create a bootable image for the Zybo z7
 
 2. Run the script
@@ -49,10 +49,10 @@ sudo systemctl restart tftpd-hpa
 ```
 3. Copy ./out/boot.scr to boot partition of SD-card
 
-### 4. Bitstream and ELF
+### 3. Bitstream and ELF
 Copy your bitstream and ps.elf file to /data/tftp on your computer
 
-### 5. Set a static IP-address
+### 4. Set a static IP-address
 Set the ip address of the ethernet port that the zybo is connected to:
 ```
 IPv4 address: 10.0.0.1
@@ -60,24 +60,24 @@ Netmask: 255.255.255.0
 Gateway: 192.168.1.1
 ```
 
-### 6. Requirements
+### 5. Requirements
 python3
 cython3
 gcc
 make
 
-### 7. Cofig
+### 6. Cofig
 Edit the config.json file in ./PC/src to your desired values
 
-### 8. Make
+### 7. Make
 Run:
 ```
 make clean
 make
 ```
 
-### 9. Connections
+### 8. Connections
 Connect the zybo to the USB and ethernet port
 
-### 10. Run your desired program
+### 9. Run your desired program
 Run your desired program from ./PC/interface
