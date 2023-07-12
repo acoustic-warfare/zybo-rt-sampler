@@ -64,7 +64,7 @@ cython3
 gcc
 make
 
-### 6. Cofig
+### 6. Config
 Edit the config.json file in ./PC/src to your desired values
 
 ### 7. Make
