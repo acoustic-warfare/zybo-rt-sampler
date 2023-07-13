@@ -472,7 +472,7 @@ int load(bool replay_mode)
     else if (pid == 0) // Child
     {
         // Create UDP socket:
-        socket_desc = create_and_bind_socket(false);
+        socket_desc = create_and_bind_socket(replay_mode);
         if(socket_desc == -1){
             return -1;
         }

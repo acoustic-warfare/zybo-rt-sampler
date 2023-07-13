@@ -1,10 +1,14 @@
 # cython: language_level=3
 # distutils: language=c
 
+#TODO Implement adaptive beamforming properly
+
 import numpy as np
 cimport numpy as np
 
 import time
+
+import config
 
 # It's necessary to call "import_array" if you use any part of the numpy PyArray_* API.
 np.import_array()
@@ -18,36 +22,263 @@ ctypedef np.float32_t DTYPE_t
 # Constants
 DTYPE_arr = np.float32
 
+# External Configs
+cdef extern from "config.h":
+    int N_SAMPLES
+    int MAX_RES_X
+    int MAX_RES_Y
+    float MAX_ANGLE
+    float SAMPLE_RATE
+    float PROPAGATION_SPEED
+    int MISO_POWER
+    float VIEW_ANGLE
+
+
+
 cdef extern from "beamformer.h":
-    void foo(float *signal)
-    void bar()
-    int load(bool)
+    void load_coefficients(int *whole_sample_delay)
+    void work_test(float *image)
+    int load(bint)
+
+def calc_r_prime(d):
+    half = d/2
+    r_prime = np.zeros((2, config.rows*config.columns))
+    element_index = 0
+    for array in range(config.ACTIVE_ARRAYS):
+        for row in range(config.rows):
+            for col in range(config.columns):
+                r_prime[0,element_index] = col * d + half + array*config.columns*d + array*config.ARRAY_SEPARATION - config.columns* config.ACTIVE_ARRAYS * half
+                r_prime[1, element_index] = row * d - config.rows * half + half
+                element_index += 1
+    r_prime[0,:] -= config.ACTIVE_ARRAYS*config.ARRAY_SEPARATION/2
+    active_mics, n_active_mics = active_microphones()
+
+    r_prime = r_prime[:,active_mics]
+    return r_prime
+
+def active_microphones():
+    mode = config.SKIP_N_MICS
+    rows = np.arange(0, config.rows, mode)
+    columns = np.arange(0, config.columns*config.ACTIVE_ARRAYS, mode)
+
+    mics = np.linspace(0, config.rows*config.columns-1, config.rows*config.columns)   # mics in one array
+    arr_elem = config.rows*config.columns                       # elements in one array
+    microphones = np.linspace(0, config.rows*config.columns-1,config.rows*config.columns).reshape((config.rows, config.columns))
+
+    for a in range(config.ACTIVE_ARRAYS-1):
+        a += 1
+        array = mics[0+a*arr_elem : arr_elem+a*arr_elem].reshape((config.rows, config.columns))
+        microphones = np.hstack((microphones, array))
+
+    active_mics = []
+    for r in rows:
+        for c in columns:
+            mic = microphones[r,c]
+            active_mics.append(int(mic))
+    return np.sort(active_mics), len(active_mics)
+
+def calculate_delays():
+    c = config.PROPAGATION_SPEED             # from config
+    fs = config.SAMPLE_RATE          # from config
+    N_SAMPLES = config.N_SAMPLES    # from config
+    d = config.ELEMENT_DISTANCE            # distance between elements, from config
+
+    alpha = VIEW_ANGLE  # total scanning angle (bildvinkel) in theta-direction [degrees], from config
+    z_scan = 10  # distance to scanning window, from config
+
+    x_res = MAX_RES_X  # resolution in x, from config
+    y_res = MAX_RES_Y  # resolution in y, from config
+    AS = 16/9   # aspect ratio, from config
+
+    # Calculations for time delay starts below
+    r_prime = calc_r_prime(d)  # matrix holding the xy positions of each microphone
+    x_i = r_prime[0,:]                      # x-coord for microphone i
+    y_i = r_prime[1,:]                      # y-coord for microphone i
+
+    # outer limits of scanning window in xy-plane
+    x_scan_max = z_scan*np.tan((alpha/2)*np.pi/180)
+    x_scan_min = - x_scan_max
+    y_scan_max = x_scan_max/AS
+    y_scan_min = -y_scan_max
+
+    # scanning window
+    x_scan = np.linspace(x_scan_min,x_scan_max, x_res).reshape(x_res,1,1)
+    y_scan = np.linspace(y_scan_min,y_scan_max,y_res).reshape(1, y_res, 1)
+    r_scan = np.sqrt(x_scan**2 + y_scan**2 + z_scan**2) # distance between middle of array to the xy-scanning coordinate
+
+    # calculate time delay (in number of samples)
+    samp_delay = (fs/c) * (x_scan*x_i + y_scan*y_i) / r_scan            # with shape: (x_res, y_res, n_active_mics)
+    # adjust such that the microphone furthest away from the beam direction have 0 delay
+    samp_delay -= np.amin(samp_delay, axis=2).reshape(x_res, y_res, 1)
+
+    return samp_delay
+    # active_mics: holds index of active microphones for a specific mode
+    # n_active_mics: number of active microphones
+    active_mics, n_active_mics = active_microphones()
+
+def calculate_delays_():
+
+    distance = 0.02
+
+    samp_delay = np.zeros((MAX_RES_X, MAX_RES_Y, 64), dtype=np.float32)
+
+    for xi, x in enumerate(np.linspace(-MAX_ANGLE, MAX_ANGLE, MAX_RES_X)):
+        azimuth = x * -np.pi / 180.0
+        x_factor = np.sin(azimuth)
+        for yi , y in enumerate(np.linspace(-MAX_ANGLE, MAX_ANGLE, MAX_RES_Y)):
+            elevation = y * -np.pi / 180.0
+            y_factor = np.sin(elevation)
+
+            smallest = 0
+
+            for row in range(8):
+                for col in range(8):
+                    half = distance / 2.0
+                    tmp_col = col * distance - 8 * half + half
+                    tmp_row = row * distance - 8 * half + half
+
+                    tmp_delay = tmp_col * x_factor + tmp_row * y_factor
+                    if (tmp_delay < smallest):
+                        smallest = tmp_delay
+
+                    samp_delay[xi, yi, row * 8 + col] = tmp_delay
+
+            samp_delay[xi, yi, :] -= smallest
+
+    samp_delay *= SAMPLE_RATE / PROPAGATION_SPEED
+
+    return samp_delay
+
+def get_h(delay, N=8):
+    tau = - delay  # Fractional delay [samples].
+    epsilon = 1e-9
+    n = np.arange(N)
+
+    sinc = n - (8 - 1) / 2 - (0.5 + tau) + epsilon
+
+    h = np.sin(sinc*np.pi)/(sinc*np.pi)
+
+    blackman = 0.42 - 0.5 * np.cos(2*np.pi * n / 8) + 0.08 * np.cos(4 * np.pi * n / 8)
+
+    h *= blackman
+    
+    # Normalize to get unity gain.
+    h /= np.sum(h)
+
+    return h
 
 
-cdef void hello():
-    cdef np.ndarray[DTYPE_t, ndim=3, mode = 'c'] arr
-    data = [[[1, 2, 1],
-            [3, 4, 5]]]
-    arr = np.ascontiguousarray(np.array(data, dtype=DTYPE_arr))
 
-    cdef DTYPE_t *arr_ptr
+def calculate_coefficients():
 
-    arr_ptr = &arr[0, 0, 0]
+    samp_delay = calculate_delays()
 
-    foo(arr_ptr)
+    #whole_sample_delay = samp_delay.astype(np.int32)
+    whole_sample_delay = samp_delay.astype(int)
+    fractional_sample_delay = samp_delay - whole_sample_delay
 
-    load(False)
+    h = np.zeros((MAX_RES_X, MAX_RES_Y, 64, 8), dtype=config.NP_DTYPE)
 
+    for x in range(MAX_RES_X):
+        for y in range(MAX_RES_Y):
+            for i in range(64):
+                h[x, y, i] = get_h(fractional_sample_delay[x, y, i])
+    
+    return whole_sample_delay, h
+
+
+import cv2
+import matplotlib.pyplot as plt
+
+cmap = plt.cm.get_cmap("jet")
+
+def calculate_heatmap(image):
+    """"""
+    lmax = np.max(image)
+
+    old_lmax = lmax
+
+    image /= lmax
+    lmax = 0.5
+
+    small_heatmap = np.zeros((MAX_RES_X, MAX_RES_Y, 3), dtype=np.uint8)
+
+    if 1>old_lmax>1e-8:
+    #if True:
+        for x in range(MAX_RES_X):
+            for y in range(MAX_RES_Y):
+                #print(i, j)
+                d = image[x, y]
+
+                if np.isnan(d):
+                    d = 0.0
+                #d += 1e-6
+                #val = min(int(255 * d ** MISO_POWER), 255)
+                #print(val)
+
+                #if val < 15:
+                if d < 0.9:
+                    color = np.zeros(3)
+
+                else:
+                    val = min(int(255 * d ** MISO_POWER), 255)
+                    color = np.array(cmap(255 - val)[:3]) * 255
+
+                small_heatmap[y, x] = color.astype(np.uint8)
+
+    heatmap = cv2.resize(small_heatmap, config.WINDOW_SIZE, interpolation=cv2.INTER_LINEAR)
+    return heatmap
+
+
+cdef void loop():
+
+    whole_samples, fractional_samples = calculate_coefficients()
+
+    cdef np.ndarray[int, ndim=3, mode="c"] samples
+
+    samples = np.ascontiguousarray(whole_samples.astype(np.int32))
+
+    load_coefficients(&samples[0, 0, 0])
+
+    load(0)
+
+    x = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
+
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] arr2
+    arr2 = np.ascontiguousarray(x)
+    
+    capture = cv2.VideoCapture(2)
+    capture.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
+    capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
     while True:
-        print(3)
-        time.sleep(1)
+        work_test(&arr2[0, 0])
 
-    print(arr)
+        frame = calculate_heatmap(arr2)
+        frame = cv2.flip(frame, 0)
+        new = cv2.resize(frame, config.WINDOW_SIZE)
+
+        status, frame = capture.read()
+        frame = cv2.flip(frame, 1)
+        try:
+            frame = cv2.resize(frame, config.WINDOW_SIZE)
+        except cv2.error as e:
+            print("An error ocurred with image processing! Check if camera and antenna connected properly")
+            #os.system("killall python3")
+            break
+
+        new = cv2.addWeighted(frame, 0.6, new, 0.8, 0)
+        cv2.imshow(config.APPLICATION_NAME, new)
+        cv2.waitKey(1)
+
+    print(samples[-1, -1,:], samples.dtype)
+
+    print(N_SAMPLES, config.rows)
 
 
 
 def main():
-    hello()
-    bar()
+    loop()
+    #bar()
     print("Hello world!")
 
