@@ -16,7 +16,11 @@ import os
 def display_video_sound_heatmap(src, beamformer, replay_mode, sound_command = ""):
     videoPlayer = VideoPlayer(beamformer, src, replay_mode)
     soundPlayer = RealtimeSoundplayer(beamformer, sound_command=sound_command)
-    
+
+    thread1 = Thread(target=soundPlayer.play_sound, args=())
+    thread1.daemon = True
+    thread1.start()
+
     if replay_mode:
         thread3 = Thread(target=soundPlayer.replay_sound, args=())
         thread3.daemon = True

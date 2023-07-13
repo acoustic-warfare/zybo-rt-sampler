@@ -132,22 +132,16 @@ cython_project:
 
 clean:
 	echo "Removing Generated Build Files"
-	ls $(BUILD)/ | grep -xv ".gitignore" | xargs -I {} sh -c "rm -r $(BUILD)/{}"
+	ls build/ | grep -xv ".gitignore" | xargs -I {} sh -c "rm -r build/{}"
 
 # $(BUILD)/*.c $(BUILD)/*.h
 clean_old:
 	echo "Removing Generated Build Files"
 
-	#ls $(BUILD)/ | grep -xv ".gitignore" | xargs rm
+	#ls build/ | grep -xv ".gitignore" | xargs rm
 	#ls lib/ | grep -xv ".gitignore" | xargs rm
 	#ls bin/ | grep -xv ".gitignore" | xargs rm
 
-	ls $(BUILD)/ | grep -xv ".gitignore" | xargs -I {} sh -c "rm -r $(BUILD)/{}"
-	
-	rm -f run || true
-	#rm $(BUILD)/*.o
-	#rm $(BUILD)/*.h 
-	#rm $(BUILD)/*.c
 #
 	#echo "Removing Libraries"
 	##rm lib/*.so

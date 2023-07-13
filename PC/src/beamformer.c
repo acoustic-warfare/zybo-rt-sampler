@@ -44,10 +44,14 @@
 #include "antenna/delay.h"
 
 ring_buffer *rb;  // Data to be stored in
+ring_buffer *rb_sound;
 msg *client_msg;
 
 int shmid; // Shared memory ID
 int semid; // Semaphore ID
+
+int shmid_sound;
+int semid_sound;
 int socket_desc;
 
 struct sembuf sem_wait = {0, -1, SEM_UNDO};  // Wait operation
@@ -97,6 +101,8 @@ void signal_handler()
 {
     shmctl(shmid, IPC_RMID, NULL);
     semctl(semid, 0, IPC_RMID);
+    shmctl(shmid_sound, IPC_RMID, NULL);
+    semctl(semid_sound, 0, IPC_RMID);
     close_socket(socket_desc);
     destroy_msg(client_msg);
     free_coefficients();
@@ -116,6 +122,13 @@ void init_shared_memory()
         perror("shmget not working");
         exit(1);
     }
+    shmid_sound = shmget(KEY_SOUND, sizeof(ring_buffer), IPC_CREAT | 0666);
+
+    if (shmid_sound == -1)
+    {
+        perror("shmget not working");
+        exit(1);
+    }
 
     rb = (ring_buffer *)shmat(shmid, NULL, 0);
 
@@ -131,6 +144,21 @@ void init_shared_memory()
     {
         rb->data[i] = 0.0;
     }
+    
+    rb_sound = (ring_buffer *)shmat(shmid_sound, NULL, 0);
+
+    if (rb_sound == (ring_buffer *)-1)
+    {
+        perror("shmat not working");
+        exit(1);
+    }
+
+    rb_sound->index = 0;
+    rb_sound->counter = 0;
+    for (int i = 0; i < BUFFER_LENGTH; i++)
+    {
+        rb_sound->data[i] = 0.0;
+    }
 }
 
 /*
@@ -145,7 +173,14 @@ void init_semaphore()
         perror("semget");
         exit(1);
     }
+    
+    semid_sound = semget(KEY_SOUND, 1, IPC_CREAT | 0666);
 
+    if (semid_sound == -1)
+    {
+        perror("semget");
+        exit(1);
+    }
     union semun
     {
         int val;
@@ -156,6 +191,12 @@ void init_semaphore()
 
     // Set semaphore to 1
     if (semctl(semid, 0, SETVAL, argument) == -1)
+    {
+        perror("semctl");
+        exit(1);
+    }
+
+    if (semctl(semid_sound, 0, SETVAL, argument) == -1)
     {
         perror("semctl");
         exit(1);
@@ -321,6 +362,13 @@ void calculate_miso_coefficients()
                                            miso_coefficients);
 }
 
+void myread(float *out)
+{
+    semop(semid_sound, &sem_wait, 1);
+    memcpy(out, (void *)&rb_sound->data[0], sizeof(float) * BUFFER_LENGTH);
+    semop(semid_sound, &sem_signal, 1);
+}
+
 /*
 Main initialization function
 */
@@ -356,13 +404,14 @@ int load(bool replay_mode)
         while (1)
         {
             semop(semid, &sem_wait, 1);
-            //Read first time header data
+            semop(semid_sound, &sem_wait, 1);
             
-            if (receive_and_write_to_buffer(socket_desc, rb, client_msg, n_arrays) == -1)
+            if (receive_and_write_to_buffer(socket_desc, rb, rb_sound, client_msg, n_arrays) == -1)
             {
                 return -1;
             }
             semop(semid, &sem_signal, 1);
+            semop(semid_sound, &sem_signal, 1);
             continue;
         }
     }

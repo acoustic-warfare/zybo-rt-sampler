@@ -26,3 +26,4 @@
 #define NORM_FACTOR 16777216.0
 #define MISO_POWER 5
 #define KEY 1234
+#define KEY_SOUND 1235

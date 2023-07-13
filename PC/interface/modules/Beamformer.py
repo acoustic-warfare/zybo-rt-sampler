@@ -43,7 +43,7 @@ class Beamformer(object):
             ctypes.c_float
         ]
 
-        self.sound_data = self.lib2.myread
+        self.sound_data = self.lib.myread
         self.sound_data.restype = None
         self.sound_data.argtypes = [
             ctypes.POINTER(ctypes.c_float)

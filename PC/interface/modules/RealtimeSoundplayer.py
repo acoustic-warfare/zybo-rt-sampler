@@ -9,7 +9,7 @@ MICROPHONE_INDEX = 4 # 0 - 63
 
 class RealtimeSoundplayer(object):
     def __init__(self, beamformer, mic_index = 4, sound_command=""):
-        self.f = beamformer.get_antenna_data()[0]
+        self.f = beamformer.get_sound_data()
         self.out = np.empty(config.BUFFER_LENGTH, dtype=config.NP_DTYPE)
         self.out_pointer = self.out.ctypes.data_as(
             ctypes.POINTER(ctypes.c_float))
@@ -21,8 +21,7 @@ class RealtimeSoundplayer(object):
         self.f(self.out_pointer)
         
         antenna_array = self.out.reshape((config.N_MICROPHONES, config.N_SAMPLES))
-        sound = np.ascontiguousarray(antenna_array[self.mic_index])
- 
+        sound = antenna_array[0]/1.0#np.ascontiguousarray(antenna_array[self.mic_index])
         return sound, pyaudio.paContinue
 
     def play_sound(self):
