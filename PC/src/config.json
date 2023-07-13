@@ -46,7 +46,8 @@
         }
     },
     "c": {
-        "NORM_FACTOR": 16777216.0,
+        "NORM_FACTOR": 8777216.0,
+        "NORM_FACTOR_SOUND": 2000000,
         "MISO_POWER": 5,
         "KEY": 1234,
         "KEY_SOUND": 1235,
