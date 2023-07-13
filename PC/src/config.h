@@ -24,7 +24,7 @@
 
 //C specific constants
 #define NORM_FACTOR 8777216.0
-#define NORM_FACTOR_SOUND 2000000
+#define NORM_FACTOR_SOUND 2000000.0
 #define MISO_POWER 5
 #define KEY 1234
 #define KEY_SOUND 1235
