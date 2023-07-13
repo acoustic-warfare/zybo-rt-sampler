@@ -61,6 +61,8 @@ float ****mimo_coefficients; // TODO fix this to more healthier
 
 float **miso_coefficients;
 
+int whole_samples_h[MAX_RES_X * MAX_RES_Y * 1 * COLUMNS * ROWS];
+
 /*
 Post memory cleanup
 */
@@ -369,6 +371,82 @@ void myread(float *out)
     semop(semid_sound, &sem_signal, 1);
 }
 
+void load_coefficients(int *whole_samples)
+{
+    memcpy(&whole_samples_h[0], whole_samples, sizeof(int) * (MAX_RES_X * MAX_RES_Y * 1 * COLUMNS * ROWS));
+}
+
+void mimo_result(int position, float *out, float *signals)
+{
+    int pos;
+    for (int xi = 0; xi < COLUMNS; xi++)
+    {
+        for (int yi = 0; yi < ROWS; yi++)
+        {
+            // printf("%d ", whole_samples_h[position + xi * ROWS + yi]);
+
+            pos = whole_samples_h[position + xi * ROWS + yi];
+
+            for (int i = 0; i < N_SAMPLES - pos; i++)
+            {
+                out[pos + i] += signals[(xi * ROWS + yi) * N_SAMPLES + i];
+            }
+        }
+    }
+}
+
+void work_test(float *image)
+{
+    float data[BUFFER_LENGTH];
+
+    // Pin the data for retrieval
+    semop(semid, &sem_wait, 1);
+    memcpy(&data[0], (void *)&rb->data[0], sizeof(float) * BUFFER_LENGTH);
+    semop(semid, &sem_signal, 1);
+
+    // dummy output
+    float _out[N_SAMPLES] = {0.0};
+    float *out = &_out[0];
+    int pos;
+
+    int xi, yi;
+    for (int x = 0; x < MAX_RES_Y; x++)
+    {
+        xi = x * MAX_RES_X * COLUMNS * ROWS;
+        for (int y = 0; y < MAX_RES_X; y++)
+        {
+            yi = y * COLUMNS * ROWS;
+
+            // Reset the output for the new direction
+            memset(out, 0, (N_SAMPLES) * sizeof(float));
+
+            for (int xii = 0; xii < COLUMNS; xii++)
+            {
+                for (int yii = 0; yii < ROWS; yii++)
+                {
+                    pos = whole_samples_h[xi + yi + xii * ROWS + yii];
+
+                    for (int i = 0; i < N_SAMPLES - pos; i++)
+                    {
+                        out[pos + i] += data[(xii * ROWS + yii) * N_SAMPLES + i];
+                    }
+                }
+            }
+
+            float sum = 0.0;
+            for (int k = 0; k < N_SAMPLES; k++)
+            {
+                out[k] /= (float)(ROWS * COLUMNS);
+                sum += powf(out[k], 2);
+            }
+
+            sum /= (float)N_SAMPLES;
+
+            image[x * MAX_RES_Y + y] = sum;
+        }
+    }
+}
+
 /*
 Main initialization function
 */
@@ -394,7 +472,7 @@ int load(bool replay_mode)
     else if (pid == 0) // Child
     {
         // Create UDP socket:
-        socket_desc = create_and_bind_socket(replay_mode);
+        socket_desc = create_and_bind_socket(false);
         if(socket_desc == -1){
             return -1;
         }
@@ -418,27 +496,4 @@ int load(bool replay_mode)
 
     // Return to parent
     return 0;
-}
-
-float h[8];
-
-void foo(float *signal)
-{
-    for (int i = 0; i < 6; i++)
-    {
-        h[i] = signal[i];
-        printf("%f ", signal[i]);
-    }
-
-    printf("\n");
-}
-
-void bar()
-{
-    for (int i = 0; i < 8; i++)
-    {
-        printf("%f ", h[i]);
-    }
-
-    printf("\n");
 }

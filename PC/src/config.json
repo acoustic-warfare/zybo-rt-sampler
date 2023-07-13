@@ -6,8 +6,8 @@
         "COLUMNS": 8,
         "ROWS": 8,
         "MAX_RES": 20,
-        "MAX_RES_X": 30,
-        "MAX_RES_Y": 10,
+        "MAX_RES_X": 20,
+        "MAX_RES_Y": 20,
         "Z": 10.0,
         "MAX_ANGLE": 45.0,
         "UDP_PORT": 21844,
@@ -46,9 +46,9 @@
         }
     },
     "c": {
-        "NORM_FACTOR": 8777216.0,
+        "NORM_FACTOR": 16777216.0,
         "NORM_FACTOR_SOUND": 2000000.0,
-        "MISO_POWER": 5,
+        "MISO_POWER": 15,
         "KEY": 1234,
         "KEY_SOUND": 1235,
         "expression": {}

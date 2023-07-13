@@ -7,3 +7,13 @@
 ```
 killall python3
 ```
+
+
+# Setup
+
+```bash
+sudo apt install gcc make cython3
+
+sudo apt-get install python3-opencv python3-pyaudio python3-matplotlib 
+# python3-opencv
+```
