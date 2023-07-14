@@ -42,6 +42,14 @@ cybeamformer: build/config.o
 	$(CC) -shared -pthread -fPIC -fwrapv -O3 -Wall -fno-strict-aliasing -lm -march=native -mavx2 -I $(PYTHON_PATH) -o lib/wrapper.so build/wrapper.c build/delay.so
 	#python3 -c "from lib.wrapper import *;main()"
 
+cytest: config
+	cp -r src/* build/
+	
+	$(CC) -O3 --shared -fPIC -march=native -mavx2 -lm `ls build/*.c | grep -xv "build/main.c"` build/antenna/*.c -o build/delay.so
+	
+	$(CYCC) src/foo.pyx -o build/foo.c
+	$(CC) -shared -pthread -fPIC -fwrapv -O3 -Wall -fno-strict-aliasing -lm -march=native -mavx2 -I $(PYTHON_PATH) -o lib/foo.so build/foo.c build/delay.so
+
 ## Cython stuff
 #build/cy_api.c:
 #	cp src/data/*.c build/

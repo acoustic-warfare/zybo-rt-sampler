@@ -31,6 +31,7 @@
 #include "antenna/delay.h"
 int load(bool replay_mode);
 //void delay_truncation_sum(float *signal, float *out, int n);
-void foo(float *signal);
-void bar();
+//void bar(float *signal);
+void kill_child();
+void myread(float *out);
 #endif

@@ -60,6 +60,8 @@ float **miso_coefficients;
 
 int whole_samples_h[MAX_RES_X * MAX_RES_Y * 1 * COLUMNS * ROWS];
 
+pid_t pid_child;
+
 /*
 Post memory cleanup
 */
@@ -93,6 +95,8 @@ void free_coefficients()
     free(miso_coefficients);
 }
 
+
+
 /*
 Remove shared memory and semafores
 */
@@ -103,7 +107,12 @@ void signal_handler()
     close_socket(socket_desc);
     destroy_msg(client_msg);
     free_coefficients();
-    exit(-1);
+}
+
+void kill_child()
+{
+    signal_handler();
+    kill(pid_child, SIGKILL);
 }
 
 /*
@@ -412,9 +421,9 @@ Main initialization function
 */
 int load(bool replay_mode)
 {
-    signal(SIGINT, signal_handler);
-    signal(SIGKILL, signal_handler);
-    signal(SIGTERM, signal_handler);
+    //signal(SIGINT, signal_handler);
+    //signal(SIGKILL, signal_handler);
+    //signal(SIGTERM, signal_handler);
 
     init_shared_memory();
     init_semaphore();
@@ -448,9 +457,10 @@ int load(bool replay_mode)
                 return -1;
             }
             semop(semid, &data_sem_signal, 1);
-            continue;
         }
     }
+
+    pid_child = pid;
 
     // Return to parent
     return 0;
