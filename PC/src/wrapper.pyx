@@ -3,12 +3,11 @@
 
 #TODO Implement adaptive beamforming properly
 
+import config
+
+
 import numpy as np
 cimport numpy as np
-
-import time
-
-import config
 
 # It's necessary to call "import_array" if you use any part of the numpy PyArray_* API.
 np.import_array()
@@ -22,19 +21,26 @@ ctypedef np.float32_t DTYPE_t
 # Constants
 DTYPE_arr = np.float32
 
-# External Configs
+# External Configs initially defined in src/config.json
 cdef extern from "config.h":
     int N_SAMPLES
+    int COLUMNS
+    int ROWS
     int MAX_RES_X
     int MAX_RES_Y
     float MAX_ANGLE
     float SAMPLE_RATE
+    float ELEMENT_DISTANCE
+    float ARRAY_SEPARATION
+    int ACTIVE_ARRAYS
+    int SKIP_N_MICS
     float PROPAGATION_SPEED
     int MISO_POWER
     float VIEW_ANGLE
 
 
 
+# C defined functions
 cdef extern from "beamformer.h":
     void load_coefficients(int *whole_sample_delay)
     void work_test(float *image)
@@ -42,32 +48,33 @@ cdef extern from "beamformer.h":
 
 def calc_r_prime(d):
     half = d/2
-    r_prime = np.zeros((2, config.rows*config.columns))
+    r_prime = np.zeros((2, COLUMNS * ROWS))
     element_index = 0
-    for array in range(config.ACTIVE_ARRAYS):
-        for row in range(config.rows):
-            for col in range(config.columns):
-                r_prime[0,element_index] = col * d + half + array*config.columns*d + array*config.ARRAY_SEPARATION - config.columns* config.ACTIVE_ARRAYS * half
-                r_prime[1, element_index] = row * d - config.rows * half + half
+    for array in range(ACTIVE_ARRAYS):
+        for row in range(ROWS):
+            for col in range(COLUMNS):
+                r_prime[0,element_index] = col * d + half + array*COLUMNS*d + array*ARRAY_SEPARATION - COLUMNS * ACTIVE_ARRAYS * half
+                r_prime[1, element_index] = row * d - ROWS * half + half
                 element_index += 1
-    r_prime[0,:] -= config.ACTIVE_ARRAYS*config.ARRAY_SEPARATION/2
+    r_prime[0,:] -= ACTIVE_ARRAYS*ARRAY_SEPARATION/2
     active_mics, n_active_mics = active_microphones()
 
     r_prime = r_prime[:,active_mics]
     return r_prime
 
 def active_microphones():
-    mode = config.SKIP_N_MICS
-    rows = np.arange(0, config.rows, mode)
-    columns = np.arange(0, config.columns*config.ACTIVE_ARRAYS, mode)
+    mode = SKIP_N_MICS
+    rows = np.arange(0, ROWS, mode)
+    columns = np.arange(0, COLUMNS*ACTIVE_ARRAYS, mode)
 
-    mics = np.linspace(0, config.rows*config.columns-1, config.rows*config.columns)   # mics in one array
-    arr_elem = config.rows*config.columns                       # elements in one array
-    microphones = np.linspace(0, config.rows*config.columns-1,config.rows*config.columns).reshape((config.rows, config.columns))
+    arr_elem = ROWS*COLUMNS                       # elements in one array
+    mics = np.linspace(0, arr_elem-1, arr_elem)   # mics in one array
+    
+    microphones = np.linspace(0, arr_elem-1,arr_elem).reshape((ROWS, COLUMNS))
 
-    for a in range(config.ACTIVE_ARRAYS-1):
+    for a in range(ACTIVE_ARRAYS-1):
         a += 1
-        array = mics[0+a*arr_elem : arr_elem+a*arr_elem].reshape((config.rows, config.columns))
+        array = mics[0+a*arr_elem : arr_elem+a*arr_elem].reshape((ROWS, COLUMNS))
         microphones = np.hstack((microphones, array))
 
     active_mics = []
@@ -78,10 +85,10 @@ def active_microphones():
     return np.sort(active_mics), len(active_mics)
 
 def calculate_delays():
-    c = config.PROPAGATION_SPEED             # from config
-    fs = config.SAMPLE_RATE          # from config
-    N_SAMPLES = config.N_SAMPLES    # from config
-    d = config.ELEMENT_DISTANCE            # distance between elements, from config
+    c = PROPAGATION_SPEED             # from config
+    fs = SAMPLE_RATE          # from config
+    #N_SAMPLES = N_SAMPLES    # from config
+    d = ELEMENT_DISTANCE            # distance between elements, from config
 
     alpha = VIEW_ANGLE  # total scanning angle (bildvinkel) in theta-direction [degrees], from config
     z_scan = 10  # distance to scanning window, from config
@@ -177,7 +184,7 @@ def calculate_coefficients():
     whole_sample_delay = samp_delay.astype(int)
     fractional_sample_delay = samp_delay - whole_sample_delay
 
-    h = np.zeros((MAX_RES_X, MAX_RES_Y, 64, 8), dtype=config.NP_DTYPE)
+    h = np.zeros((MAX_RES_X, MAX_RES_Y, 64, 8), dtype=np.float32)
 
     for x in range(MAX_RES_X):
         for y in range(MAX_RES_Y):
@@ -207,14 +214,10 @@ def calculate_heatmap(image):
     #if True:
         for x in range(MAX_RES_X):
             for y in range(MAX_RES_Y):
-                #print(i, j)
                 d = image[x, y]
 
                 if np.isnan(d):
                     d = 0.0
-                #d += 1e-6
-                #val = min(int(255 * d ** MISO_POWER), 255)
-                #print(val)
 
                 #if val < 15:
                 if d < 0.9:
@@ -271,14 +274,8 @@ cdef void loop():
         cv2.imshow(config.APPLICATION_NAME, new)
         cv2.waitKey(1)
 
-    print(samples[-1, -1,:], samples.dtype)
-
-    print(N_SAMPLES, config.rows)
-
 
 
 def main():
     loop()
-    #bar()
-    print("Hello world!")
 
