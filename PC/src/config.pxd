@@ -1,4 +1,7 @@
 # External Configs initially defined in src/config.json
+
+# Usage: from config cimport *
+
 cdef extern from "config.h":
     int N_MICROPHONES
     int N_SAMPLES

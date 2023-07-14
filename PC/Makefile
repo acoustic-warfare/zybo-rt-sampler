@@ -136,7 +136,8 @@ cython_project:
 	echo "cy_api.entrypoint()" >> run
 	chmod +x run
 
-	cp interface/config.py config.py
+	#python3 -c "from lib.microphone_array import *;main()"
+
 
 .PHONY: clean
 

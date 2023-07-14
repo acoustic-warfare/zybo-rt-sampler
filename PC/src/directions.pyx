@@ -76,7 +76,7 @@ def calculate_delays():
 
     x_res = MAX_RES_X  # resolution in x, from config
     y_res = MAX_RES_Y  # resolution in y, from config
-    AS = 16/9   # aspect ratio, from config
+    AS = 4/3# 16/9   # aspect ratio, from config
 
     # Calculations for time delay starts below
     r_prime = calc_r_prime(d)  # matrix holding the xy positions of each microphone
