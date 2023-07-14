@@ -21,7 +21,7 @@ class RealtimeSoundplayer(object):
         self.f(self.out_pointer)
         
         antenna_array = self.out.reshape((config.N_MICROPHONES, config.N_SAMPLES))
-        sound = antenna_array[0]/1.0#np.ascontiguousarray(antenna_array[self.mic_index])
+        sound = antenna_array[0]*45.0#np.ascontiguousarray(antenna_array[self.mic_index])
         return sound, pyaudio.paContinue
 
     def play_sound(self):
