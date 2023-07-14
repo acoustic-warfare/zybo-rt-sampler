@@ -13,7 +13,8 @@ setup (
     ext_modules = cythonize(
         [
             Extension("test", ["src/test.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
-            Extension("microphone_array", ["src/microphone_array.pyx"] + c_files, include_dirs=["src/"], 
+            Extension("directions", ["src/directions.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
+            Extension("microphone_array", ["src/microphone_array.pyx"] + c_files, include_dirs=["src/"],
                         extra_compile_args = ["-O3", "-march=native", "-mavx2", "-lm"]),
         
         ],
