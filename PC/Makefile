@@ -36,11 +36,13 @@ build/config.o:
 cybeamformer: build/config.o
 	cp -r src/* build/
 	
-	$(CC) -O3 --shared -fPIC -march=native -mavx2 -lm `ls build/*.c | grep -xv "build/main.c"` build/antenna/*.c -o build/delay.so
+	$(CC) -O3 --shared -fPIC -march=native -mavx2 -lm `ls build/*.c | grep -xv "build/main.c"` build/antenna/*.c -o lib/delay.so
 	
-	$(CYCC) src/wrapper.pyx -o build/wrapper.c
-	$(CC) -shared -pthread -fPIC -fwrapv -O3 -Wall -fno-strict-aliasing -lm -march=native -mavx2 -I $(PYTHON_PATH) -o lib/wrapper.so build/wrapper.c build/delay.so
-	#python3 -c "from lib.wrapper import *;main()"
+	$(CYCC) src/microphone_array.pyx -o build/microphone_array.c
+	$(CC) -shared -pthread -fPIC -fwrapv -O3 -Wall -fno-strict-aliasing -lm -march=native -mavx2 -I $(PYTHON_PATH) -o lib/microphone_array.so build/microphone_array.c lib/delay.so
+	cp lib/microphone_array.so interface/lib/
+	cp lib/delay.so interface/lib/
+	#python3 -c "from lib.microphone_array import *;main()"
 
 cytest: config
 	cp -r src/* build/

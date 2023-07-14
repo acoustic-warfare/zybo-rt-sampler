@@ -33,11 +33,7 @@ gcc delay.c -ffinite-math-only -lm -march=native -mavx2 -O3 -o run && ./run
 
 #define PI 3.14159265359
 
-#define SSE_SIMD_LENGTH 4
-#define AVX_SIMD_LENGTH 8
-
-#define KERNEL_LENGTH 16
-#define VECTOR_LENGTH 16
+#define AVX_SIMD_LENGTH 8 // AVX2 m256 width
 #define ALIGNMENT 32 // Must be divisible by 32
 
 /*
@@ -159,6 +155,7 @@ void delay_vectorized(float *signal, float *h, float *out)
     //_mm_free(padded);
 }
 
+// Borrowed code
 // x = ( x7, x6, x5, x4, x3, x2, x1, x0 )
 float sum8(__m256 x)
 {
