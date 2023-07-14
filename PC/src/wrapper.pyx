@@ -37,8 +37,12 @@ cdef extern from "config.h":
     float PROPAGATION_SPEED
     int MISO_POWER
     float VIEW_ANGLE
+    int APPLICATION_WINDOW_WIDTH
+    int APPLICATION_WINDOW_HEIGHT
+    int CAMERA_SOURCE
 
 
+window_size = (APPLICATION_WINDOW_WIDTH, APPLICATION_WINDOW_HEIGHT)
 
 # C defined functions
 cdef extern from "beamformer.h":
@@ -127,7 +131,7 @@ def calculate_delays_():
 
     distance = 0.02
 
-    samp_delay = np.zeros((MAX_RES_X, MAX_RES_Y, 64), dtype=np.float32)
+    samp_delay = np.zeros((MAX_RES_X, MAX_RES_Y, COLUMNS*ROWS*ACTIVE_ARRAYS), dtype=np.float32)
 
     for xi, x in enumerate(np.linspace(-MAX_ANGLE, MAX_ANGLE, MAX_RES_X)):
         azimuth = x * -np.pi / 180.0
@@ -138,17 +142,17 @@ def calculate_delays_():
 
             smallest = 0
 
-            for row in range(8):
-                for col in range(8):
+            for row in range(ROWS):
+                for col in range(COLUMNS):
                     half = distance / 2.0
-                    tmp_col = col * distance - 8 * half + half
-                    tmp_row = row * distance - 8 * half + half
+                    tmp_col = col * distance - COLUMNS * half + half
+                    tmp_row = row * distance - ROWS * half + half
 
                     tmp_delay = tmp_col * x_factor + tmp_row * y_factor
                     if (tmp_delay < smallest):
                         smallest = tmp_delay
 
-                    samp_delay[xi, yi, row * 8 + col] = tmp_delay
+                    samp_delay[xi, yi, row * COLUMNS + col] = tmp_delay
 
             samp_delay[xi, yi, :] -= smallest
 
@@ -184,11 +188,11 @@ def calculate_coefficients():
     whole_sample_delay = samp_delay.astype(int)
     fractional_sample_delay = samp_delay - whole_sample_delay
 
-    h = np.zeros((MAX_RES_X, MAX_RES_Y, 64, 8), dtype=np.float32)
+    h = np.zeros((MAX_RES_X, MAX_RES_Y, COLUMNS*ROWS*ACTIVE_ARRAYS, 8), dtype=np.float32)
 
     for x in range(MAX_RES_X):
         for y in range(MAX_RES_Y):
-            for i in range(64):
+            for i in range(COLUMNS*ROWS*ACTIVE_ARRAYS):
                 h[x, y, i] = get_h(fractional_sample_delay[x, y, i])
     
     return whole_sample_delay, h
@@ -199,37 +203,32 @@ import matplotlib.pyplot as plt
 
 cmap = plt.cm.get_cmap("jet")
 
+# Generate color lookup table
+colors = np.empty((256, 3))
+
+for i in range(256):
+    colors[i] = (np.array(cmap(255 - i)[:3]) * 255).astype(np.uint8)
+
 def calculate_heatmap(image):
     """"""
     lmax = np.max(image)
 
-    old_lmax = lmax
-
     image /= lmax
-    lmax = 0.5
 
-    small_heatmap = np.zeros((MAX_RES_X, MAX_RES_Y, 3), dtype=np.uint8)
+    small_heatmap = np.zeros((MAX_RES_Y, MAX_RES_X, 3), dtype=np.uint8)
 
-    if 1>old_lmax>1e-8:
-    #if True:
+    if lmax>1e-7:
         for x in range(MAX_RES_X):
             for y in range(MAX_RES_Y):
                 d = image[x, y]
 
-                if np.isnan(d):
-                    d = 0.0
+                if d > 0.9:
+                    val = int(255 * d ** MISO_POWER)
 
-                #if val < 15:
-                if d < 0.9:
-                    color = np.zeros(3)
+                    small_heatmap[MAX_RES_Y - 1 - y, x] = colors[val]
 
-                else:
-                    val = min(int(255 * d ** MISO_POWER), 255)
-                    color = np.array(cmap(255 - val)[:3]) * 255
 
-                small_heatmap[y, x] = color.astype(np.uint8)
-
-    heatmap = cv2.resize(small_heatmap, config.WINDOW_SIZE, interpolation=cv2.INTER_LINEAR)
+    heatmap = cv2.resize(small_heatmap, window_size, interpolation=cv2.INTER_LINEAR)
     return heatmap
 
 
@@ -250,28 +249,27 @@ cdef void loop():
     cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] arr2
     arr2 = np.ascontiguousarray(x)
     
-    capture = cv2.VideoCapture(2)
-    capture.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
-    capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    capture = cv2.VideoCapture(CAMERA_SOURCE)
+    capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
+    capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
     capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+
     while True:
         work_test(&arr2[0, 0])
 
-        frame = calculate_heatmap(arr2)
-        frame = cv2.flip(frame, 0)
-        new = cv2.resize(frame, config.WINDOW_SIZE)
+        heatmap = calculate_heatmap(arr2)
 
         status, frame = capture.read()
-        frame = cv2.flip(frame, 1)
+        frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
         try:
-            frame = cv2.resize(frame, config.WINDOW_SIZE)
+            frame = cv2.resize(frame, window_size)
         except cv2.error as e:
             print("An error ocurred with image processing! Check if camera and antenna connected properly")
             #os.system("killall python3")
             break
 
-        new = cv2.addWeighted(frame, 0.6, new, 0.8, 0)
-        cv2.imshow(config.APPLICATION_NAME, new)
+        image = cv2.addWeighted(frame, 0.6, heatmap, 0.8, 0)
+        cv2.imshow(config.APPLICATION_NAME, image)
         cv2.waitKey(1)
 
 
