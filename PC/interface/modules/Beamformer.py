@@ -12,7 +12,6 @@ cmap = plt.cm.get_cmap("jet")
 class Beamformer(object):
     def __init__(self, replay_mode=False): 
         self.lib = ctypes.cdll.LoadLibrary("../lib/beamformer.so")
-        self.lib2 = ctypes.cdll.LoadLibrary("../lib/libsampler.so")
         
         init = self.lib.load
         init.restype = int

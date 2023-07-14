@@ -44,21 +44,22 @@
 #include "antenna/delay.h"
 
 ring_buffer *rb;  // Data to be stored in
+ring_buffer *rb_sound;
 msg *client_msg;
 
 int shmid; // Shared memory ID
 int semid; // Semaphore ID
 
+int shmid_sound;
+int semid_sound;
 int socket_desc;
 
-struct sembuf data_sem_wait = {0, -1, SEM_UNDO};  // Wait operation
-struct sembuf data_sem_signal = {0, 1, SEM_UNDO}; // Sig operation
+struct sembuf sem_wait = {0, -1, SEM_UNDO};  // Wait operation
+struct sembuf sem_signal = {0, 1, SEM_UNDO}; // Sig operation
 
 float ****mimo_coefficients; // TODO fix this to more healthier
 
 float **miso_coefficients;
-
-int whole_samples_h[MAX_RES_X * MAX_RES_Y * 1 * COLUMNS * ROWS];
 
 /*
 Post memory cleanup
@@ -100,6 +101,8 @@ void signal_handler()
 {
     shmctl(shmid, IPC_RMID, NULL);
     semctl(semid, 0, IPC_RMID);
+    shmctl(shmid_sound, IPC_RMID, NULL);
+    semctl(semid_sound, 0, IPC_RMID);
     close_socket(socket_desc);
     destroy_msg(client_msg);
     free_coefficients();
@@ -119,6 +122,13 @@ void init_shared_memory()
         perror("shmget not working");
         exit(1);
     }
+    shmid_sound = shmget(KEY_SOUND, sizeof(ring_buffer), IPC_CREAT | 0666);
+
+    if (shmid_sound == -1)
+    {
+        perror("shmget not working");
+        exit(1);
+    }
 
     rb = (ring_buffer *)shmat(shmid, NULL, 0);
 
@@ -133,6 +143,21 @@ void init_shared_memory()
     for (int i = 0; i < BUFFER_LENGTH; i++)
     {
         rb->data[i] = 0.0;
+    }
+    
+    rb_sound = (ring_buffer *)shmat(shmid_sound, NULL, 0);
+
+    if (rb_sound == (ring_buffer *)-1)
+    {
+        perror("shmat not working");
+        exit(1);
+    }
+
+    rb_sound->index = 0;
+    rb_sound->counter = 0;
+    for (int i = 0; i < BUFFER_LENGTH; i++)
+    {
+        rb_sound->data[i] = 0.0;
     }
 }
 
@@ -149,6 +174,13 @@ void init_semaphore()
         exit(1);
     }
     
+    semid_sound = semget(KEY_SOUND, 1, IPC_CREAT | 0666);
+
+    if (semid_sound == -1)
+    {
+        perror("semget");
+        exit(1);
+    }
     union semun
     {
         int val;
@@ -163,6 +195,12 @@ void init_semaphore()
         perror("semctl");
         exit(1);
     }
+
+    if (semctl(semid_sound, 0, SETVAL, argument) == -1)
+    {
+        perror("semctl");
+        exit(1);
+    }
 }
 
 /*
@@ -170,7 +208,7 @@ Steer the antenna to the direction
 */
 void steer(float theta, float phi)
 {
-    semop(semid, &data_sem_wait, 1);
+    semop(semid, &sem_wait, 1);
     directional_antenna_delay_coefficients(theta, // Horizontal
                                            phi, // Vertical
                                            ROWS,
@@ -179,7 +217,7 @@ void steer(float theta, float phi)
                                            SAMPLE_RATE,
                                            PROPAGATION_SPEED,
                                            miso_coefficients);
-    semop(semid, &data_sem_signal, 1);
+    semop(semid, &sem_signal, 1);
 }
 
 
@@ -191,9 +229,9 @@ void miso(float *out)
     float data[BUFFER_LENGTH];
 
     // Pin the data for retrieval
-    semop(semid, &data_sem_wait, 1);
+    semop(semid, &sem_wait, 1);
     memcpy(&data[0], (void *)&rb->data[0], sizeof(float) * BUFFER_LENGTH);
-    semop(semid, &data_sem_signal, 1);
+    semop(semid, &sem_signal, 1);
 
     // Reset output stream
     memset(out, 0, (N_SAMPLES) * sizeof(float));
@@ -217,9 +255,9 @@ void mimo(float *image)
     float data[BUFFER_LENGTH];
 
     // Pin the data for retrieval
-    semop(semid, &data_sem_wait, 1);
+    semop(semid, &sem_wait, 1);
     memcpy(&data[0], (void *)&rb->data[0], sizeof(float) * BUFFER_LENGTH);
-    semop(semid, &data_sem_signal, 1);
+    semop(semid, &sem_signal, 1);
 
     // dummy output
     float _out[N_SAMPLES] = {0.0};
@@ -326,101 +364,22 @@ void calculate_miso_coefficients()
 
 void myread(float *out)
 {
-    semop(semid, &data_sem_wait, 1);
+    semop(semid, &sem_wait, 1);
     memcpy(out, (void *)&rb->data[0], sizeof(float) * BUFFER_LENGTH);
-    semop(semid, &data_sem_signal, 1);
-}
-
-void load_coefficients(int *whole_samples)
-{
-    memcpy(&whole_samples_h[0], whole_samples, sizeof(int) * (MAX_RES_X * MAX_RES_Y * 1 * COLUMNS * ROWS));
-}
-
-void mimo_result(int position, float *out, float *signals)
-{
-    int pos;
-    for (int xi = 0; xi < COLUMNS; xi++)
-    {
-        for (int yi = 0; yi < ROWS; yi++)
-        {
-            // printf("%d ", whole_samples_h[position + xi * ROWS + yi]);
-
-            pos = whole_samples_h[position + xi * ROWS + yi];
-
-            for (int i = 0; i < N_SAMPLES - pos; i++)
-            {
-                out[pos + i] += signals[(xi * ROWS + yi) * N_SAMPLES + i];
-            }
-        }
-    }
-}
-
-void work_test(float *image)
-{
-    float data[BUFFER_LENGTH];
-
-    // Pin the data for retrieval
-    semop(semid, &data_sem_wait, 1);
-    memcpy(&data[0], (void *)&rb->data[0], sizeof(float) * BUFFER_LENGTH);
-    semop(semid, &data_sem_signal, 1);
-
-    // dummy output
-    float _out[N_SAMPLES] = {0.0};
-    float *out = &_out[0];
-    int pos;
-
-    int xi, yi;
-    for (int x = 0; x < MAX_RES_Y; x++)
-    {
-        xi = x * MAX_RES_X * COLUMNS * ROWS;
-        for (int y = 0; y < MAX_RES_X; y++)
-        {
-            yi = y * COLUMNS * ROWS;
-
-            // Reset the output for the new direction
-            memset(out, 0, (N_SAMPLES) * sizeof(float));
-
-            for (int xii = 0; xii < COLUMNS; xii++)
-            {
-                for (int yii = 0; yii < ROWS; yii++)
-                {
-                    pos = whole_samples_h[xi + yi + xii * ROWS + yii];
-
-                    for (int i = 0; i < N_SAMPLES - pos; i++)
-                    {
-                        out[pos + i] += data[(xii * ROWS + yii) * N_SAMPLES + i];
-                    }
-                }
-            }
-
-            float sum = 0.0;
-            for (int k = 0; k < N_SAMPLES; k++)
-            {
-                out[k] /= (float)(ROWS * COLUMNS);
-                sum += powf(out[k], 2);
-            }
-
-            sum /= (float)N_SAMPLES;
-
-            image[x * MAX_RES_Y + y] = sum;
-        }
-    }
+    semop(semid, &sem_signal, 1);
 }
 
 /*
 Main initialization function
 */
-int load(bool replay_mode)
+int load()
 {
     signal(SIGINT, signal_handler);
     signal(SIGKILL, signal_handler);
     signal(SIGTERM, signal_handler);
-
+    
     init_shared_memory();
     init_semaphore();
-
-    calculate_mimo_coefficients();
-    calculate_miso_coefficients();
 
     pid_t pid = fork(); // Fork child
 
@@ -432,26 +391,44 @@ int load(bool replay_mode)
     else if (pid == 0) // Child
     {
         // Create UDP socket:
-        socket_desc = create_and_bind_socket(replay_mode);
-        if(socket_desc == -1){
-            return -1;
-        }
+        socket_desc = create_and_bind_socket(true);
         client_msg = create_msg();
-        int n_arrays = receive_header_data(socket_desc);
-        
+
         while (1)
         {
-            semop(semid, &data_sem_wait, 1);
-            
-            if (receive_and_write_to_buffer(socket_desc, rb, client_msg, n_arrays) == -1)
-            {
+            semop(semid, &sem_wait, 1);
+
+            if(receive_and_write_to_buffer(socket_desc, rb, rb_sound, client_msg, 1) == -1){
                 return -1;
             }
-            semop(semid, &data_sem_signal, 1);
+
+            semop(semid, &sem_signal, 1);
             continue;
         }
     }
 
-    // Return to parent
     return 0;
+}
+
+float h[8];
+
+void foo(float *signal)
+{
+    for (int i = 0; i < 6; i++)
+    {
+        h[i] = signal[i];
+        printf("%f ", signal[i]);
+    }
+
+    printf("\n");
+}
+
+void bar()
+{
+    for (int i = 0; i < 8; i++)
+    {
+        printf("%f ", h[i]);
+    }
+
+    printf("\n");
 }

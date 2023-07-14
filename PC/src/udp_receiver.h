@@ -56,7 +56,7 @@ int receive_and_print(int socket_desc);
 /// @param message A pointer for temporarily storing received message
 /// @param n_arrays Number of connected arrays
 /// @return 0 if no errors and -1 if the message can't be received
-int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, ring_buffer *rb_sound, msg *message, int n_arrays);
+int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, int n_arrays);
 
 /// @brief Closes the socket descriptor.
 /// @param socket_desc A socket file descriptor.
