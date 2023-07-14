@@ -145,7 +145,10 @@ int receive_header_data(int socket_desc){
         printf("Couldn't receive\n");
         return -1;
     }
-    int8_t n_arrays = client_msg->n_arrays; 
+    int8_t n_arrays = client_msg->n_arrays;
+    if(client_msg->protocol_ver != FPGA_PROTOCOL_VERSION){
+        return -1;
+    }
     free(client_msg);
     return n_arrays;
 }

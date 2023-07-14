@@ -447,7 +447,9 @@ int load(bool replay_mode)
         }
         client_msg = create_msg();
         int n_arrays = receive_header_data(socket_desc);
-        
+        if (n_arrays == -1){
+            return -1;
+        }
         while (1)
         {
             semop(semid, &data_sem_wait, 1);

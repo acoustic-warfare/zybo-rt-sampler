@@ -10,7 +10,7 @@ import config
 
 from lib.microphone_array import connect, disconnect, receive
 
-connect()
+connect(True)
 
 data = np.zeros((config.N_MICROPHONES, config.N_SAMPLES), dtype=np.float32)
 #time.sleep(2)

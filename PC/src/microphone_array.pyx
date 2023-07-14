@@ -246,9 +246,13 @@ def connect(replay_mode: bool = False, verbose=True) -> None:
     assert isinstance(replay_mode, bool), "Replay mode must be either True or False"
 
     if replay_mode: # True
-        load(1)
+        if load(1) == -1:
+            print("Wrong FPGA protocol data format received, disconnecting")
+            disconnect()
     else: # Default for real data
-        load(0)
+        if load(0) == -1:
+            print("Wrong FPGA protocol data format received, disconnecting")
+            disconnect()
 
     if verbose:
         print("Receiver process is forked.\nContinue your program!\n")
