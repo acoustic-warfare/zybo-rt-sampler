@@ -22,3 +22,4 @@ cdef extern from "config.h":
     int APPLICATION_WINDOW_WIDTH
     int APPLICATION_WINDOW_HEIGHT
     int CAMERA_SOURCE
+    int FLIP_IMAGE

@@ -26,7 +26,7 @@ cdef class VideoPlayer(object):
     cdef public tuple shape
     cdef public int FPS_MS, X, Y
     cdef public object beamformer
-    def __init__(self, beamformer, src=2, replay_mode=False):
+    def __init__(self, beamformer, src=CAMERA_SOURCE, replay_mode=False):
         self.X, self.Y = WINDOW_DIMENSIONS
 
         if replay_mode:
@@ -34,10 +34,10 @@ cdef class VideoPlayer(object):
         else:
             self.capture = cv2.VideoCapture(src, 200)
 
-        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
-        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
+        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
         self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
-        self.shape = (MAX_RES, MAX_RES, 3)
+        self.shape = (MAX_RES_Y, MAX_RES_X, 3)
         self.small_heatmap = np.zeros(self.shape, dtype=np.uint8)
         self.previous = np.zeros((self.Y, self.X, 3), dtype=np.uint8)
 
@@ -57,10 +57,9 @@ cdef class VideoPlayer(object):
             dst = self.add_heatmap_to_frame()
             if True:
                 dst = cv2.flip(dst, 1)
-            #dst = cv2.resize(dst, (1920, 1080))
+
             cv2.imshow(APPLICATION_NAME, dst)
             cv2.setMouseCallback(APPLICATION_NAME, self.mouse_click_handler)
-            #cv2.waitKey(self.FPS_MS)
             cv2.waitKey(1)
     
     def add_heatmap_to_frame(self):
@@ -74,3 +73,23 @@ cdef class VideoPlayer(object):
             vertical = (y / self.Y) * MAX_ANGLE * 2 - MAX_ANGLE
             self.steer(-horizontal, vertical)
             print(f"{horizontal}, {vertical}")
+
+class Viewer:
+    def __init__(self):
+        self.capture = cv2.VideoCapture(2)
+        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
+        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
+        self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+
+    def show(self, heatmap):
+        status, frame = self.capture.read()
+        frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
+        try:
+            frame = cv2.resize(frame, WINDOW_DIMENSIONS)
+        except cv2.error as e:
+            print("An error ocurred with image processing! Check if camera and antenna connected properly")
+            exit()
+
+        image = cv2.addWeighted(frame, 0.6, heatmap, 0.8, 0)
+        cv2.imshow("Demo", image)
+        cv2.waitKey(1)

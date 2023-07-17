@@ -23,6 +23,8 @@ DTYPE_arr = np.float32
 
 from lib.directions import calculate_coefficients, active_microphones
 
+from lib.VideoPlayer import Viewer
+
 from config cimport *
 
 WINDOW_DIMENSIONS = (APPLICATION_WINDOW_WIDTH, APPLICATION_WINDOW_HEIGHT)
@@ -39,6 +41,7 @@ cdef extern from "beamformer.h":
 
 
 def generate_color_map(name="jet"):
+    
     cmap = plt.cm.get_cmap(name)
 
     cdef np.ndarray[np.uint8_t, ndim=2, mode="c"] colors 
@@ -142,6 +145,28 @@ def receive(signals: np.ndarray[N_MICROPHONES, N_SAMPLES]) -> None:
     myread(&sig[0, 0])
 
 
+# class Viewer:
+#     def __init__(self):
+#         self.capture = cv2.VideoCapture(2)
+#         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
+#         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
+#         self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+
+#     def show(self, heatmap):
+#         status, frame = self.capture.read()
+#         frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
+#         try:
+#             frame = cv2.resize(frame, WINDOW_DIMENSIONS)
+#         except cv2.error as e:
+#             print("An error ocurred with image processing! Check if camera and antenna connected properly")
+#             exit()
+
+#         image = cv2.addWeighted(frame, 0.6, heatmap, 0.8, 0)
+#         cv2.imshow("Demo", image)
+#         cv2.waitKey(1)
+
+
+
 cdef void loop():
 
     whole_samples, fractional_samples = calculate_coefficients()
@@ -149,42 +174,46 @@ cdef void loop():
 
     cdef np.ndarray[int, ndim=1, mode="c"] active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
 
-    cdef np.ndarray[int, ndim=3, mode="c"] samples
+    cdef np.ndarray[int, ndim=3, mode="c"] i32_whole_samples
 
-    samples = np.ascontiguousarray(whole_samples.astype(np.int32))
+    i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
 
-    load_coefficients(&samples[0, 0, 0])
+    # Pass int pointer to C function
+    load_coefficients(&i32_whole_samples[0, 0, 0])
 
     connect()
 
     x = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
 
-    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] arr2
-    arr2 = np.ascontiguousarray(x)
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
+    mimo_arr = np.ascontiguousarray(x)
     
-    capture = cv2.VideoCapture(CAMERA_SOURCE)
-    capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
-    capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
-    capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+    # capture = cv2.VideoCapture(CAMERA_SOURCE)
+    # capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
+    # capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
+    # capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+
+    v = Viewer()
 
     while True:
         #work_test(&arr2[0, 0])
-        mimo_truncated(&arr2[0, 0], &active_micro[0], int(n_active_mics))
+        mimo_truncated(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
 
-        heatmap = calculate_heatmap(arr2)
+        heatmap = calculate_heatmap(mimo_arr)
 
-        status, frame = capture.read()
-        frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
-        try:
-            frame = cv2.resize(frame, WINDOW_DIMENSIONS)
-        except cv2.error as e:
-            print("An error ocurred with image processing! Check if camera and antenna connected properly")
-            #os.system("killall python3")
-            break
+        v.show(heatmap)
 
-        image = cv2.addWeighted(frame, 0.6, heatmap, 0.8, 0)
-        cv2.imshow("Demo", image)
-        cv2.waitKey(1)
+        # status, frame = capture.read()
+        # frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
+        # try:
+        #     frame = cv2.resize(frame, WINDOW_DIMENSIONS)
+        # except cv2.error as e:
+        #     print("An error ocurred with image processing! Check if camera and antenna connected properly")
+        #     break
+
+        # image = cv2.addWeighted(frame, 0.6, heatmap, 0.8, 0)
+        # cv2.imshow("Demo", image)
+        # cv2.waitKey(1)
 
 
 

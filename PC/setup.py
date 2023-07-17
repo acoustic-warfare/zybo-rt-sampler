@@ -16,6 +16,11 @@ setup (
             #Extension("foo", ["src/foo.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
             Extension("microphone_array", ["src/microphone_array.pyx"] + c_files, include_dirs=["src/"],
                         extra_compile_args = ["-O3", "-march=native", "-mavx2", "-lm"]),
+            Extension("VideoPlayer", ["src/modules/VideoPlayer.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
+            #Extension("TruncAndSum", ["src/modules/TruncAndSum.pyx"] + c_files, include_dirs=["src/"],
+            #            extra_compile_args = ["-O3", "-march=native", "-mavx2", "-lm"]),
+            #Extension("Beamformer", ["src/modules/Beamformer.pyx"] + c_files, include_dirs=["src/"],
+            #            extra_compile_args = ["-O3", "-march=native", "-mavx2", "-lm"]),
             Extension("directions", ["src/directions.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
         ],
 
