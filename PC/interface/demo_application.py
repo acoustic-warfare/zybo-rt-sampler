@@ -1,6 +1,4 @@
 from threading import Thread
-import cv2, time
-import numpy as np
 from modules.RealtimeSoundplayer import RealtimeSoundplayer
 from modules.Beamformer import Beamformer
 from modules.VideoPlayer import VideoPlayer

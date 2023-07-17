@@ -1,8 +1,7 @@
-import cv2, time
+import cv2
 import config
 import numpy as np
 import os
-import signal
 
 #TODO: Signal handler
 
