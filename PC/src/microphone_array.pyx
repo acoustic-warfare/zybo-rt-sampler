@@ -226,6 +226,22 @@ def calculate_heatmap(image):
     return heatmap
 
 def connect(replay_mode: bool = False, verbose=True) -> None:
+    """
+    Connect to a Zybo data-stream
+
+    [NOTICE]
+
+    You must remember to disconnect after you are done, to let the internal c child process terminate
+    safely.
+
+    Args:
+        replay_mode     bool    True for using replay mode everything else or nothing
+                                will result in using real data
+
+    Kwargs:
+        verbose         bool    If you want to display terminal output or not
+
+    """
     assert isinstance(replay_mode, bool), "Replay mode must be either True or False"
 
     if replay_mode: # True
@@ -241,9 +257,32 @@ def connect(replay_mode: bool = False, verbose=True) -> None:
         print("Receiver process is forked.\nContinue your program!\n")
 
 def disconnect():
+    """
+    Disconnect from a stream
+
+    This is done by killing the child receiving process
+    remember to call this function before calling 'exit()'
+    
+    """
     kill_child()
 
 def receive(signals: np.ndarray[N_MICROPHONES, N_SAMPLES]) -> None:
+    """
+    Receive the N_SAMPLES latest samples from the Zybo.
+
+    [NOTICE]
+
+    It is important to have the correct datatype and shape as defined in src/config.json
+
+    Usage:
+
+        >>>data = np.empty((N_MICROPHONES, N_SAMPLES), dtype=np.float32)
+        >>>receive(data)
+
+    Args:
+        signals     np.ndarray The array to be filled with the latest microphone data
+    
+    """
     assert signals.shape == (N_MICROPHONES, N_SAMPLES), "Arrays do not match shape"
     assert signals.dtype == np.float32, "Arrays dtype do not match"
 
