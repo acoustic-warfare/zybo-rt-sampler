@@ -22,7 +22,7 @@ class VideoPlayer(object):
         self.small_heatmap = np.zeros(self.shape, dtype=np.uint8)
         self.previous = np.zeros((self.Y, self.X, 3), dtype=np.uint8)
 
-        self.FPS = 1/15
+        self.FPS = 1/256
         self.FPS_MS = int(self.FPS * 1000)
         self.beamformer = beamformer
         self.steer = beamformer.get_antenna_data()[1]
