@@ -5,7 +5,7 @@ from modules.RealtimeSoundplayer import RealtimeSoundplayer
 from modules.Beamformer import Beamformer
 from modules.VideoPlayer import VideoPlayer
 from modules.Replay import Replay
-from modules.ArgumentParser import ArgumentParser, ArgParser
+from modules.ArgumentParser import ArgParser
 
 import ctypes
 
