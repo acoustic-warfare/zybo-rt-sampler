@@ -449,7 +449,7 @@ void mimo_truncated(float *image, int *adaptive_array, int n)
             for (int s = 0; s < n; s++)
             {
                 pos_u = adaptive_array[s];
-                printf("(%d %d) ", pos_u, n);
+                //printf("(%d %d) ", pos_u, n);
                 pos = whole_samples_h[xi + yi + s];
                 for (int i = 0; i < N_SAMPLES - pos; i++)
                 {

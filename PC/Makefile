@@ -129,6 +129,8 @@ cython_project:
 	mv *.so lib/
 	touch lib/__init__.py
 
+	cp lib/*.so interface/lib/
+
 	echo "#!/usr/bin/env python3" >> run
 	echo "# -*- coding: utf-8 -*-" >> run
 	echo "# DO NOT EDIT. THIS IS CREATED DURING COMPILATION"

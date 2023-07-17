@@ -7,6 +7,7 @@ cdef extern from "config.h":
     int N_SAMPLES
     int COLUMNS
     int ROWS
+    int MAX_RES
     int MAX_RES_X
     int MAX_RES_Y
     float MAX_ANGLE
