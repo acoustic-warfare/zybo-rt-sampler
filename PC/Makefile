@@ -144,6 +144,7 @@ cython_project:
 clean:
 	echo "Removing Generated Build Files"
 	ls build/ | grep -xv ".gitignore" | xargs -I {} sh -c "rm -r build/{}"
+	ls lib/ | grep -xv ".gitignore" | xargs -I {} sh -c "rm -r lib/{}"
 
 # $(BUILD)/*.c $(BUILD)/*.h
 clean_old:
