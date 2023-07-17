@@ -8,13 +8,12 @@ import config
 MICROPHONE_INDEX = 4 # 0 - 63
 
 class RealtimeSoundplayer(object):
-    def __init__(self, beamformer, mic_index = 4, sound_command=""):
+    def __init__(self, beamformer, mic_index = 4):
         self.f = beamformer.get_antenna_data()[0]
         self.out = np.empty(config.BUFFER_LENGTH, dtype=config.NP_DTYPE)
         self.out_pointer = self.out.ctypes.data_as(
             ctypes.POINTER(ctypes.c_float))
         self.mic_index = mic_index
-        self.sound_command = sound_command
     
     def this_callback(self, in_data, frame_count, time_info, status):
         """This is a pyaudio callback when an output is finished and new data should be gathered"""
@@ -51,10 +50,6 @@ class RealtimeSoundplayer(object):
         sum_array = antenna_array.sum(axis=1) / 54
         sound = np.ascontiguousarray(sum_array)
         return sound
-    
-    def replay_sound(self):
-        time.sleep(6)
-        os.system(self.sound_command)
 
     def get_samples(self):
         print("HEJ")
