@@ -7,15 +7,6 @@ from modules.VideoPlayer import VideoPlayer
 from modules.Replay import Replay
 from modules.ArgumentParser import ArgParser
 
-import ctypes
-
-import pyaudio
-import sys
-
-# Local
-import config
-import os
-
 def display_video_sound_heatmap(src, beamformer, replayMode, replayNumber):
     videoPlayer = VideoPlayer(beamformer, src, replayMode)
     soundPlayer = RealtimeSoundplayer(beamformer)

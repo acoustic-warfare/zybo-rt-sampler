@@ -12,7 +12,6 @@ class ArgParser(object):
         self.replayMode = False
         self.replayNumber = ""
 
-        
         if self.args.replay:
             self.replayMode = True
             self.replayNumber = self.args.replay
