@@ -36,4 +36,5 @@ void kill_child();
 void myread(float *out);
 void miso(float *out);
 void steer(float theta, float phi);
+void mimo_truncated(float *image, int *adaptive_array, int n);
 #endif

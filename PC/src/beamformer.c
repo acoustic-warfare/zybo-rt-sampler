@@ -417,6 +417,61 @@ void work_test(float *image)
 }
 
 /*
+
+Trunc-And-Sum beamformer with adaptive array configuration
+
+*/
+void mimo_truncated(float *image, int *adaptive_array, int n)
+{
+    float data[BUFFER_LENGTH];
+
+    // Pin the data for retrieval
+    semop(semid, &data_sem_wait, 1);
+    memcpy(&data[0], (void *)&rb->data[0], sizeof(float) * BUFFER_LENGTH);
+    semop(semid, &data_sem_signal, 1);
+
+    // dummy output
+    float _out[N_SAMPLES] = {0.0};
+    float *out = &_out[0];
+    int pos, pos_u;
+
+    int xi, yi;
+    for (int y = 0; y < MAX_RES_Y; y++)
+    {
+        xi = y * MAX_RES_X * n;
+        for (int x = 0; x < MAX_RES_X; x++)
+        {
+            yi = x * n;
+
+            // Reset the output for the new direction
+            memset(out, 0, (N_SAMPLES) * sizeof(float));
+
+            for (int s = 0; s < n; s++)
+            {
+                pos_u = adaptive_array[s];
+                printf("(%d %d) ", pos_u, n);
+                pos = whole_samples_h[xi + yi + s];
+                for (int i = 0; i < N_SAMPLES - pos; i++)
+                {
+                    out[pos + i] += data[pos_u * N_SAMPLES + i];
+                }
+            }
+
+            float sum = 0.0;
+            for (int k = 0; k < N_SAMPLES; k++)
+            {
+                out[k] /= (float)n;
+                sum += powf(out[k], 2);
+            }
+
+            sum /= (float)N_SAMPLES;
+
+            image[y * MAX_RES_Y + x] = sum;
+        }
+    }
+}
+
+/*
 Main initialization function
 */
 int load(bool replay_mode)

@@ -14,7 +14,7 @@
  USAGE:
 
  #include "udp_receiver.h"
- 
+
  sockfd = create_and_bind_socket();
  receive_and_print(sockfd); | receive_and_write_to_buffer(sockfd, ring_buffer *rb);
  close_socket();
@@ -64,7 +64,7 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, 
 int close_socket(int socket_desc);
 
 /// @brief Receives the first message and returns the number of arrays
-/// @param socket_desc 
+/// @param socket_desc
 /// @return The number of connected arrays
 int receive_header_data(int socket_desc);
 

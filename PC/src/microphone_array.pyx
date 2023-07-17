@@ -1,20 +1,6 @@
 # cython: language_level=3
 # distutils: language=c
 
-
-"""
-Wrapper for interfacing with the C-backend
-
-This module contains 3 important functions:
-
-- connect: Used for establishing a connection to a microphone data-stream
-
-- receive: Used for retrieving data from the stream
-
-- disconnect: Used for closing the connection and destroy processes
-
-"""
-
 #TODO Implement adaptive beamforming properly
 
 import cv2
@@ -37,11 +23,9 @@ DTYPE_arr = np.float32
 
 from config cimport *
 
-from lib.directions import calculate_coefficients
-
 WINDOW_DIMENSIONS = (APPLICATION_WINDOW_WIDTH, APPLICATION_WINDOW_HEIGHT)
 
-# C defined functions exposed to python
+# C defined functions
 cdef extern from "beamformer.h":
     void load_coefficients(int *whole_sample_delay)
     void work_test(float *image)
@@ -49,14 +33,160 @@ cdef extern from "beamformer.h":
     void myread(float *signal)
     void signal_handler()
     void kill_child()
-    void miso(float *signal)
-    void steer(float theta, float phi)
+    void mimo_truncated(float *image, int *adaptive_array, int n)
+
+
+def calc_r_prime(d):
+    half = d/2
+    r_prime = np.zeros((2, COLUMNS * ROWS))
+    element_index = 0
+    for array in range(ACTIVE_ARRAYS):
+        for row in range(ROWS):
+            for col in range(COLUMNS):
+                r_prime[0,element_index] = col * d + half + array*COLUMNS*d + array*ARRAY_SEPARATION - COLUMNS * ACTIVE_ARRAYS * half
+                r_prime[1, element_index] = row * d - ROWS * half + half
+                element_index += 1
+    r_prime[0,:] -= ACTIVE_ARRAYS*ARRAY_SEPARATION/2
+    active_mics, n_active_mics = active_microphones()
+
+    r_prime = r_prime[:,active_mics]
+    return r_prime
+
+def active_microphones():
+    mode = SKIP_N_MICS
+    rows = np.arange(0, ROWS, mode)
+    columns = np.arange(0, COLUMNS*ACTIVE_ARRAYS, mode)
+
+    arr_elem = ROWS*COLUMNS                       # elements in one array
+    mics = np.linspace(0, arr_elem-1, arr_elem)   # mics in one array
+    
+    microphones = np.linspace(0, arr_elem-1,arr_elem).reshape((ROWS, COLUMNS))
+
+    for a in range(ACTIVE_ARRAYS-1):
+        a += 1
+        array = mics[0+a*arr_elem : arr_elem+a*arr_elem].reshape((ROWS, COLUMNS))
+        microphones = np.hstack((microphones, array))
+
+    active_mics = []
+    for r in rows:
+        for c in columns:
+            mic = microphones[r,c]
+            active_mics.append(int(mic))
+    return np.sort(active_mics), len(active_mics)
+
+def calculate_delays():
+    c = PROPAGATION_SPEED             # from config
+    fs = SAMPLE_RATE          # from config
+    #N_SAMPLES = N_SAMPLES    # from config
+    d = ELEMENT_DISTANCE            # distance between elements, from config
+
+    alpha = VIEW_ANGLE  # total scanning angle (bildvinkel) in theta-direction [degrees], from config
+    z_scan = 10  # distance to scanning window, from config
+
+    x_res = MAX_RES_X  # resolution in x, from config
+    y_res = MAX_RES_Y  # resolution in y, from config
+    AS = 16/9   # aspect ratio, from config
+
+    # Calculations for time delay starts below
+    r_prime = calc_r_prime(d)  # matrix holding the xy positions of each microphone
+    x_i = r_prime[0,:]                      # x-coord for microphone i
+    y_i = r_prime[1,:]                      # y-coord for microphone i
+
+    # outer limits of scanning window in xy-plane
+    x_scan_max = z_scan*np.tan((alpha/2)*np.pi/180)
+    x_scan_min = - x_scan_max
+    y_scan_max = x_scan_max/AS
+    y_scan_min = -y_scan_max
+
+    # scanning window
+    x_scan = np.linspace(x_scan_min,x_scan_max, x_res).reshape(x_res,1,1)
+    y_scan = np.linspace(y_scan_min,y_scan_max,y_res).reshape(1, y_res, 1)
+    r_scan = np.sqrt(x_scan**2 + y_scan**2 + z_scan**2) # distance between middle of array to the xy-scanning coordinate
+
+    # calculate time delay (in number of samples)
+    samp_delay = (fs/c) * (x_scan*x_i + y_scan*y_i) / r_scan            # with shape: (x_res, y_res, n_active_mics)
+    # adjust such that the microphone furthest away from the beam direction have 0 delay
+    samp_delay -= np.amin(samp_delay, axis=2).reshape(x_res, y_res, 1)
+
+    return samp_delay
+    # active_mics: holds index of active microphones for a specific mode
+    # n_active_mics: number of active microphones
+    active_mics, n_active_mics = active_microphones()
+
+def calculate_delays_():
+
+    distance = 0.02
+
+    samp_delay = np.zeros((MAX_RES_X, MAX_RES_Y, COLUMNS*ROWS*ACTIVE_ARRAYS), dtype=np.float32)
+
+    for xi, x in enumerate(np.linspace(-MAX_ANGLE, MAX_ANGLE, MAX_RES_X)):
+        azimuth = x * -np.pi / 180.0
+        x_factor = np.sin(azimuth)
+        for yi , y in enumerate(np.linspace(-MAX_ANGLE, MAX_ANGLE, MAX_RES_Y)):
+            elevation = y * -np.pi / 180.0
+            y_factor = np.sin(elevation)
+
+            smallest = 0
+
+            for row in range(ROWS):
+                for col in range(COLUMNS):
+                    half = distance / 2.0
+                    tmp_col = col * distance - COLUMNS * half + half
+                    tmp_row = row * distance - ROWS * half + half
+
+                    tmp_delay = tmp_col * x_factor + tmp_row * y_factor
+                    if (tmp_delay < smallest):
+                        smallest = tmp_delay
+
+                    samp_delay[xi, yi, row * COLUMNS + col] = tmp_delay
+
+            samp_delay[xi, yi, :] -= smallest
+
+    samp_delay *= SAMPLE_RATE / PROPAGATION_SPEED
+
+    return samp_delay
+
+def get_h(delay, N=8):
+    tau = - delay  # Fractional delay [samples].
+    epsilon = 1e-9
+    n = np.arange(N)
+
+    sinc = n - (8 - 1) / 2 - (0.5 + tau) + epsilon
+
+    h = np.sin(sinc*np.pi)/(sinc*np.pi)
+
+    blackman = 0.42 - 0.5 * np.cos(2*np.pi * n / 8) + 0.08 * np.cos(4 * np.pi * n / 8)
+
+    h *= blackman
+    
+    # Normalize to get unity gain.
+    h /= np.sum(h)
+
+    return h
+
+
+
+def calculate_coefficients():
+
+    samp_delay = calculate_delays()
+
+    #whole_sample_delay = samp_delay.astype(np.int32)
+    whole_sample_delay = samp_delay.astype(int)
+    fractional_sample_delay = samp_delay - whole_sample_delay
+
+    h = np.zeros((*samp_delay.shape, 8), dtype=np.float32)
+
+    #h = np.zeros((MAX_RES_X, MAX_RES_Y, COLUMNS*ROWS*ACTIVE_ARRAYS, 8), dtype=np.float32)
+
+    for x in range(MAX_RES_X):
+        for y in range(MAX_RES_Y):
+            for i in range(samp_delay.shape[2]):
+                h[x, y, i] = get_h(fractional_sample_delay[x, y, i])
+    
+    return whole_sample_delay, h
 
 
 def generate_color_map(name="jet"):
-    """
-    Faster lookup for converting a value to a color
-    """
     cmap = plt.cm.get_cmap(name)
 
     cdef np.ndarray[np.uint8_t, ndim=2, mode="c"] colors 
@@ -73,18 +203,14 @@ def generate_color_map(name="jet"):
 colors = generate_color_map()
 
 def calculate_heatmap(image):
-    """
-    TODO
-
-    Calculate a heatmap based on the image received from the algorithm
-    """
+    """"""
     lmax = np.max(image)
 
     image /= lmax
 
     small_heatmap = np.zeros((MAX_RES_Y, MAX_RES_X, 3), dtype=np.uint8)
 
-    if lmax>1e-9:
+    if lmax>1e-8:
         for x in range(MAX_RES_X):
             for y in range(MAX_RES_Y):
                 d = image[x, y]
@@ -94,27 +220,12 @@ def calculate_heatmap(image):
 
                     small_heatmap[MAX_RES_Y - 1 - y, x] = colors[val]
 
-    heatmap = cv2.resize(small_heatmap, (WINDOW_DIMENSIONS), interpolation=cv2.INTER_LINEAR)
+
+    heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)
 
     return heatmap
 
 def connect(replay_mode: bool = False, verbose=True) -> None:
-    """
-    Connect to a Zybo data-stream
-
-    [NOTICE]
-
-    You must remember to disconnect after you are done, to let the internal c child process terminate
-    safely.
-
-    Args:
-        replay_mode     bool    True for using replay mode everything else or nothing
-                                will result in using real data
-
-    Kwargs:
-        verbose         bool    If you want to display terminal output or not
-
-    """
     assert isinstance(replay_mode, bool), "Replay mode must be either True or False"
 
     if replay_mode: # True
@@ -129,33 +240,10 @@ def connect(replay_mode: bool = False, verbose=True) -> None:
     if verbose:
         print("Receiver process is forked.\nContinue your program!\n")
 
-def disconnect() -> None:
-    """
-    Disconnect from a stream
-
-    This is done by killing the child receiving process
-    remember to call this function before calling 'exit()'
-    
-    """
+def disconnect():
     kill_child()
 
 def receive(signals: np.ndarray[N_MICROPHONES, N_SAMPLES]) -> None:
-    """
-    Receive the N_SAMPLES latest samples from the Zybo.
-
-    [NOTICE]
-
-    It is important to have the correct datatype and shape as defined in src/config.json
-
-    Usage:
-
-        >>>data = np.empty((N_MICROPHONES, N_SAMPLES), dtype=np.float32)
-        >>>receive(data)
-
-    Args:
-        signals     np.ndarray The array to be filled with the latest microphone data
-    
-    """
     assert signals.shape == (N_MICROPHONES, N_SAMPLES), "Arrays do not match shape"
     assert signals.dtype == np.float32, "Arrays dtype do not match"
 
@@ -166,6 +254,9 @@ def receive(signals: np.ndarray[N_MICROPHONES, N_SAMPLES]) -> None:
 cdef void loop():
 
     whole_samples, fractional_samples = calculate_coefficients()
+    active_mics, n_active_mics = active_microphones()
+
+    cdef np.ndarray[int, ndim=1, mode="c"] active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
 
     cdef np.ndarray[int, ndim=3, mode="c"] samples
 
@@ -186,10 +277,10 @@ cdef void loop():
     capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 
     while True:
-        work_test(&arr2[0, 0])
+        #work_test(&arr2[0, 0])
+        mimo_truncated(&arr2[0, 0], &active_micro[0], int(n_active_mics))
 
         heatmap = calculate_heatmap(arr2)
-        #heatmap = cv2.flip(heatmap, 1)
 
         status, frame = capture.read()
         frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
@@ -200,11 +291,14 @@ cdef void loop():
             #os.system("killall python3")
             break
 
-        print(frame.shape, heatmap.shape)
-
         image = cv2.addWeighted(frame, 0.6, heatmap, 0.8, 0)
         cv2.imshow("Demo", image)
         cv2.waitKey(1)
+
+
+
+
+
 
 def main():
     loop()

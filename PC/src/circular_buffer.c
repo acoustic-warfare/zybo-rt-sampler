@@ -22,7 +22,7 @@
  read_buffer_mcpy(rb, &out[0]);
 
  rb = destroy_ring_buffer(rb);
- 
+
 */
 
 #include <stdlib.h>
@@ -34,7 +34,8 @@
 /*
 Create a ring buffer
 */
-ring_buffer *create_ring_buffer(){
+ring_buffer *create_ring_buffer()
+{
     ring_buffer *rb = (ring_buffer *)calloc(1, sizeof(ring_buffer));
     rb->index = 0;
     return rb;
@@ -43,7 +44,8 @@ ring_buffer *create_ring_buffer(){
 /*
 Destroy a ring buffer
 */
-ring_buffer *destroy_ring_buffer(ring_buffer *rb){
+ring_buffer *destroy_ring_buffer(ring_buffer *rb)
+{
     free(rb);
     rb = NULL;
     return rb;
@@ -61,7 +63,7 @@ void write_buffer(ring_buffer *rb, float *in, int length, int offset)
     int idx;
     for (int i = 0; i < length; ++i)
     {
-        
+
         idx = (i + previous_item) & buffer_length; // Wrap around
         rb->data[idx] = in[i + offset];
     }
@@ -83,7 +85,7 @@ void write_buffer_int32(ring_buffer *rb, int32_t *in, int length, int offset)
     int idx;
     for (int i = 0; i < length; ++i)
     {
-        
+
         idx = (i + previous_item) & buffer_length; // Wrap around
         rb->data[idx] = (float)in[i + offset];
     }
@@ -136,7 +138,6 @@ void read_buffer_mcpy(ring_buffer *rb, float *out)
     memcpy(out + first_partition, (void *)(data_ptr), sizeof(float) * rb->index);
 }
 
-
 /*
 Write data from an address `in` to a ring buffer you can specify offset
 but most of the times, it will probably just be 0
@@ -149,7 +150,7 @@ void write_int32(struct ringba *rb, int32_t *in, int length, int offset)
     int idx;
     for (int i = 0; i < length; ++i)
     {
-        
+
         idx = (i + previous_item) & buffer_length; // Wrap around
         rb->data[idx] = (float)in[i + offset];
     }
