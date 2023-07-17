@@ -6,8 +6,8 @@ class ArgParser(object):
     def __init__(self):
         self.src = config.CAMERA_SOURCE
         self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("--convolution", help="changes the beamforming algorithm to convolution instead of pad and sum", action="store_true") 
-        self.parser.add_argument("--replay", help="changes playback mode to replay mode")
+        self.parser.add_argument("-c", "--convolution", help="changes the beamforming algorithm to convolution instead of pad and sum", action="store_true") 
+        self.parser.add_argument("-r", "--replay", help="changes playback mode to replay mode")
         self.args = self.parser.parse_args()
         self.replayMode = False
         self.replayNumber = ""
