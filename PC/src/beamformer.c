@@ -244,11 +244,6 @@ void mimo(float *image)
 
             for (int i = 0; i < ROWS * COLUMNS; i++)
             {
-                // TODO mic 1 does not work
-                if (i == 1)
-                {
-                    continue;
-                }
 
                 // Delay using the EPIC delay function ;)
                 delay_vectorized_add(&data[i * N_SAMPLES], mimo_coefficients[x][y][i], out);
@@ -263,7 +258,7 @@ void mimo(float *image)
             float sum = 0.0;
             for (int k = 0; k < N_SAMPLES; k++)
             {
-                out[k] /= (float)(ROWS * COLUMNS - 1);
+                out[k] /= (float)(ROWS * COLUMNS);
                 //out[k] /= (float)4;
                 //sum += powf((float)fabs((double)out[k]), 2);
                 sum += powf(out[k], 2);

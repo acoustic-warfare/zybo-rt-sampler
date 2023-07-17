@@ -1,4 +1,7 @@
-import cv2, time
+import cv2
+import matplotlib.pyplot as plt
+
+import time
 
 import sys
 sys.path.insert(0, "") # Access local modules located in . Enables 'from . import MODULE'
@@ -19,6 +22,46 @@ import signal
 
 WINDOW_DIMENSIONS = (APPLICATION_WINDOW_WIDTH, APPLICATION_WINDOW_HEIGHT)
 APPLICATION_NAME = "Demo App"
+
+def generate_color_map(name="jet"):
+    
+    cmap = plt.cm.get_cmap(name)
+
+    cdef np.ndarray[np.uint8_t, ndim=2, mode="c"] colors 
+
+    # Generate color lookup table
+    colors = np.empty((256, 3), dtype=np.uint8)
+
+    for i in range(256):
+        colors[i] = (np.array(cmap(255 - i)[:3]) * 255).astype(np.uint8)
+
+    return colors
+
+
+colors = generate_color_map()
+
+def calculate_heatmap(image):
+    """"""
+    lmax = np.max(image)
+
+    image /= lmax
+
+    small_heatmap = np.zeros((MAX_RES_Y, MAX_RES_X, 3), dtype=np.uint8)
+
+    if lmax>1e-8:
+        for x in range(MAX_RES_X):
+            for y in range(MAX_RES_Y):
+                d = image[x, y]
+
+                if d > 0.9:
+                    val = int(255 * d ** MISO_POWER)
+
+                    small_heatmap[MAX_RES_Y - 1 - y, x] = colors[val]
+
+
+    heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)
+
+    return heatmap
 
 cdef class VideoPlayer(object):
     cdef public object capture, small_heatmap, previous, steer, frame, status
@@ -81,7 +124,7 @@ class Viewer:
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
         self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 
-    def show(self, heatmap):
+    def show(self, small_heatmap):
         status, frame = self.capture.read()
         frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
         try:
@@ -90,6 +133,6 @@ class Viewer:
             print("An error ocurred with image processing! Check if camera and antenna connected properly")
             exit()
 
-        image = cv2.addWeighted(frame, 0.6, heatmap, 0.8, 0)
+        image = cv2.addWeighted(frame, 0.6, calculate_heatmap(small_heatmap), 0.8, 0)
         cv2.imshow("Demo", image)
         cv2.waitKey(1)

@@ -3,9 +3,6 @@
 
 #TODO Implement adaptive beamforming properly
 
-import cv2
-import matplotlib.pyplot as plt
-
 import numpy as np
 cimport numpy as np
 
@@ -37,48 +34,9 @@ cdef extern from "beamformer.h":
     void myread(float *signal)
     void signal_handler()
     void kill_child()
+    void mimo(float *image)
     void mimo_truncated(float *image, int *adaptive_array, int n)
 
-
-def generate_color_map(name="jet"):
-    
-    cmap = plt.cm.get_cmap(name)
-
-    cdef np.ndarray[np.uint8_t, ndim=2, mode="c"] colors 
-
-    # Generate color lookup table
-    colors = np.empty((256, 3), dtype=np.uint8)
-
-    for i in range(256):
-        colors[i] = (np.array(cmap(255 - i)[:3]) * 255).astype(np.uint8)
-
-    return colors
-
-
-colors = generate_color_map()
-
-def calculate_heatmap(image):
-    """"""
-    lmax = np.max(image)
-
-    image /= lmax
-
-    small_heatmap = np.zeros((MAX_RES_Y, MAX_RES_X, 3), dtype=np.uint8)
-
-    if lmax>1e-8:
-        for x in range(MAX_RES_X):
-            for y in range(MAX_RES_Y):
-                d = image[x, y]
-
-                if d > 0.9:
-                    val = int(255 * d ** MISO_POWER)
-
-                    small_heatmap[MAX_RES_Y - 1 - y, x] = colors[val]
-
-
-    heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)
-
-    return heatmap
 
 def connect(replay_mode: bool = False, verbose=True) -> None:
     """
@@ -145,29 +103,8 @@ def receive(signals: np.ndarray[N_MICROPHONES, N_SAMPLES]) -> None:
     myread(&sig[0, 0])
 
 
-# class Viewer:
-#     def __init__(self):
-#         self.capture = cv2.VideoCapture(2)
-#         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
-#         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
-#         self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
-
-#     def show(self, heatmap):
-#         status, frame = self.capture.read()
-#         frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
-#         try:
-#             frame = cv2.resize(frame, WINDOW_DIMENSIONS)
-#         except cv2.error as e:
-#             print("An error ocurred with image processing! Check if camera and antenna connected properly")
-#             exit()
-
-#         image = cv2.addWeighted(frame, 0.6, heatmap, 0.8, 0)
-#         cv2.imshow("Demo", image)
-#         cv2.waitKey(1)
-
-
-
-cdef void loop():
+# Truncate and sum beamformer for MIMO application
+cdef void trunc_mimo(replay=False):
 
     whole_samples, fractional_samples = calculate_coefficients()
     active_mics, n_active_mics = active_microphones()
@@ -181,45 +118,40 @@ cdef void loop():
     # Pass int pointer to C function
     load_coefficients(&i32_whole_samples[0, 0, 0])
 
-    connect()
-
     x = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
 
     cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
     mimo_arr = np.ascontiguousarray(x)
-    
-    # capture = cv2.VideoCapture(CAMERA_SOURCE)
-    # capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
-    # capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
-    # capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 
+    connect(replay)
     v = Viewer()
 
     while True:
-        #work_test(&arr2[0, 0])
         mimo_truncated(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
 
-        heatmap = calculate_heatmap(mimo_arr)
+        v.show(mimo_arr)
+    
+    disconnect() # TODO will never disconnect except: Ctrl-C
+        
 
-        v.show(heatmap)
+# TODO axis are inverted, x must be -x and so on
+cdef void convolve_mimo(replay=False):
 
-        # status, frame = capture.read()
-        # frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
-        # try:
-        #     frame = cv2.resize(frame, WINDOW_DIMENSIONS)
-        # except cv2.error as e:
-        #     print("An error ocurred with image processing! Check if camera and antenna connected properly")
-        #     break
+    v = Viewer()
+    connect(replay)
 
-        # image = cv2.addWeighted(frame, 0.6, heatmap, 0.8, 0)
-        # cv2.imshow("Demo", image)
-        # cv2.waitKey(1)
+    x = np.zeros((MAX_RES, MAX_RES), dtype=DTYPE_arr)
 
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
+    mimo_arr = np.ascontiguousarray(x)
 
+    while True:
+        mimo(&mimo_arr[0, 0])
+        v.show(mimo_arr.T)
 
-
+    disconnect() # TODO will never disconnect except: Ctrl-C
 
 
 def main():
-    loop()
+    convolve_mimo()
 
