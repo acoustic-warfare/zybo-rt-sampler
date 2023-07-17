@@ -34,4 +34,6 @@ int load(bool replay_mode);
 //void bar(float *signal);
 void kill_child();
 void myread(float *out);
+void miso(float *out);
+void steer(float theta, float phi);
 #endif

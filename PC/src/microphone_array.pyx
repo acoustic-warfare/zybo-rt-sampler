@@ -49,6 +49,8 @@ cdef extern from "beamformer.h":
     void myread(float *signal)
     void signal_handler()
     void kill_child()
+    void miso(float *signal)
+    void steer(float theta, float phi)
 
 
 def generate_color_map(name="jet"):

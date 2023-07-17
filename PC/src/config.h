@@ -7,8 +7,8 @@
 #define COLUMNS 8
 #define ROWS 8
 #define MAX_RES 20
-#define MAX_RES_X 20
-#define MAX_RES_Y 20
+#define MAX_RES_X 40
+#define MAX_RES_Y 30
 #define Z 10.0
 #define MAX_ANGLE 45.0
 #define VIEW_ANGLE 68.0

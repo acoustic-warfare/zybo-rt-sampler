@@ -9,7 +9,7 @@ MICROPHONE_INDEX = 4 # 0 - 63
 
 class RealtimeSoundplayer(object):
     def __init__(self, beamformer, mic_index = 4, sound_command=""):
-        self.f = beamformer.get_sound_data()
+        self.f = beamformer.get_antenna_data()[0]
         self.out = np.empty(config.BUFFER_LENGTH, dtype=config.NP_DTYPE)
         self.out_pointer = self.out.ctypes.data_as(
             ctypes.POINTER(ctypes.c_float))
