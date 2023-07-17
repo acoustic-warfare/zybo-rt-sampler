@@ -5,7 +5,7 @@ from modules.RealtimeSoundplayer import RealtimeSoundplayer
 from modules.Beamformer import Beamformer
 from modules.VideoPlayer import VideoPlayer
 from modules.Replay import Replay
-from modules.ArgumentParser import ArgumentParser
+from modules.ArgumentParser import ArgumentParser, ArgParser
 
 import ctypes
 
@@ -36,7 +36,7 @@ def display_video_sound_heatmap(src, beamformer, replayMode, replayNumber):
 
 
 if __name__ == '__main__':
-    argumentParser = ArgumentParser()
+    argumentParser = ArgParser()
     
     beamformer = Beamformer(argumentParser.getReplayMode())
     display_video_sound_heatmap(argumentParser.getSrc(), beamformer, argumentParser.getReplayMode(), argumentParser.getReplayNumber())
