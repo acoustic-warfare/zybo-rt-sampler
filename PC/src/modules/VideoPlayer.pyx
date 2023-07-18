@@ -194,3 +194,32 @@ class Viewer:
         elif event == cv2.EVENT_MBUTTONDOWN:
             self.bf.running = False
             self.video_running = False
+
+
+class Viewer2:
+    def __init__(self, src, convolveBackend=False, replayMode=False):
+        if replayMode:
+            if not convolveBackend:
+                self.wait = 70
+            else:
+                self.wait = 1
+        else:
+            self.wait = 1
+
+        self.capture = cv2.VideoCapture(src)
+        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
+        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
+        self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+
+    def show(self, small_heatmap):
+        status, frame = self.capture.read()
+        frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
+        try:
+            frame = cv2.resize(frame, WINDOW_DIMENSIONS)
+        except cv2.error as e:
+            print("An error ocurred with image processing! Check if camera and antenna connected properly")
+            exit()
+
+        image = cv2.addWeighted(frame, 0.6, calculate_heatmap(small_heatmap), 0.8, 0)
+        cv2.imshow("Demo", image)
+        cv2.waitKey(self.wait)

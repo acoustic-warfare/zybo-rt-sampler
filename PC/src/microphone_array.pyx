@@ -20,7 +20,7 @@ DTYPE_arr = np.float32
 
 from lib.directions import calculate_coefficients, active_microphones
 
-from lib.VideoPlayer import Viewer
+from lib.VideoPlayer import Viewer, Viewer2
 
 from config cimport *
 
@@ -262,6 +262,63 @@ cdef void convolve_mimo(replay=False):
         v.show(mimo_arr.T)
 
     disconnect() # TODO will never disconnect except: Ctrl-C
+
+
+
+# Truncate and sum beamformer for MIMO application
+cdef void trunc_mimo_2(src, replay=False):
+
+    whole_samples, fractional_samples = calculate_coefficients()
+    active_mics, n_active_mics = active_microphones()
+
+    cdef np.ndarray[int, ndim=1, mode="c"] active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+    cdef np.ndarray[int, ndim=3, mode="c"] i32_whole_samples
+
+    i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
+
+    # Pass int pointer to C function
+    load_coefficients(&i32_whole_samples[0, 0, 0])
+
+    x = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
+
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
+    mimo_arr = np.ascontiguousarray(x)
+
+    connect(replay)
+    v = Viewer2(src, False, replay)
+
+    while True:
+        mimo_truncated(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
+
+        v.show(mimo_arr)
+    
+    disconnect() # TODO will never disconnect except: Ctrl-C
+        
+
+# TODO axis are inverted, x must be -x and so on
+cdef void convolve_mimo_2(src, replay=False):
+
+    v = Viewer2(src, True, replay)
+    connect(replay)
+
+    x = np.zeros((MAX_RES, MAX_RES), dtype=DTYPE_arr)
+
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
+    mimo_arr = np.ascontiguousarray(x)
+
+    while True:
+        mimo(&mimo_arr[0, 0])
+        v.show(mimo_arr.T)
+
+    disconnect() # TODO will never disconnect except: Ctrl-C
+
+
+def convolve_backend_2(src, replayMode):
+    convolve_mimo_2(src, replayMode)
+
+def trunc_backend_2(src, replayMode):
+    trunc_mimo_2(src, replayMode)
 
 
 
