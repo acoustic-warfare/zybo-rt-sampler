@@ -56,6 +56,8 @@ int socket_desc;
 
 struct sembuf data_sem_wait = {0, -1, SEM_UNDO};  // Wait operation
 struct sembuf data_sem_signal = {0, 1, SEM_UNDO}; // Sig operation
+struct sembuf data_sem_wait_2 = {0, -1, SEM_UNDO};  // Wait operation
+struct sembuf data_sem_signal_2 = {0, 1, SEM_UNDO}; // Sig operation
 
 float ****mimo_coefficients; // TODO fix this to more healthier
 
@@ -207,9 +209,15 @@ void init_semaphore()
         perror("semget");
         exit(1);
     }
-    
+    union semun2
+    {
+        int val;
+        struct semid_ds *buf;
+        short *array;
+    } argument2;
+    argument2.val = 1;
     // Set semaphore to 1
-    if (semctl(semid_sound, 0, SETVAL, argument) == -1)
+    if (semctl(semid_sound, 0, SETVAL, argument2) == -1)
     {
         perror("semctl");
         exit(1);
@@ -372,9 +380,9 @@ void calculate_miso_coefficients()
 
 void myread(float *out)
 {
-    semop(semid_sound, &data_sem_wait, 1);
+    semop(semid_sound, &data_sem_wait_2, 1);
     memcpy(out, (void *)&rb_sound->data[0], sizeof(float) * BUFFER_LENGTH);
-    semop(semid_sound, &data_sem_signal, 1);
+    semop(semid_sound, &data_sem_signal_2, 1);
 }
 
 void load_coefficients(int *whole_samples)
@@ -545,13 +553,13 @@ int load(bool replay_mode)
         while (1)
         {
             semop(semid, &data_sem_wait, 1);
-            semop(semid_sound, &data_sem_wait, 1);
+            semop(semid_sound, &data_sem_wait_2, 1);
             
             if (receive_and_write_to_buffer(socket_desc, rb, rb_sound, client_msg, n_arrays) == -1)
             {
                 return -1;
             }
-            semop(semid_sound, &data_sem_signal, 1);
+            semop(semid_sound, &data_sem_signal_2, 1);
             semop(semid, &data_sem_signal, 1);
         }
     }

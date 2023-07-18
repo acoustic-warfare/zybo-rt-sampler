@@ -20,7 +20,8 @@ class RealtimeSoundplayer(object):
     def this_callback(self, in_data, frame_count, time_info, status):
         """This is a pyaudio callback when an output is finished and new data should be gathered"""
         self.f(self.data)
-        sound = self.data[0]*45.0#np.ascontiguousarray(antenna_array[self.mic_index])
+        sound = self.data[30]*45.0#np.ascontiguousarray(antenna_array[self.mic_index])
+        
         return sound, pyaudio.paContinue
 
     def play_sound(self):
