@@ -14,14 +14,13 @@ class RealtimeSoundplayer(object):
         self.out_pointer = self.out.ctypes.data_as(
             ctypes.POINTER(ctypes.c_float))
         self.data = np.zeros((config.N_MICROPHONES, config.N_SAMPLES), dtype=np.float32)
+
         self.mic_index = mic_index
     
     def this_callback(self, in_data, frame_count, time_info, status):
         """This is a pyaudio callback when an output is finished and new data should be gathered"""
-        self.f(self.out_pointer)
-        
-        antenna_array = self.out.reshape((config.N_MICROPHONES, config.N_SAMPLES))
-        sound = antenna_array[0]*45.0#np.ascontiguousarray(antenna_array[self.mic_index])
+        self.f(self.data)
+        sound = self.data[0]*45.0#np.ascontiguousarray(antenna_array[self.mic_index])
         return sound, pyaudio.paContinue
 
     def play_sound(self):
