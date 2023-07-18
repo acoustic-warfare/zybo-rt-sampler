@@ -94,7 +94,7 @@ int receive_and_print(int socket_desc)
     return 0;
 }
 
-int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, int n_arrays)
+int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, ring_buffer *rb_sound, msg *message, int n_arrays)
 {
     int step = 0;
     for (int i = 0; i < BUFFER_LENGTH; i += N_MICROPHONES)
@@ -132,6 +132,7 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, 
                     for (int x = 0; x < COLUMNS; x++)
                     {
                         rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[2 + row + x]) / NORM_FACTOR);
+                        rb_sound->data[step + N_SAMPLES * s] = (float)((double)(message->stream[2 + row + x]) / NORM_FACTOR);
                         s++;
                     }
                 }
@@ -140,6 +141,7 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, 
                     for (int x = 0; x < COLUMNS; x++)
                     {
                         rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[2 + row + COLUMNS - x]) / NORM_FACTOR);
+                        rb_sound->data[step + N_SAMPLES * s] = (float)((double)(message->stream[2 + row + COLUMNS - x]) / NORM_FACTOR);
                         s++;
                     }
                 }

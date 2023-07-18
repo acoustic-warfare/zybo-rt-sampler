@@ -33,11 +33,6 @@ def display_video_sound_heatmap(src, replayMode, replayNumber, convolveBackend):
     data = np.zeros((config.N_MICROPHONES, config.N_SAMPLES), dtype=np.float32)
     time.sleep(2)
     soundPlayer.play_sound()
-    #thread1 = Thread(target=main, args=(replayMode, src))
-    #thread1.daemon = True
-    #thread1.start()
-    time.sleep(1000)
-    #soundPlayer.get_samples()
 
 if __name__ == '__main__':
     argumentParser = ArgParser()
