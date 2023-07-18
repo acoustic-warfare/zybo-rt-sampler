@@ -1,6 +1,5 @@
 from threading import Thread
 from modules.RealtimeSoundplayerNew import RealtimeSoundplayer
-from modules.Beamformer import Beamformer
 from modules.VideoPlayer import VideoPlayer
 from modules.Replay import Replay
 from modules.ArgumentParser import ArgParser
@@ -11,9 +10,10 @@ import time
 
 def display_video_sound_heatmap(src, replayMode, replayNumber, convolveBackend):
     #Create a SoundPlayer object
-    soundPlayer = RealtimeSoundplayer(receive=receive)
+    #soundPlayer = RealtimeSoundplayer(receive=receive)
 
     #Prepare a replay transmission
+    print(replayMode)
     if replayMode:
         replay = Replay(replayNumber)
 
@@ -28,16 +28,16 @@ def display_video_sound_heatmap(src, replayMode, replayNumber, convolveBackend):
 
     #Prepare selected backed
     if convolveBackend:
-        thread2 = Thread(target=bf.run, args=(convolve_backend_3))
+        thread2 = Thread(target=bf.run, args=())
     else:
-        thread2 = Thread(target=bf.run, args=(trunc_backend_3))
+        thread2 = Thread(target=bf.run, args=())
     #Start backend
     thread2.daemon = True
     thread2.start()
 
-    time.sleep(1)
+    time.sleep(100000)
     #Play sound
-    soundPlayer.play_sound()
+    #soundPlayer.play_sound()
 
 if __name__ == '__main__':
     #Parse input arguments

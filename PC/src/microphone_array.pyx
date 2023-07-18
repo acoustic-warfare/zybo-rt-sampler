@@ -195,9 +195,11 @@ class Beamformer:
         #self.v.show(image)
         self.v.refresh(image)
 
-    def run(self, algo: object):
-        connect(self.replay_mode)
-        algo(self)
+    def run(self):
+        self.running = True
+        connect(True)
+        #algo(self)
+        convolve_mimo2(self)
         print("Disconnecting")
         disconnect()
 
