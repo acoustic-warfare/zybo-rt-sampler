@@ -118,19 +118,24 @@ cdef class VideoPlayer(object):
             print(f"{horizontal}, {vertical}")
 
 class Viewer:
-    def __init__(self, src, convolveBackend=False, replayMode=False):
-        if replayMode:
-            if not convolveBackend:
-                self.wait = 70
-            else:
-                self.wait = 1
-        else:
-            self.wait = 1
-
-        self.capture = cv2.VideoCapture(src)
+    def __init__(self, bf):
+        #self.capture = cv2.VideoCapture(CAMERA_SOURCE)
+        self.capture = cv2.VideoCapture("/dev/video2")
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
         self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+
+        self.shape = (MAX_RES_Y, MAX_RES_X, 3)
+        self.small_heatmap = np.zeros(self.shape, dtype=np.uint8)
+
+        self.X, self.Y = WINDOW_DIMENSIONS
+
+        self.has_update = False
+
+        self.bf = bf
+
+        self.video_running = True
+        #cv2.setMouseCallback(APPLICATION_NAME, self.mouse_click_handler)
 
     def show(self, small_heatmap):
         status, frame = self.capture.read()
@@ -142,5 +147,50 @@ class Viewer:
             exit()
 
         image = cv2.addWeighted(frame, 0.6, calculate_heatmap(small_heatmap), 0.8, 0)
-        cv2.imshow("Demo", image)
-        cv2.waitKey(self.wait)
+        cv2.imshow(APPLICATION_NAME, image)
+        cv2.setMouseCallback(APPLICATION_NAME, self.mouse_click_handler)
+        cv2.waitKey(1)
+
+    def refresh(self, small_heatmap):
+        self.small_heatmap = calculate_heatmap(small_heatmap)
+        self.has_update = True
+    
+
+    def update(self):
+        while self.video_running:
+            status, frame = self.capture.read()
+            frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
+            try:
+                frame = cv2.resize(frame, WINDOW_DIMENSIONS)
+            except cv2.error as e:
+                print("An error ocurred with image processing! Check if camera and antenna connected properly")
+                exit()
+
+            if self.bf.running:
+
+                if self.has_update:
+                    image = cv2.addWeighted(frame, 0.6, self.small_heatmap, 0.8, 0)
+                    self.has_update = False
+                else:
+                    continue
+            else:
+                image = frame
+            cv2.imshow(APPLICATION_NAME, image)
+            cv2.setMouseCallback(APPLICATION_NAME, self.mouse_click_handler)
+            cv2.waitKey(1)
+
+
+    def mouse_click_handler(self, event, x, y, flags, params):
+        """Steers the antenna to listen in a specific direction"""
+        if event == cv2.EVENT_LBUTTONDOWN:
+            horizontal = (x / self.X) * MAX_ANGLE * 2 - MAX_ANGLE
+            vertical = (y / self.Y) * MAX_ANGLE * 2 - MAX_ANGLE
+            #self.steer(-horizontal, vertical)
+            print(f"{horizontal}, {vertical}")
+
+        elif event == cv2.EVENT_RBUTTONDOWN:
+            self.bf.running = not self.bf.running
+
+        elif event == cv2.EVENT_MBUTTONDOWN:
+            self.bf.running = False
+            self.video_running = False

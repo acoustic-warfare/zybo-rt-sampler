@@ -103,8 +103,120 @@ def receive(signals: np.ndarray[N_MICROPHONES, N_SAMPLES]) -> None:
     myread(&sig[0, 0])
 
 
+cdef void trunc_mimo2(bf: object):
+    whole_samples, fractional_samples = calculate_coefficients()
+    active_mics, n_active_mics = active_microphones()
+
+    cdef np.ndarray[int, ndim=1, mode="c"] active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+    cdef np.ndarray[int, ndim=3, mode="c"] i32_whole_samples
+
+    i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
+
+    # Pass int pointer to C function
+    load_coefficients(&i32_whole_samples[0, 0, 0])
+
+    x = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
+
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
+    mimo_arr = np.ascontiguousarray(x)
+
+    #bf.connect()
+
+    while bf.running:
+        mimo_truncated(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
+        bf.show(mimo_arr)
+
+
+
+# TODO axis are inverted, x must be -x and so on
+cdef void convolve_mimo2(bf: object):
+
+    x = np.zeros((MAX_RES, MAX_RES), dtype=DTYPE_arr)
+
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
+    mimo_arr = np.ascontiguousarray(x)
+
+    while bf.running:
+        mimo(&mimo_arr[0, 0])
+        bf.show(mimo_arr.T)
+
+
+def get_algo(algos):
+    print("To exit, input: 'exit'")
+    for i, algo in enumerate(algos):
+        print(f"[{i}] {algo}")
+    print("\n")
+
+    a = None
+
+    while True:
+        a = input("Choice: ")
+        print(a)
+        if a == "exit":
+            return None
+        try:
+
+            a = int(a)
+            assert 0 <= a < len(algos)
+            return a
+        except Exception as e:
+            print(e)
+            print("Wrong")
+            continue
+    
+    return a
+
+
+import time, threading
+class Beamformer:
+    algos = {
+        "trunc": trunc_mimo2,
+        "convolve": convolve_mimo2
+    }
+    def __init__(self):
+        self.running = False
+        self.v = Viewer(self)
+        self.replay = False
+        thread = threading.Thread(target=self.v.update, args=())
+        thread.start()
+
+        self.is_connected = False
+
+    def connect(self):
+        if not self.is_connected:
+            connect(self.replay)
+
+    def disconnect(self):
+        print("I am unable to disconnect")
+
+    def show(self, image):
+        #self.v.show(image)
+        self.v.refresh(image)
+
+    def loop(self):
+        connect()
+        while self.v.video_running:
+
+            options = list(self.algos.keys())
+
+            choice = get_algo(options)
+
+            if choice == None:
+                self.v.video_running = False
+                self.running = False
+                break
+            else:
+                self.running = True
+                self.algos[options[choice]](self)
+
+        print("Disconnecting")
+        disconnect()
+
+
+
 # Truncate and sum beamformer for MIMO application
-cdef void trunc_mimo(src, replay=False):
+cdef void trunc_mimo(replay=False):
 
     whole_samples, fractional_samples = calculate_coefficients()
     active_mics, n_active_mics = active_microphones()
@@ -124,7 +236,7 @@ cdef void trunc_mimo(src, replay=False):
     mimo_arr = np.ascontiguousarray(x)
 
     connect(replay)
-    v = Viewer(src, False, replay)
+    v = Viewer()
 
     while True:
         mimo_truncated(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
@@ -135,9 +247,9 @@ cdef void trunc_mimo(src, replay=False):
         
 
 # TODO axis are inverted, x must be -x and so on
-cdef void convolve_mimo(src, replay=False):
+cdef void convolve_mimo(replay=False):
 
-    v = Viewer(src, True, replay)
+    v = Viewer()
     connect(replay)
 
     x = np.zeros((MAX_RES, MAX_RES), dtype=DTYPE_arr)
@@ -152,9 +264,10 @@ cdef void convolve_mimo(src, replay=False):
     disconnect() # TODO will never disconnect except: Ctrl-C
 
 
-def convolve_backend(src, replayMode):
-    convolve_mimo(src, replayMode)
 
-def trunc_backend(src, replayMode):
-    trunc_mimo(src, replayMode)
+
+def main():
+
+    bf = Beamformer()
+    bf.loop()
 
