@@ -174,9 +174,10 @@ class Beamformer:
         "trunc": trunc_mimo2,
         "convolve": convolve_mimo2
     }
-    def __init__(self):
+    def __init__(self, replay_mode=False, src=CAMERA_SOURCE):
+        self.replay_mode = replay_mode
         self.running = False
-        self.v = Viewer(self)
+        self.v = Viewer(self, src)
         self.replay = False
         thread = threading.Thread(target=self.v.update, args=())
         thread.start()
@@ -194,8 +195,15 @@ class Beamformer:
         #self.v.show(image)
         self.v.refresh(image)
 
+    def run(self, algo: object):
+        connect(self.replay_mode)
+        algo(self)
+        print("Disconnecting")
+        disconnect()
+
+
     def loop(self):
-        connect()
+        connect(self.replay_mode)
         while self.v.video_running:
 
             options = list(self.algos.keys())
@@ -321,6 +329,11 @@ def trunc_backend_2(src, replayMode):
     trunc_mimo_2(src, replayMode)
 
 
+def convolve_backend_3():
+    return convolve_mimo2
+
+def trunc_backend_3():
+    return trunc_mimo2
 
 
 def main():

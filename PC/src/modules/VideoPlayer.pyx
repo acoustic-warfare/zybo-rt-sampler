@@ -118,7 +118,7 @@ cdef class VideoPlayer(object):
             print(f"{horizontal}, {vertical}")
 
 class Viewer:
-    def __init__(self, bf):
+    def __init__(self, bf, src: str = CAMERA_SOURCE):
         #self.capture = cv2.VideoCapture(CAMERA_SOURCE)
         self.capture = cv2.VideoCapture("/dev/video2")
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
