@@ -19,19 +19,19 @@ def display_video_sound_heatmap(src, replayMode, replayNumber, convolveBackend):
 
     #Start a replay transmission
     if replayMode:
-        thread3 = Thread(target=replay.beginReplayTransmission, args=())
-        thread3.daemon = True
-        thread3.start()
+        thread1 = Thread(target=replay.beginReplayTransmission, args=())
+        thread1.daemon = True
+        thread1.start()
     time.sleep(0.1)
 
     #Prepare selected backed
     if convolveBackend:
-        thread1 = Thread(target=convolve_backend, args=(src, replayMode))
+        thread2 = Thread(target=convolve_backend, args=(src, replayMode))
     else:
-        thread1 = Thread(target=trunc_backend, args=(src, replayMode))
+        thread2 = Thread(target=trunc_backend, args=(src, replayMode))
     #Start backend
-    thread1.daemon = True
-    thread1.start()
+    thread2.daemon = True
+    thread2.start()
 
     time.sleep(1)
     #Play sound
