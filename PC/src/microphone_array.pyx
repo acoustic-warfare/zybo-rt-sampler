@@ -104,7 +104,7 @@ def receive(signals: np.ndarray[N_MICROPHONES, N_SAMPLES]) -> None:
 
 
 # Truncate and sum beamformer for MIMO application
-cdef void trunc_mimo(replay=False):
+cdef void trunc_mimo(src, replay=False):
 
     whole_samples, fractional_samples = calculate_coefficients()
     active_mics, n_active_mics = active_microphones()
@@ -124,7 +124,7 @@ cdef void trunc_mimo(replay=False):
     mimo_arr = np.ascontiguousarray(x)
 
     connect(replay)
-    v = Viewer()
+    v = Viewer(src, False, replay)
 
     while True:
         mimo_truncated(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
@@ -135,9 +135,9 @@ cdef void trunc_mimo(replay=False):
         
 
 # TODO axis are inverted, x must be -x and so on
-cdef void convolve_mimo(replay=False):
+cdef void convolve_mimo(src, replay=False):
 
-    v = Viewer()
+    v = Viewer(src, True, replay)
     connect(replay)
 
     x = np.zeros((MAX_RES, MAX_RES), dtype=DTYPE_arr)
@@ -152,6 +152,9 @@ cdef void convolve_mimo(replay=False):
     disconnect() # TODO will never disconnect except: Ctrl-C
 
 
-def main():
-    convolve_mimo()
+def convolve_backend(src, replayMode):
+    convolve_mimo(src, replayMode)
+
+def trunc_backend(src, replayMode):
+    trunc_mimo(src, replayMode)
 

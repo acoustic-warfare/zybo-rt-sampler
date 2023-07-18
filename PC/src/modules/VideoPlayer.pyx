@@ -118,8 +118,16 @@ cdef class VideoPlayer(object):
             print(f"{horizontal}, {vertical}")
 
 class Viewer:
-    def __init__(self):
-        self.capture = cv2.VideoCapture(2)
+    def __init__(self, src, convolveBackend=False, replayMode=False):
+        if replayMode:
+            if not convolveBackend:
+                self.wait = 70
+            else:
+                self.wait = 1
+        else:
+            self.wait = 1
+
+        self.capture = cv2.VideoCapture(src)
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
         self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
@@ -135,4 +143,4 @@ class Viewer:
 
         image = cv2.addWeighted(frame, 0.6, calculate_heatmap(small_heatmap), 0.8, 0)
         cv2.imshow("Demo", image)
-        cv2.waitKey(1)
+        cv2.waitKey(self.wait)
