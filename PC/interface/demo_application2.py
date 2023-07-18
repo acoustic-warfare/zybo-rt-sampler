@@ -10,31 +10,35 @@ import config
 import time
 
 def display_video_sound_heatmap(src, replayMode, replayNumber, convolveBackend):
-    #videoPlayer = VideoPlayer(beamformer, src, replayMode)
+    #Create a SoundPlayer object
     soundPlayer = RealtimeSoundplayer(receive=receive)
 
+    #Prepare a replay transmission
     if replayMode:
         replay = Replay(replayNumber)
 
+    #Start a replay transmission
     if replayMode:
         thread3 = Thread(target=replay.beginReplayTransmission, args=())
         thread3.daemon = True
         thread3.start()
     time.sleep(0.1)
 
+    #Prepare selected backed
     if convolveBackend:
         thread1 = Thread(target=convolve_backend, args=(src, replayMode))
     else:
         thread1 = Thread(target=trunc_backend, args=(src, replayMode))
-
+    #Start backend
     thread1.daemon = True
     thread1.start()
 
-    data = np.zeros((config.N_MICROPHONES, config.N_SAMPLES), dtype=np.float32)
-    time.sleep(2)
+    time.sleep(1)
+    #Play sound
     soundPlayer.play_sound()
 
 if __name__ == '__main__':
+    #Parse input arguments
     argumentParser = ArgParser()
     
     display_video_sound_heatmap(argumentParser.getSrc(), argumentParser.getReplayMode(), argumentParser.getReplayNumber(), argumentParser.getBeamformingAlgorithm())
