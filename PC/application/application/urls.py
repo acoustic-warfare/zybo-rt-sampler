@@ -15,7 +15,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.http import StreamingHttpResponse
+
+from camera import VideoCamera, gen
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('monitor/', lambda r: StreamingHttpResponse(gen(VideoCamera()),
+                                                     content_type='multipart/x-mixed-replace; boundary=frame')),
 ]
