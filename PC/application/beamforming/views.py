@@ -16,7 +16,9 @@ def disableBackend(req):
 
 def enableBackend(req):
     v.v.value = 1
+    v.startBeamforming()
     return render(req, "stream.html")
+
 
 def disconnect(req):
     disc(v)

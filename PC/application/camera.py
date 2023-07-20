@@ -42,6 +42,12 @@ class VideoCamera(object):
 
         self.p.start()
 
+    def startBeamforming(self):
+        self.p.join()
+        self.p = Process(target=uti_api, args=(self.q, self.v))
+        self.p.start()
+
+
     def handle_image(self, image):
         image = cv2.flip(image, 1) # Nobody likes looking out of the array :(
         image = cv2.resize(image, WINDOW_DIMENSIONS)
