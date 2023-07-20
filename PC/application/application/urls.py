@@ -16,15 +16,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.http import StreamingHttpResponse, HttpResponse
-from beamforming.views import index
-
-from camera import VideoCamera, gen
+from beamforming.views import index, stream, disableBackend, enableBackend, disconnect
 
 def fun(s):
-    hej = HttpResponse("<html><head><title>Video Streaming Demonstration</title></head><body><button type=\"button\" onclick=\"alert('Hello world!')\">Trunc and sum backend</button><button type=\"button\" onclick=\"alert('Hello world!')\">Convolve</button><img src=\"http://127.0.0.1:8000/monitor\"></body></html>")
+    hej = 0
     return hej
 urlpatterns = [
     path('', index),
-    path('admin/', admin.site.urls),
-    path('monitor/', lambda r: StreamingHttpResponse(gen(VideoCamera()), content_type='multipart/x-mixed-replace; boundary=frame')),
+    path('disable/', disableBackend),
+    path('enable/', enableBackend),
+    path('monitor/', stream),
+    path('disconnect/', disconnect),
+    
 ]

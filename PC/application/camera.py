@@ -72,13 +72,16 @@ class VideoCamera(object):
 
         ret, jpeg = cv2.imencode('.jpg', image)
         return jpeg.tobytes()
+    
 
 
 def gen(camera):
     while camera.v.value:
         frame = camera.get_frame()
         yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+    camera.p.join()
     
+def disc(camera):
     camera.p.join()
     disconnect()
