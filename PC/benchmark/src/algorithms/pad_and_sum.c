@@ -8,7 +8,7 @@ int *whole_samples_h;
 // #define DEBUG 1
 // #endif
 
-#define DEBUG 1
+#define DEBUG 0
 
 /*
 Perform a delay

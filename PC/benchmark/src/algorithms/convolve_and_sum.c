@@ -10,7 +10,7 @@
 // #define DEBUG 1
 // #endif
 
-#define DEBUG 1
+#define DEBUG 0
 
 float *convolve_coefficients;
 

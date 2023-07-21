@@ -17,7 +17,7 @@ ctypedef np.float32_t DTYPE_t
 DTYPE_arr = np.float32
 
 try:
-    from lib.directions import calculate_coefficients, active_microphones
+    from lib.directions import calculate_coefficients, active_microphones, compute_convolve_h
 except:
     print("You must build the directions library")
     exit(1)
@@ -30,6 +30,8 @@ cdef extern from "api.h":
     void get_data(float *signals)
     void stop_receiving()
     void pad_mimo(float *image, int *adaptive_array, int n)
+    void convolve_mimo_vectorized(float *image, int *adaptive_array, int n)
+    void convolve_mimo_naive(float *image, int *adaptive_array, int n)
     # void load_coefficients_pad(int *whole_samples, int n)
     # void unload_coefficients_pad()
 
@@ -103,6 +105,17 @@ cdef extern from "algorithms/pad_and_sum.c":
     void miso_pad(float *signals, float *out, int *adaptive_array, int n, int offset)
     void mimo_pad(float *signals, float *image, int *adaptive_array, int n)
 
+cdef extern from "algorithms/convolve_and_sum.c":
+    void convolve_delay_naive_add(float *signal, float *h, float *out)
+    void convolve_delay_vectorized(float *signal, float *h, float *out)
+    void convolve_delay_vectorized_add(float *signal, float *h, float *out)
+    void convolve_delay_naive(float *signal, float *out, float *h)
+    void convolve_naive(float *signals, float *out, int *adaptive_array, int n, int offset)
+    void mimo_convolve_naive(float *signals, float *image, int *adaptive_array, int n)
+    void miso_convolve_vectorized(float *signals, float *out, int *adaptive_array, int n, int offset)
+    void mimo_convolve_vectorized(float *signals, float *image, int *adaptive_array, int n)
+    void load_coefficients_convolve(float *h, int n)
+    void unload_coefficients_convolve()
 
 
 available_backends = {
@@ -167,6 +180,31 @@ cdef void pad_mimo_api(bf: object):
         bf.show(mimo_arr)
 
     unload_coefficients_pad()
+
+
+cdef _convolve_coefficients_load(h):
+    cdef np.ndarray[float, ndim=4, mode="c"] f32_h = np.ascontiguousarray(h)
+    load_coefficients_convolve(&f32_h[0, 0, 0, 0], int(h.size))
+    
+cdef void convolve_mimo_api(bf: object):
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
+    
+    image = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
+    mimo_arr = np.ascontiguousarray(image)
+
+    h = compute_convolve_h()
+    active_mics, n_active_mics = active_microphones()
+
+    cdef np.ndarray[int, ndim=1, mode="c"] active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+    _convolve_coefficients_load(h)
+
+    while bf.running:
+        convolve_mimo_vectorized(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
+        bf.show(mimo_arr)
+
+    unload_coefficients_convolve()
+
 
 WINDOW_DIMENSIONS = (APPLICATION_WINDOW_WIDTH, APPLICATION_WINDOW_HEIGHT)
 APPLICATION_NAME = "Demo App"
@@ -403,6 +441,51 @@ cdef void api(q: JoinableQueue, running: Value):
 
     unload_coefficients_pad()
 
+cdef void api_convolve(q: JoinableQueue, running: Value):
+    # whole_samples, fractional_samples = calculate_coefficients()
+    # active_mics, n_active_mics = active_microphones()
+
+    # cdef np.ndarray[int, ndim=1, mode="c"] active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+    # cdef np.ndarray[int, ndim=3, mode="c"] i32_whole_samples
+
+    # i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
+
+    # # Pass int pointer to C function
+    # load_coefficients_pad(&i32_whole_samples[0, 0, 0], whole_samples.size)
+
+    # x = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
+
+    # cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
+    # mimo_arr = np.ascontiguousarray(x)
+
+    # while running.value:
+    #     pad_mimo(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
+    #     q.put(mimo_arr)
+
+    # # q.join()
+
+    # unload_coefficients_pad()
+
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
+    
+    image = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
+    mimo_arr = np.ascontiguousarray(image)
+
+    h = compute_convolve_h()
+    active_mics, n_active_mics = active_microphones()
+
+    cdef np.ndarray[int, ndim=1, mode="c"] active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+    _convolve_coefficients_load(h)
+
+    while running.value:
+        convolve_mimo_naive(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
+        q.put(mimo_arr)
+        # print(mimo_arr)
+
+    unload_coefficients_convolve()
+
 def uti_api(q: JoinableQueue, running: Value):
     api(q, running)
 
@@ -448,7 +531,7 @@ def main():
     try:
 
         producers = [
-            Process(target=api, args=(q, v))
+            Process(target=api_convolve, args=(q, v))
             for _ in range(jobs)
         ]
 

@@ -24,8 +24,8 @@ setup (
     name = 'Module',
     ext_modules = cythonize(
         [
-            #Extension("beamformer", ["src/main.pyx"] + c_files, include_dirs=["src/"],
-            #            extra_compile_args = CFLAGS.split(" ")),
+            Extension("beamformer", ["src/main.pyx"] + c_files, include_dirs=["src/"],
+                        extra_compile_args = CFLAGS.split(" ")),
             Extension("tests", ["src/benchmark.pyx"] + c_files, include_dirs=["src/"],
                         extra_compile_args = CFLAGS.split(" ")),
             # Extension("VideoPlayer", ["src/modules/VideoPlayer.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),

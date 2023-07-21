@@ -178,3 +178,23 @@ void pad_mimo(float *image, int *adaptive_array, int n)
 
     mimo_pad(&signals[0], image, adaptive_array, n);
 }
+
+
+#include "algorithms/convolve_and_sum.h"
+void convolve_mimo_vectorized(float *image, int *adaptive_array, int n)
+{
+    float signals[BUFFER_LENGTH];
+
+    get_data(&signals[0]);
+
+    mimo_convolve_vectorized(&signals[0], image, adaptive_array, n);
+}
+
+void convolve_mimo_naive(float *image, int *adaptive_array, int n)
+{
+    float signals[BUFFER_LENGTH];
+
+    get_data(&signals[0]);
+
+    mimo_convolve_naive(&signals[0], image, adaptive_array, n);
+}
