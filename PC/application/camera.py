@@ -16,9 +16,9 @@ class VideoCamera(object):
         # from a webcam, comment the line below out and use a video file
         # instead.
         self.video = cv2.VideoCapture(0)
-        # self.video.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
-        # self.video.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
-        # self.video.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+        #self.video.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
+        #self.video.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        #self.video.set(cv2.CAP_PROP_BUFFERSIZE, 2)
         # If you decide to use video.mp4, you must have this file in the folder
         # as the main.py.
         # self.video = cv2.VideoCapture('video.mp4')
@@ -91,9 +91,10 @@ class VideoCamera(object):
         return jpeg.tobytes()
     
     def disableBeamforming(self):
-        self.v.value = 0
-        self.p.join()
-        self.v.value = 1
+        if self.processStarted:
+            self.v.value = 0
+            self.p.join()
+            self.v.value = 1
     
     def quit(self):
         self.v.value = 0

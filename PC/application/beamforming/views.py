@@ -9,6 +9,7 @@ def index(req):
     return render(req, "stream.html")
 
 def stream(req):
+    global v
     return StreamingHttpResponse(gen(v), content_type='multipart/x-mixed-replace; boundary=frame')
 
 def disableBackend(req):
