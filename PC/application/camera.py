@@ -37,15 +37,25 @@ class VideoCamera(object):
         
 
         connect()
-
+        self.processStarted = False
         self.p = Process(target=uti_api, args=(self.q, self.v))
-
+        #self.p.start()
 
     def startBeamforming(self, trunc_and_sum = True):
         if trunc_and_sum:
+            if self.processStarted:
+                self.v.value = 0
+                self.p.join()
+                self.v.value = 1
             self.p = Process(target=uti_api, args=(self.q, self.v))
+            self.processStarted = True
         else:
+            if self.processStarted:
+                self.v.value = 0
+                self.p.join()
+                self.v.value = 1
             self.p = Process(target=conv_api, args=(self.q, self.v))
+            self.processStarted = True
         self.p.start()
 
 
