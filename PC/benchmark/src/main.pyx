@@ -398,11 +398,9 @@ cdef void api(q: JoinableQueue, running: Value):
     while running.value:
         pad_mimo(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
         q.put(mimo_arr)
-
-    q.join()
-
+        
     unload_coefficients_pad()
-
+    
 def uti_api(q: JoinableQueue, running: Value):
     api(q, running)
 
