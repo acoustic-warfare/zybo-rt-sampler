@@ -16,7 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.http import StreamingHttpResponse, HttpResponse
-from beamforming.views import index, stream, disableBackend, enableBackend, disconnect, connect
+from beamforming.views import index, stream, disableBackend, enablePadBackend, disconnect, connect, enableConvolveBackend
 
 def fun(s):
     hej = 0
@@ -24,7 +24,8 @@ def fun(s):
 urlpatterns = [
     path('', index),
     path('disable/', disableBackend),
-    path('enable/', enableBackend),
+    path('enablePad/', enablePadBackend),
+    path('enableConvolve/', enableConvolveBackend),
     path('disconnect/', disconnect),
     path('connect/', connect),
     path('monitor/', stream),

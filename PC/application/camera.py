@@ -44,8 +44,8 @@ class VideoCamera(object):
     def startBeamforming(self, trunc_and_sum = True):
         if trunc_and_sum:
             self.p = Process(target=uti_api, args=(self.q, self.v))
-        #else:
-        #    self.p = Process(target=convolve, args=(self.q, self.v))
+        else:
+            self.p = Process(target=conv_api, args=(self.q, self.v))
         self.p.start()
 
 

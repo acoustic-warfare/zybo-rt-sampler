@@ -480,7 +480,7 @@ cdef void api_convolve(q: JoinableQueue, running: Value):
     _convolve_coefficients_load(h)
 
     while running.value:
-        convolve_mimo_naive(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
+        convolve_mimo_vectorized(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
         q.put(mimo_arr)
         # print(mimo_arr)
 
@@ -488,6 +488,9 @@ cdef void api_convolve(q: JoinableQueue, running: Value):
 
 def uti_api(q: JoinableQueue, running: Value):
     api(q, running)
+
+def conv_api(q: JoinableQueue, running: Value):
+    api_convolve(q, running)
 
 def consumer(q: JoinableQueue, v: Value):
     capture = cv2.VideoCapture("/dev/video0")
