@@ -13,12 +13,11 @@ def stream(req):
 
 def disableBackend(req):
     global v
-    v.v.value = 0
+    v.disableBeamforming()
     return render(req, "stream.html")
 
 def enableBackend(req):
     global v
-    v.v.value = 1
     v.startBeamforming()
     return render(req, "stream.html")
 

@@ -40,11 +40,12 @@ class VideoCamera(object):
 
         self.p = Process(target=uti_api, args=(self.q, self.v))
 
-        self.p.start()
 
-    def startBeamforming(self):
-        self.p.join()
-        self.p = Process(target=uti_api, args=(self.q, self.v))
+    def startBeamforming(self, trunc_and_sum = True):
+        if trunc_and_sum:
+            self.p = Process(target=uti_api, args=(self.q, self.v))
+        #else:
+        #    self.p = Process(target=convolve, args=(self.q, self.v))
         self.p.start()
 
 
@@ -79,15 +80,15 @@ class VideoCamera(object):
         ret, jpeg = cv2.imencode('.jpg', image)
         return jpeg.tobytes()
     
-    def quit(self):
-
+    def disableBeamforming(self):
         self.v.value = 0
-        print("HEJ")
-        self.q.task_done()
         self.p.join()
-        print("Knas")
+        self.v.value = 1
+    
+    def quit(self):
+        self.v.value = 0
+        self.p.join()
         disconnect()
-        print("Allt")
         self.video.release()
 
 def gen(camera):
