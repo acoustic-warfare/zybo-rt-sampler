@@ -5,6 +5,7 @@
 cdef extern from "config.h":
     int N_MICROPHONES
     int N_SAMPLES
+    int N_TAPS
     int COLUMNS
     int ROWS
     int MAX_RES

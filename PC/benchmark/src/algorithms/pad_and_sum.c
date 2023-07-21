@@ -4,6 +4,11 @@
 
 int *whole_samples_h;
 
+// #ifndef DEBUG
+// #define DEBUG 1
+// #endif
+
+#define DEBUG 1
 
 /*
 Perform a delay
@@ -44,6 +49,11 @@ Perform a MIMO
 void mimo_pad(float *signals, float *image, int *adaptive_array, int n)
 {
 
+#if DEBUG
+    int progress = 0;
+    printf("Status mimo pad\n");
+#endif
+
     // dummy output
     float out[N_SAMPLES];
     float sum;
@@ -67,8 +77,17 @@ void mimo_pad(float *signals, float *image, int *adaptive_array, int n)
 
             sum /= (float)N_SAMPLES;
 
-            image[y * MAX_RES_Y + x] = sum;
+            image[y * MAX_RES_X + x] = sum;
+
+#if DEBUG
+            progress++;
+            printf("\r%f\%     ", (float)progress / (float)(MAX_RES_X * MAX_RES_Y) * 100);
+#endif
         }
+
+#if DEBUG
+        printf("\n");
+#endif
     }
 }
 

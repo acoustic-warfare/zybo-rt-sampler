@@ -8,7 +8,7 @@ LDFLAGS = -shared -pthread -fPIC -fwrapv -Wall -fno-strict-aliasing
 
 .PHONY: all
 
-all: lib/beamformer.so
+all: fig#lib/beamformer.so
 
 config:
 	python3 src/build_config.py
@@ -26,6 +26,9 @@ lib/beamformer.so: config
 
 test: lib/beamformer.so
 	python3 test.py
+
+fig: clean lib/beamformer.so
+	python3 exe.py
 
 .PHONY: clean
 

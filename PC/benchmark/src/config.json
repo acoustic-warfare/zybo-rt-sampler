@@ -16,7 +16,7 @@
         "ELEMENT_DISTANCE": 0.02,
         "ARRAY_SEPARATION": 0.0,
         "ACTIVE_ARRAYS": 1,
-        "SKIP_N_MICS": 2,
+        "SKIP_N_MICS": 1,
         "PROPAGATION_SPEED": 340.0,
         "APPLICATION_WINDOW_WIDTH": 720,
         "APPLICATION_WINDOW_HEIGHT": 480,

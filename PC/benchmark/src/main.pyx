@@ -216,9 +216,9 @@ def calculate_heatmap(image):
 
 
 import cv2
-import multiprocessing
+# import multiprocessing
 
-from multiprocessing import shared_memory
+# from multiprocessing import shared_memory
 cdef class Beamformer:
     cdef public bint connected, replay_mode, verbose, running, can_read
     cdef public object output, capture
@@ -398,9 +398,11 @@ cdef void api(q: JoinableQueue, running: Value):
     while running.value:
         pad_mimo(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
         q.put(mimo_arr)
-        
+
+    # q.join()
+
     unload_coefficients_pad()
-    
+
 def uti_api(q: JoinableQueue, running: Value):
     api(q, running)
 

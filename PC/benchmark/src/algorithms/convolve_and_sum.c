@@ -2,12 +2,22 @@
 
 #include <immintrin.h>
 
-#include "../config.h"
+#include "config.h"
 
 #define OFFSET N_TAPS / 2
 
+// #ifndef DEBUG
+// #define DEBUG 1
+// #endif
+
+#define DEBUG 1
 
 float *convolve_coefficients;
+
+// VECTORIZED
+
+#define AVX_SIMD_LENGTH 8 // AVX2 m256 width
+#define ALIGNMENT 32      // Must be divisible by 32
 
 /*
 Naive convolution for adding to a single out with reset
@@ -185,9 +195,9 @@ void miso_convolve_naive(float *signals, float *out, int *adaptive_array, int n,
     for (int m = 0; m < n; m++)
     {
         pos_mic = adaptive_array[m];           // Which mic to use
-        h = &convolve_coefficients[offset + m]; // Delay amount
+        // h = &convolve_coefficients[offset + m * N_TAPS]; // Delay amount
 
-        convolve_delay_naive(signals + pos_mic * N_SAMPLES, out, h);
+        convolve_delay_naive(signals + pos_mic * N_SAMPLES, out, convolve_coefficients + offset + m * N_TAPS);
     }
 }
 
@@ -199,6 +209,11 @@ void mimo_convolve_naive(float *signals, float *image, int *adaptive_array, int 
 
     int x_offset, y_offset;
 
+    #if DEBUG
+    int progress = 0;
+    printf("Status mimo convolve naive\n");
+    #endif
+
     for (int y = 0; y < MAX_RES_Y; y++)
     {
         y_offset = y * MAX_RES_X * n * N_TAPS;
@@ -206,26 +221,30 @@ void mimo_convolve_naive(float *signals, float *image, int *adaptive_array, int 
         {
             x_offset = x * n * N_TAPS;
             miso_convolve_naive(signals, &out[0], adaptive_array, n, y_offset + x_offset);
+
+            sum = 0.0;
+            for (int k = 0; k < N_SAMPLES; k++)
+            {
+                out[k] /= (float)n; // Divide by number of microphones
+                sum += powf(out[k], 2);
+            }
+
+            sum /= (float)N_SAMPLES;
+
+            image[y * MAX_RES_X + x] = sum;
+#if DEBUG
+            progress++;
+            printf("\r%f\%     ", (float)progress/(float)(MAX_RES_X * MAX_RES_Y)*100);
+#endif
         }
 
-        sum = 0.0;
-        for (int k = 0; k < N_SAMPLES; k++)
-        {
-            out[k] /= (float)n; // Divide by number of microphones
-            sum += powf(out[k], 2);
-        }
-
-        sum /= (float)N_SAMPLES;
-
-        image[y * MAX_RES_Y + x] = sum;
+#if DEBUG
+        printf("\n");
+#endif
     }
 }
 
 
-// VECTORIZED
-
-#define AVX_SIMD_LENGTH 8 // AVX2 m256 width
-#define ALIGNMENT 32      // Must be divisible by 32
 
 void miso_convolve_vectorized(float *signals, float *out, int *adaptive_array, int n, int offset)
 {
@@ -241,7 +260,7 @@ void miso_convolve_vectorized(float *signals, float *out, int *adaptive_array, i
         pos_mic = adaptive_array[m];            // Which mic to use
         h = &convolve_coefficients[offset + m]; // Delay amount
 
-        convolve_delay_naive(signals + pos_mic * N_SAMPLES, out, h);
+        convolve_delay_vectorized(signals + pos_mic * N_SAMPLES, out, h);
     }
 }
 
@@ -260,18 +279,72 @@ void mimo_convolve_vectorized(float *signals, float *image, int *adaptive_array,
         for (int x = 0; x < MAX_RES_X; x++)
         {
             x_offset = x * n * N_TAPS;
-            miso_pad(signals, &out[0], adaptive_array, n, y_offset + x_offset);
+
+            miso_convolve_vectorized(signals, &out[0], adaptive_array, n, y_offset + x_offset);
+
+            sum = 0.0;
+            for (int k = 0; k < N_SAMPLES; k++)
+            {
+                out[k] /= (float)n; // Divide by number of microphones
+                sum += powf(out[k], 2);
+            }
+
+            sum /= (float)N_SAMPLES;
+
+            image[y * MAX_RES_Y + x] = sum;
         }
-
-        sum = 0.0;
-        for (int k = 0; k < N_SAMPLES; k++)
-        {
-            out[k] /= (float)n; // Divide by number of microphones
-            sum += powf(out[k], 2);
-        }
-
-        sum /= (float)N_SAMPLES;
-
-        image[y * MAX_RES_Y + x] = sum;
     }
 }
+
+#include <stdio.h>
+void load_coefficients_convolve(float *h, int n)
+{
+    convolve_coefficients = (float*) malloc(n * sizeof(float));
+    memcpy(convolve_coefficients, h, n * sizeof(float));
+}
+
+void unload_coefficients_convolve()
+{
+    free(convolve_coefficients);
+}
+
+// void compute_antenna(float azimuth, float elevation, float *h)
+// {
+//     float smallest = 0.0;
+
+//     int i = 0;
+
+//     float delays[ROWS * COLUMNS]
+
+//     for (int row = 0; row < ROWS; row++)
+//     {
+//         for (int col = 0; col < COLUMNS; col++)
+//         {
+//             /* code */
+//         }
+//     }
+// }
+
+
+// void calculate_coefficients(int steps)
+// {
+//     convolve_coefficients = (float *)malloc(MAX_RES_X * MAX_RES_Y * ACTIVE_ARRAYS * ROWS * COLUMNS * N_TAPS * sizeof(float));
+
+//     int x_offset, y_offset;
+//     float azimuth, elevation;
+
+//     for (int y = 0; y < MAX_RES_Y; y++)
+//     {
+//         y_offset = y * MAX_RES_X * ACTIVE_ARRAYS * ROWS * COLUMNS * N_TAPS;
+//         elevation = (float)MAX_ANGLE * 2 * (float)y / float(MAX_RES_Y) - (float)MAX_ANGLE;
+//         for (int x = 0; x < MAX_RES_X; x++)
+//         {
+//             x_offset = x * ACTIVE_ARRAYS * ROWS * COLUMNS * N_TAPS;
+//             azimuth = (float)MAX_ANGLE * 2 * (float)x / float(MAX_RES_X) - (float)MAX_ANGLE;
+
+//             compute_antenna(azimuth, elevation, convolve_coefficients + y_offset + x_offset);
+//         }
+        
+//     }
+    
+// }

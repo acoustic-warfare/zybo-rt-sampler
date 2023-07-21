@@ -140,6 +140,57 @@ def get_h(delay, N=8):
 
     return h
 
+def get_h2(delay, N=64):
+    
+    epsilon = 1e-9
+
+    tau = 0.5 - delay + epsilon # Fractional delay [samples].
+    h = np.zeros(N, dtype=np.float32)
+
+    sum_ = 0
+    for i in range(N):
+        hi = i - (N - 1) / 2 - tau
+        hi = np.sin(hi*np.pi) / (hi * np.pi)
+        n = i * 2 - N + 1
+
+        black = 0.42 + 0.5 * np.cos(np.pi * n / (N - 1 + epsilon)) + 0.08 * np.cos(2 * np.pi * n / (N - 1 + epsilon))
+        hi *= black
+        sum_ += hi
+        h[i] = hi
+
+    h /= sum_
+    return h
+
+
+def compute_convolve_h():
+    # delays = calculate_delays_()
+
+    # h = np.zeros((MAX_RES_X, MAX_RES_Y, ROWS * COLUMNS, N_TAPS), dtype=np.float32)
+
+    samp_delay = calculate_delays()
+
+    print(samp_delay.shape)
+
+    h = np.zeros((*samp_delay.shape, N_TAPS), dtype=np.float32)
+
+    #h = np.zeros((MAX_RES_X, MAX_RES_Y, COLUMNS*ROWS*ACTIVE_ARRAYS, 8), dtype=np.float32)
+
+    
+    for y in range(MAX_RES_Y):
+        for x in range(MAX_RES_X):
+            for i in range(samp_delay.shape[2]):
+                h[x, y, i] = get_h2(samp_delay[x, y, i], N=N_TAPS)
+    return np.float32(h)
+    # for y in range(MAX_RES_Y):
+    #     for x in range(MAX_RES_X):
+    #         for i in range(64):
+    #             # print
+    #             h[x, y, i] = get_h(delays[x, y, i], N=N_TAPS)
+
+    # return np.float32(h)
+
+
+
 
 
 def calculate_coefficients():
