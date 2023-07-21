@@ -124,7 +124,7 @@ cdef np.ndarray _mimo_convolve(signals):
 
     _convolve_coefficients_load(h)
 
-    mimo_convolve_naive(&_signals[0, 0], &mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
+    mimo_convolve_vectorized(&_signals[0, 0], &mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
 
     return mimo_arr
 

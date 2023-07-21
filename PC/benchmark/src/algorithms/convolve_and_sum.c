@@ -253,14 +253,14 @@ void miso_convolve_vectorized(float *signals, float *out, int *adaptive_array, i
 
     int pos_pad, pos_mic;
 
-    float *h;
+    // float *h;
 
     for (int m = 0; m < n; m++)
     {
         pos_mic = adaptive_array[m];            // Which mic to use
-        h = &convolve_coefficients[offset + m]; // Delay amount
+        // h = &convolve_coefficients[offset + m]; // Delay amount
 
-        convolve_delay_vectorized(signals + pos_mic * N_SAMPLES, out, h);
+        convolve_delay_vectorized_add(signals + pos_mic * N_SAMPLES, convolve_coefficients + offset + m * N_TAPS, out);
     }
 }
 
@@ -291,7 +291,7 @@ void mimo_convolve_vectorized(float *signals, float *image, int *adaptive_array,
 
             sum /= (float)N_SAMPLES;
 
-            image[y * MAX_RES_Y + x] = sum;
+            image[y * MAX_RES_X + x] = sum;
         }
     }
 }
