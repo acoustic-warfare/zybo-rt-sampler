@@ -93,12 +93,17 @@ int create_and_bind_socket(bool replay_mode)
 int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, int n_arrays)
 {
     int step = 0;
-    for (int i = 0; i < BUFFER_LENGTH; i += N_MICROPHONES)
+    for (int i = 0; i < BUFFER_LENGTH * EVERY_N_SAMPLES; i += N_MICROPHONES)
     {
         if (recv(socket_desc, message, sizeof(msg), 0) < 0)
         {
             printf("Couldn't receive\n");
             return -1;
+        }
+
+        if (i%EVERY_N_SAMPLES != 0)
+        {
+            continue;
         }
 
         /*

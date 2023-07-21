@@ -4,6 +4,7 @@
 #define N_MICROPHONES 192
 #define N_SAMPLES 1024
 #define N_TAPS 64
+#define EVERY_N_SAMPLES 2
 #define COLUMNS 8
 #define ROWS 8
 #define MAX_RES 20
