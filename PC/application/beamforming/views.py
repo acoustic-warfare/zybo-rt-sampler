@@ -33,6 +33,23 @@ def connect(req):
     v = VideoCamera()
     return render(req, "stream.html")
 
+def replaySelection(req):
+    # If connected, release video capture object
+    #TODO
+    # Disconnect and reconnect with replay mode
+    #TODO
+    # Open stream.html
+    return render(req, "replay_selection.html")
+
+def replay(req):
+    # Start replay transmission
+    #TODO
+    # Display replay
+    #TODO
+    # Open stream.html
+    return render(req, "stream.html")
+
+
 def disconnect(req):
     global v 
     v.quit()
