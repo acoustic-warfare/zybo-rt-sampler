@@ -2,10 +2,27 @@ from django.shortcuts import render
 from django.http import HttpResponse, StreamingHttpResponse
 from camera import VideoCamera, gen
 import time
+from play import RealtimeSoundplayer
+from threading import Thread
+import os  
+import signal  
+import sys  
 
 v = VideoCamera()
 
+def my_signal_handler(*args):  
+    if os.environ.get('RUN_MAIN') == 'true':  
+        v.quit()
+    sys.exit(0) 
+
+signal.signal(signal.SIGINT, my_signal_handler) 
+
+
 def index(req):
+   # s = RealtimeSoundplayer()
+    #thread = Thread(target=s.play_sound, args=())
+    #thread.daemon = True
+    #thread.start()
     return render(req, "stream.html")
 
 def stream(req):
