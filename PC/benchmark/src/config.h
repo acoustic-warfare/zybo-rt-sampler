@@ -2,16 +2,16 @@
 
 //General constants for both c and python.
 #define N_MICROPHONES 192
-#define N_SAMPLES 1024
+#define N_SAMPLES 48828
 #define N_TAPS 64
-#define EVERY_N_SAMPLES 2
+#define EVERY_N_SAMPLES 1
 #define COLUMNS 8
 #define ROWS 8
 #define MAX_RES 20
-#define MAX_RES_X 20
-#define MAX_RES_Y 20
+#define MAX_RES_X 30
+#define MAX_RES_Y 30
 #define Z 10.0
-#define MAX_ANGLE 45.0
+#define MAX_ANGLE 70.0
 #define VIEW_ANGLE 68.0
 #define UDP_PORT 21844
 #define SAMPLE_RATE 48828.0
