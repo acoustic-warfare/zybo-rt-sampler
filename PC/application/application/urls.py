@@ -16,7 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.http import StreamingHttpResponse, HttpResponse
-from beamforming.views import index, stream, disableBackend, enablePadBackend, disconnect, connect, enableConvolveBackend, replay, replaySelection
+from beamforming.views import index, stream, disableBackend, enablePadBackend, disconnect, connect, enableConvolveBackend, replay, replaySelection, enableThirdBackend
 
 def fun(s):
     hej = 0
@@ -31,5 +31,5 @@ urlpatterns = [
     path('monitor/', stream),
     path('replay_selection/', replaySelection),
     path('replay/', replay),
-    
+    path('enableThirdBackend/', enableThirdBackend)
 ]

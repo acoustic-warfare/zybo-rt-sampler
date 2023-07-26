@@ -36,13 +36,18 @@ def disableBackend(req):
 
 def enablePadBackend(req):
     global v
-    v.startBeamforming()
+    v.startBeamforming(0)
     return render(req, "stream.html")
 
 
 def enableConvolveBackend(req):
     global v
-    v.startBeamforming(False)
+    v.startBeamforming(1)
+    return render(req, "stream.html")
+
+def enableThirdBackend(req):
+    global v
+    v.startBeamforming(2)
     return render(req, "stream.html")
 
 def connect(req):
