@@ -22,6 +22,8 @@ except:
     print("You must build the directions library")
     exit(1)
 
+steer_offset = 0
+
 
 from config cimport *
 
@@ -35,6 +37,8 @@ cdef extern from "api.h":
 
     void load_coefficients2(int *whole_sample_delay, int n)
     void mimo_truncated(float *image, int *adaptive_array, int n)
+
+    void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset)
 
 def connect(replay_mode: bool = False, verbose=True) -> None:
     """
@@ -202,6 +206,44 @@ cdef void api_old(q: JoinableQueue, running: Value):
         mimo_truncated(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
         q.put(mimo_arr)
 
+def steer(azimuth: float, elevation: float):
+    """Steer a MISO into a specific direction"""
+    assert -90<=azimuth<=90, "Invalid range"
+    assert -90<=elevation<=90, "Invalid range"
+
+    azimuth += 90
+    azimuth /= 180
+    azimuth = int(azimuth * MAX_RES_X)
+    elevation += 90
+    elevation /= 180
+    elevation = int(elevation * MAX_RES_Y)
+
+    _, n_active_mics = active_microphones()
+
+    global steer_offset
+    steer_offset = elevation * MAX_RES_X * n_active_mics + azimuth * n_active_mics
+
+cdef void api_miso(q: JoinableQueue, running: Value):
+    cdef np.ndarray[np.float32_t, ndim=1, mode = 'c'] out = np.ascontiguousarray(np.zeros(N_SAMPLES, dtype=DTYPE_arr))
+    
+    whole_samples, fractional_samples = calculate_coefficients()
+    active_mics, n_active_mics = active_microphones()
+
+    cdef np.ndarray[int, ndim=1, mode="c"] active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+    cdef np.ndarray[int, ndim=3, mode="c"] i32_whole_samples
+
+    i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
+
+    # Pass int pointer to C function
+    load_coefficients_pad(&i32_whole_samples[0, 0, 0], whole_samples.size)
+
+    while running.value:
+        global steer_offset
+        miso_steer_listen(&out[0], &active_micro[0], int(n_active_mics), steer_offset)
+        q.put(out)
+
+
 
 # Web interface
 def uti_api(q: JoinableQueue, running: Value):
@@ -209,6 +251,9 @@ def uti_api(q: JoinableQueue, running: Value):
 
 def conv_api(q: JoinableQueue, running: Value):
     api_convolve(q, running)
+
+def miso_api(q: JoinableQueue, running: Value):
+    api_miso(q, running)
 
 # Testing
 
