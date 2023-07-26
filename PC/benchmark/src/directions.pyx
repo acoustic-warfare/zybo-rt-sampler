@@ -61,7 +61,7 @@ def calculate_delays():
 
     x_res = MAX_RES_X  # resolution in x, from config
     y_res = MAX_RES_Y  # resolution in y, from config
-    AS = 16/9   # aspect ratio, from config
+    AS = 1 #16/9   # aspect ratio, from config
 
     # Calculations for time delay starts below
     r_prime = calc_r_prime(d)  # matrix holding the xy positions of each microphone
@@ -195,7 +195,7 @@ def compute_convolve_h():
 
 def calculate_coefficients():
 
-    samp_delay = calculate_delays()
+    samp_delay = calculate_delays_()
 
     #whole_sample_delay = samp_delay.astype(np.int32)
     whole_sample_delay = samp_delay.astype(int)

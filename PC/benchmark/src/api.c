@@ -198,3 +198,72 @@ void convolve_mimo_naive(float *image, int *adaptive_array, int n)
 
     mimo_convolve_naive(&signals[0], image, adaptive_array, n);
 }
+
+int whole_samples_h_[MAX_RES_X * MAX_RES_Y * ACTIVE_ARRAYS * COLUMNS * ROWS];
+#include <math.h>
+
+void mimo_truncated_algorithm(float *signals, float *image, int *adaptive_array, int n)
+{
+    // dummy output
+    float _out[N_SAMPLES] = {0.0};
+    float *out = &_out[0];
+    int pos, pos_u;
+
+    int xi, yi;
+    for (int y = 0; y < MAX_RES_Y; y++)
+    {
+        xi = y * MAX_RES_X * n;
+        for (int x = 0; x < MAX_RES_X; x++)
+        {
+            yi = x * n;
+
+            // Reset the output for the new direction
+            memset(out, 0, (N_SAMPLES) * sizeof(float));
+
+            for (int s = 0; s < n; s++)
+            {
+                pos_u = adaptive_array[s];
+                // printf("(%d %d) ", pos_u, n);
+                pos = whole_samples_h_[xi + yi + s];
+                for (int i = 0; i < N_SAMPLES - pos; i++)
+                {
+                    out[pos + i] += signals[pos_u * N_SAMPLES + i];
+                }
+            }
+
+            float sum = 0.0;
+            for (int k = 0; k < N_SAMPLES; k++)
+            {
+                out[k] /= (float)n;
+                sum += powf(out[k], 2);
+            }
+
+            sum /= (float)N_SAMPLES;
+
+            // Danger bug
+            image[y * MAX_RES_X + x] = sum;
+        }
+    }
+}
+
+void load_coefficients2(int *whole_samples, int n)
+{
+    memcpy(&whole_samples_h_[0], whole_samples, sizeof(int) * n);
+}
+
+/*
+
+Trunc-And-Sum beamformer with adaptive array configuration
+
+*/
+void mimo_truncated(float *image, int *adaptive_array, int n)
+{
+    float data[BUFFER_LENGTH];
+
+    // Pin the data for retrieval
+    semop(semid, &data_sem_wait, 1);
+    memcpy(&data[0], (void *)&rb->data[0], sizeof(float) * BUFFER_LENGTH);
+    semop(semid, &data_sem_signal, 1);
+
+    mimo_truncated_algorithm(&data[0], image, adaptive_array, n);
+}

@@ -92,8 +92,9 @@ int create_and_bind_socket(bool replay_mode)
 
 int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, int n_arrays)
 {
+    int msg_offset = 0;
     int step = 0;
-    for (int i = 0; i < BUFFER_LENGTH * EVERY_N_SAMPLES; i += N_MICROPHONES)
+    for (int i = 0; i < BUFFER_LENGTH; i += N_MICROPHONES)
     {
         if (recv(socket_desc, message, sizeof(msg), 0) < 0)
         {
@@ -101,10 +102,10 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, 
             return -1;
         }
 
-        if (i%EVERY_N_SAMPLES != 0)
-        {
-            continue;
-        }
+        // if (i%EVERY_N_SAMPLES != 0)
+        // {
+        //     continue;
+        // }
 
         /*
         Fixes ordering such that the microphone data will be (microphone, data)
@@ -123,6 +124,12 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, 
         */
         int s = 0;
 
+        // for (int t = 0; t < 64; t++)
+        // {
+        //     rb->data[step + t * N_SAMPLES] = (float)((double)(message->stream[t]) / NORM_FACTOR);
+        // }
+        
+
         for (int n = 0; n < n_arrays; n++)
         {
             for (int y = 0; y < ROWS; y++)
@@ -132,7 +139,7 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, 
                 {
                     for (int x = 0; x < COLUMNS; x++)
                     {
-                        rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[2 + row + x]) / NORM_FACTOR);
+                        rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[msg_offset + row + x]) / NORM_FACTOR);
                         s++;
                     }
                 }
@@ -140,7 +147,7 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, 
                 {
                     for (int x = 0; x < COLUMNS; x++)
                     {
-                        rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[2 + row + COLUMNS - x]) / NORM_FACTOR);
+                        rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[msg_offset + row + COLUMNS - x]) / NORM_FACTOR);
                         s++;
                     }
                 }
