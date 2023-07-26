@@ -14,4 +14,6 @@ void convolve_mimo_vectorized(float *image, int *adaptive_array, int n);
 
 void mimo_truncated(float *image, int *adaptive_array, int n);
 void load_coefficients2(int *whole_samples, int n);
+
+void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset);
 #endif

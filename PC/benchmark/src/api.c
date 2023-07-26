@@ -1,3 +1,21 @@
+/******************************************************************************
+ * Title                 :   A beamformer application
+ * Filename              :   src/api.c
+ * Author                :   Irreq, jteglund
+ * Origin Date           :   20/07/2023
+ * Version               :   1.0.0
+ * Compiler              :   gcc (GCC) 11.3.0
+ * Target                :   x86_64 GNU/Linux
+ * Notes                 :   None
+ ******************************************************************************
+
+ The interface for the beamforming algorithms and UDP-packets-receiver.
+
+ This file spawns a child process that continiuosly stores the latest raw mic data
+ to a ringbuffer for other processes or threads to access.
+
+*/
+
 // Semaphores
 #include <sys/sem.h>
 #include <sys/shm.h>
@@ -170,6 +188,10 @@ int load(bool replay_mode)
 // Algorithms
 
 #include "algorithms/pad_and_sum.h"
+
+/*
+Cython wrapper for MIMO using naive padding
+*/
 void pad_mimo(float *image, int *adaptive_array, int n)
 {
     float signals[BUFFER_LENGTH];
@@ -181,6 +203,10 @@ void pad_mimo(float *image, int *adaptive_array, int n)
 
 
 #include "algorithms/convolve_and_sum.h"
+
+/*
+Cython wrapper for MIMO using vectorized convolve
+*/
 void convolve_mimo_vectorized(float *image, int *adaptive_array, int n)
 {
     float signals[BUFFER_LENGTH];
@@ -190,6 +216,9 @@ void convolve_mimo_vectorized(float *image, int *adaptive_array, int n)
     mimo_convolve_vectorized(&signals[0], image, adaptive_array, n);
 }
 
+/*
+Cython wrapper for MIMO using naive convolve
+*/
 void convolve_mimo_naive(float *image, int *adaptive_array, int n)
 {
     float signals[BUFFER_LENGTH];
@@ -266,4 +295,13 @@ void mimo_truncated(float *image, int *adaptive_array, int n)
     semop(semid, &data_sem_signal, 1);
 
     mimo_truncated_algorithm(&data[0], image, adaptive_array, n);
+}
+
+void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset)
+{
+    float signals[BUFFER_LENGTH];
+
+    get_data(&signals[0]);
+
+    miso_pad(&signals[0], out, adaptive_array, n, steer_offset);
 }
