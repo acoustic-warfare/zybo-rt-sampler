@@ -14,26 +14,21 @@ c_files.extend(glob.glob("src/*.c"))
 
 CFLAGS = "-O3 -march=native -mavx2 -lm"
 
-# import os
-
-# print(os.environ.get('CFLAGS', []))
-
-# exit()
-
 setup (
     name = 'Module',
     ext_modules = cythonize(
         [
             Extension("beamformer", ["src/main.pyx"] + c_files, include_dirs=["src/"],
                         extra_compile_args = CFLAGS.split(" ")),
-            Extension("tests", ["src/benchmark.pyx"] + c_files, include_dirs=["src/"],
-                        extra_compile_args = CFLAGS.split(" ")),
+            #Extension("tests", ["src/benchmark.pyx"] + c_files, include_dirs=["src/"],
+            #            extra_compile_args = CFLAGS.split(" ")),
             # Extension("VideoPlayer", ["src/modules/VideoPlayer.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
             #Extension("TruncAndSum", ["src/modules/TruncAndSum.pyx"] + c_files, include_dirs=["src/"],
             #            extra_compile_args = ["-O3", "-march=native", "-mavx2", "-lm"]),
             #Extension("Beamformer", ["src/modules/Beamformer.pyx"] + c_files, include_dirs=["src/"],
             #            extra_compile_args = ["-O3", "-march=native", "-mavx2", "-lm"]),
             Extension("directions", ["src/directions.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
+            Extension("visual", ["src/visual.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
         ],
 
         build_dir="build",
