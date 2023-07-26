@@ -228,7 +228,7 @@ def generate_color_map(name="jet"):
 
 colors = generate_color_map()
 
-def calculate_heatmap(image):
+def calculate_heatmap_old(image):
     """"""
     lmax = np.max(image)
 
@@ -255,8 +255,40 @@ def calculate_heatmap(image):
     # small_heatmap = np.reshape(small_heatmap, (MAX_RES_Y, MAX_RES_X, 3))
 
 
-    # heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)
-    heatmap = cv2.resize(small_heatmap, (1000, 1000), interpolation=cv2.INTER_NEAREST)
+    heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)
+    # heatmap = cv2.resize(small_heatmap, (1000, 1000), interpolation=cv2.INTER_NEAREST)
+    return heatmap
+
+def calculate_heatmap(image):
+    """"""
+    lmax = np.max(image)
+
+    image /= lmax
+
+    # image = image.T
+
+    small_heatmap = np.zeros((MAX_RES_Y, MAX_RES_X, 3), dtype=np.uint8)
+    # small_heatmap = np.zeros((MAX_RES_X, MAX_RES_Y, 3), dtype=np.uint8)
+
+    if lmax>1e-8:
+        for x in range(MAX_RES_X):
+            for y in range(MAX_RES_Y):
+                d = image[x, y]
+
+                if d > 0.9:
+                    val = int(255 * d ** MISO_POWER)
+
+                    # small_heatmap[y, MAX_RES_X - 1 - x] = colors[val]
+                    small_heatmap[MAX_RES_Y - 1 - y, x] = colors[val]
+                    # small_heatmap[x, y] = colors[val]
+
+    # cv2.imshow()
+
+    # small_heatmap = np.reshape(small_heatmap, (MAX_RES_Y, MAX_RES_X, 3))
+
+
+    heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)
+    # heatmap = cv2.resize(small_heatmap, (1000, 1000), interpolation=cv2.INTER_NEAREST)
     return heatmap
 
 def calculate_heatmap2_(img):
@@ -387,7 +419,7 @@ cdef class Beamformer:
         self.can_read = False
         self.output = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=np.float32)
 
-        self.capture = cv2.VideoCapture("/dev/video0")
+        self.capture = cv2.VideoCapture("/dev/video2")
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
         self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
@@ -557,6 +589,7 @@ cdef void api(q: JoinableQueue, running: Value):
 
     # q.join()
 
+
     unload_coefficients_pad()
 
 cdef void api_convolve(q: JoinableQueue, running: Value):
@@ -613,28 +646,30 @@ def conv_api(q: JoinableQueue, running: Value):
     api_convolve(q, running)
 
 def consumer(q: JoinableQueue, v: Value):
-    capture = cv2.VideoCapture("/dev/video0")
+    capture = cv2.VideoCapture("/dev/video2")
     capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
     capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
     capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
-    
+
     
     while True:
         try:
             output = q.get(block=False)
             q.task_done()
-            # status, frame = capture.read()
-            # frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
-            # try:
-            #     frame = cv2.resize(frame, WINDOW_DIMENSIONS)
-            # except cv2.error as e:
-            #     print("An error ocurred with image processing! Check if camera and antenna connected properly")
-            #     v.value = 0
-            #     break
+            status, frame = capture.read()
+            frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
+            try:
+                frame = cv2.resize(frame, WINDOW_DIMENSIONS)
+            except cv2.error as e:
+                print("An error ocurred with image processing! Check if camera and antenna connected properly")
+                v.value = 0
+                break
 
             res = calculate_heatmap(output)
 
-            # image = cv2.addWeighted(frame, 0.6, res, 0.8, 0)
+            # print("Running")
+
+            image = cv2.addWeighted(frame, 0.6, res, 0.8, 0)
 
             # img = np.log10(output)
             # img -= img.min()
@@ -642,7 +677,7 @@ def consumer(q: JoinableQueue, v: Value):
             # img /= img.max()
 
             # img **= 10
-            image = res
+            # image = res
             cv2.imshow(APPLICATION_NAME, image)
             # out = cv2.cvtColor(img.T,cv2.COLOR_GRAY2RGB)
             # out = cv2.resize(out, (600, 600))
@@ -653,6 +688,8 @@ def consumer(q: JoinableQueue, v: Value):
         except KeyboardInterrupt:
             v.value = 0
             break
+
+    print("Interupted")
 
 
 def main():
@@ -666,7 +703,7 @@ def main():
     try:
 
         producers = [
-            Process(target=api_old, args=(q, v))
+            Process(target=api, args=(q, v))
             for _ in range(jobs)
         ]
 

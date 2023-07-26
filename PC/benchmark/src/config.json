@@ -1,7 +1,7 @@
 {
     "general": {
         "N_MICROPHONES": 192,
-        "N_SAMPLES": 48828,
+        "N_SAMPLES": 1024,
         "N_TAPS": 64,
         "EVERY_N_SAMPLES": 1,
         "COLUMNS": 8,

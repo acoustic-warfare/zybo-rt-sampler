@@ -2,7 +2,7 @@
 
 //General constants for both c and python.
 #define N_MICROPHONES 192
-#define N_SAMPLES 48828
+#define N_SAMPLES 1024
 #define N_TAPS 64
 #define EVERY_N_SAMPLES 1
 #define COLUMNS 8
