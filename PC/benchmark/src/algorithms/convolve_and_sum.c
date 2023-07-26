@@ -16,15 +16,11 @@
  2N Coefficients, since the algorithm can only delay up to half of the number of
  coefficients (h).
 
- 
- pads the signals with zeros as
- the delay operation. This is fast as only a single summation is required.
-
  Worst case scenario:
 
- MAX_RES_X * MAX_RES_Y * n * N_SAMPLES
+ MAX_RES_X * MAX_RES_Y * n * N_SAMPLES * N_TAPS
 
- Which may result in a time complexity of O(n^4) // Different `n`
+ Which may result in a time-complexity of O(n^5) // Different `n`
 
 */
 
