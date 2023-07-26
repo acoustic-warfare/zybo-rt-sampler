@@ -12,8 +12,7 @@ v = VideoCamera()
 
 def my_signal_handler(*args):  
     if os.environ.get('RUN_MAIN') == 'true':  
-        v.quit()
-    sys.exit(0) 
+        os.system('ps aux  |  grep -i python3  |  awk \'{print $2}\'  |  xargs sudo kill -9')
 
 signal.signal(signal.SIGINT, my_signal_handler) 
 
