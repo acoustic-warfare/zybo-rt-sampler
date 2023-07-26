@@ -3,9 +3,12 @@ import cv2
 from multiprocessing import JoinableQueue, Process, Value
 
 from lib.beamformer import *
+from lib.visual import calculate_heatmap
 
 import queue
-
+import config
+import numpy as np
+#from realtime_scripts.phase_shift_algorithm_peak_detection import main
 WINDOW_DIMENSIONS = (1920, 1080)# (720, 480)
 APPLICATION_WINDOW_WIDTH, APPLICATION_WINDOW_HEIGHT = WINDOW_DIMENSIONS
 
@@ -22,7 +25,6 @@ class VideoCamera(object):
         # If you decide to use video.mp4, you must have this file in the folder
         # as the main.py.
         # self.video = cv2.VideoCapture('video.mp4')
-
         self.v = Value('i', 1)
 
         self.setup()
@@ -54,10 +56,17 @@ class VideoCamera(object):
             self.processStarted = True
         elif backend == 2:
             #TODO: Change conv_api to new backend
-            self.p = Process(target=conv_api, args=(self.q, self.v))
+            self.p = Process(target=self.fftbackend, args=(self.q, self.v))
             self.processStarted = True
         self.p.start()
 
+    def fftbackend(self, q: JoinableQueue, v: Value):
+        data = np.empty((config.N_MICROPHONES, config.N_SAMPLES), dtype=np.float32)
+        while self.v.value:
+            receive(data)
+            #heatmap_data = main(data.T)
+            #self.q.put(heatmap_data)
+        
 
     def handle_image(self, image):
         image = cv2.flip(image, 1) # Nobody likes looking out of the array :(
@@ -68,15 +77,9 @@ class VideoCamera(object):
         try:
             output = self.q.get(block=False)
             self.q.task_done()
-            
-
             res = calculate_heatmap(output)
-
             res = cv2.resize(res, WINDOW_DIMENSIONS)
-
             image = cv2.addWeighted(image, 0.6, res, 0.8, 0)
-
-            
 
         except queue.Empty:
             pass
