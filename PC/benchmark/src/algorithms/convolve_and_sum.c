@@ -1,3 +1,33 @@
+/******************************************************************************
+ * Title                 :   A convolve- and sum beamformer
+ * Filename              :   src/algorithms/convolve_and_sum.c
+ * Author                :   Irreq
+ * Origin Date           :   20/07/2023
+ * Version               :   1.0.0
+ * Compiler              :   gcc (GCC) 11.3.0
+ * Target                :   x86_64 GNU/Linux
+ * Notes                 :   None
+ ******************************************************************************
+
+ This file is a delay and sum beamformer which uses a convolution to delay
+ the signals with a kernal similar to a sinc filter in order
+ to achieve true-time delay. One caveat with this implementation is that 
+ in order to delay a signal N samples, one must calculate a kernel with atleast
+ 2N Coefficients, since the algorithm can only delay up to half of the number of
+ coefficients (h).
+
+ 
+ pads the signals with zeros as
+ the delay operation. This is fast as only a single summation is required.
+
+ Worst case scenario:
+
+ MAX_RES_X * MAX_RES_Y * n * N_SAMPLES
+
+ Which may result in a time complexity of O(n^4) // Different `n`
+
+*/
+
 #include <string.h>
 
 #include <immintrin.h>

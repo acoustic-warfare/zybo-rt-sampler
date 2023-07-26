@@ -1,8 +1,30 @@
+/******************************************************************************
+ * Title                 :   A pad- and sum beamformer
+ * Filename              :   src/algorithms/pad_and_sum.c
+ * Author                :   Irreq
+ * Origin Date           :   20/07/2023
+ * Version               :   1.0.0
+ * Compiler              :   gcc (GCC) 11.3.0
+ * Target                :   x86_64 GNU/Linux
+ * Notes                 :   None
+ ******************************************************************************
+
+ This file is a delay and sum beamformer which pads the signals with zeros as
+ the delay operation. This is fast as only a single summation is required.
+
+ Worst case scenario:
+
+ MAX_RES_X * MAX_RES_Y * n * N_SAMPLES
+
+ Which may result in a time complexity of O(n^4) // Different `n`
+
+*/
+
 #include <stdlib.h>
 
 #include "config.h"
 
-int *whole_samples_h;
+int *whole_samples_h;  // The 1D delay coefficients
 
 // #ifndef DEBUG
 // #define DEBUG 1
@@ -39,12 +61,16 @@ void miso_pad(float *signals, float *out, int *adaptive_array, int n, int offset
         pos_pad = whole_samples_h[offset + m]; // Delay amount
 
         pad_delay(signals + pos_mic * N_SAMPLES, out, pos_pad);
+        // pad_delay(&signals[pos_mic * N_SAMPLES], out, pos_pad);
     }
     
 }
 
 /*
 Perform a MIMO
+
+As this algorithm uses a 1D flattened array for mic delays, 
+a offset is calculated based on which microphone and direction is currently being calculated
 */
 void mimo_pad(float *signals, float *image, int *adaptive_array, int n)
 {
@@ -134,3 +160,7 @@ void unload_coefficients_pad()
 //         }
 //     }
 // }
+
+
+
+
