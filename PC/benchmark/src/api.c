@@ -44,9 +44,11 @@ struct sembuf data_sem_signal = {0, 1, SEM_UNDO}; // Sig operation
 
 pid_t pid_child;
 
-/*
-Remove shared memory and semafores
-*/
+
+/**
+ * @brief Remove shared memory and semafores
+ *
+ */
 void signal_handler()
 {
     shmctl(shmid, IPC_RMID, NULL);
@@ -55,18 +57,20 @@ void signal_handler()
     destroy_msg(client_msg);
 }
 
-/*
-Stops the receiving child process
-*/
+/**
+ * @brief Stops the receiving child process
+ *
+ */
 void stop_receiving()
 {
     signal_handler();
     kill(pid_child, SIGKILL);
 }
 
-/*
-Create a shared memory ring buffer
-*/
+/**
+ * @brief Create a shared memory ring buffer
+ *
+ */
 void init_shared_memory()
 {
     // Create
@@ -94,9 +98,10 @@ void init_shared_memory()
     }
 }
 
-/*
-Create the semaphore
-*/
+/**
+ * @brief Create the semaphore
+ *
+ */
 void init_semaphore()
 {
     semid = semget(KEY, 1, IPC_CREAT | 0666);
@@ -123,9 +128,11 @@ void init_semaphore()
     }
 }
 
-/*
-Retrieve the data located in the ring buffer
-*/
+/**
+ * @brief Retrieve the data located in the ring buffer
+ *
+ * @param out
+ */
 void get_data(float *out)
 {
     semop(semid, &data_sem_wait, 1);
@@ -133,10 +140,13 @@ void get_data(float *out)
     semop(semid, &data_sem_signal, 1);
 }
 
-
-/*
-Main initialization function which starts a child process that continiously receive data
-*/
+/**
+ * @brief Main initialization function which starts
+ * a child process that continiously receive data
+ *
+ * @param replay_mode
+ * @return int
+ */
 int load(bool replay_mode)
 {
 
@@ -189,9 +199,13 @@ int load(bool replay_mode)
 
 #include "algorithms/pad_and_sum.h"
 
-/*
-Cython wrapper for MIMO using naive padding
-*/
+/**
+ * @brief Cython wrapper for MIMO using naive padding
+ *
+ * @param image
+ * @param adaptive_array
+ * @param n
+ */
 void pad_mimo(float *image, int *adaptive_array, int n)
 {
     float signals[BUFFER_LENGTH];
@@ -204,9 +218,13 @@ void pad_mimo(float *image, int *adaptive_array, int n)
 
 #include "algorithms/convolve_and_sum.h"
 
-/*
-Cython wrapper for MIMO using vectorized convolve
-*/
+/**
+ * @brief Cython wrapper for MIMO using vectorized convolve
+ *
+ * @param image
+ * @param adaptive_array
+ * @param n
+ */
 void convolve_mimo_vectorized(float *image, int *adaptive_array, int n)
 {
     float signals[BUFFER_LENGTH];
@@ -216,9 +234,13 @@ void convolve_mimo_vectorized(float *image, int *adaptive_array, int n)
     mimo_convolve_vectorized(&signals[0], image, adaptive_array, n);
 }
 
-/*
-Cython wrapper for MIMO using naive convolve
-*/
+/**
+ * @brief Cython wrapper for MIMO using naive convolve
+ *
+ * @param image
+ * @param adaptive_array
+ * @param n
+ */
 void convolve_mimo_naive(float *image, int *adaptive_array, int n)
 {
     float signals[BUFFER_LENGTH];
@@ -231,6 +253,14 @@ void convolve_mimo_naive(float *image, int *adaptive_array, int n)
 int whole_samples_h_[MAX_RES_X * MAX_RES_Y * ACTIVE_ARRAYS * COLUMNS * ROWS];
 #include <math.h>
 
+/**
+ * @brief TODO
+ * 
+ * @param signals 
+ * @param image 
+ * @param adaptive_array 
+ * @param n 
+ */
 void mimo_truncated_algorithm(float *signals, float *image, int *adaptive_array, int n)
 {
     // dummy output
@@ -275,16 +305,25 @@ void mimo_truncated_algorithm(float *signals, float *image, int *adaptive_array,
     }
 }
 
+
+/**
+ * @brief TODO
+ * 
+ * @param whole_samples 
+ * @param n 
+ */
 void load_coefficients2(int *whole_samples, int n)
 {
     memcpy(&whole_samples_h_[0], whole_samples, sizeof(int) * n);
 }
 
-/*
-
-Trunc-And-Sum beamformer with adaptive array configuration
-
-*/
+/**
+ * @brief Trunc-And-Sum beamformer with adaptive array configuration
+ *
+ * @param image
+ * @param adaptive_array
+ * @param n
+ */
 void mimo_truncated(float *image, int *adaptive_array, int n)
 {
     float data[BUFFER_LENGTH];
@@ -297,6 +336,14 @@ void mimo_truncated(float *image, int *adaptive_array, int n)
     mimo_truncated_algorithm(&data[0], image, adaptive_array, n);
 }
 
+/**
+ * @brief Listen in a specific direction
+ * 
+ * @param out 
+ * @param adaptive_array 
+ * @param n 
+ * @param steer_offset 
+ */
 void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset)
 {
     float signals[BUFFER_LENGTH];
