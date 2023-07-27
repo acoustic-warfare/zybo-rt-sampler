@@ -12,17 +12,55 @@ sys.path.insert(0, "") # Access local modules located in . Enables 'from . impor
 
 from config cimport *
 
+# def calc_r_prime(d):
+#     half = d/2
+#     r_prime = np.zeros((2, COLUMNS * ROWS * ACTIVE_ARRAYS))
+#     element_index = 0
+#     for array in range(ACTIVE_ARRAYS):
+#         for row in range(ROWS):
+#             for col in range(COLUMNS):
+#                 r_prime[0,element_index] = col * d + half + array*COLUMNS*d + array*ARRAY_SEPARATION - COLUMNS * ACTIVE_ARRAYS * half
+#                 r_prime[1, element_index] = row * d - ROWS * half + half
+#                 element_index += 1
+#     r_prime[0,:] -= ACTIVE_ARRAYS*ARRAY_SEPARATION/2
+#     active_mics, n_active_mics = active_microphones()
+
+#     r_prime = r_prime[:,active_mics]
+#     return r_prime
+
+# def active_microphones():
+#     mode = SKIP_N_MICS
+#     rows = np.arange(0, ROWS, mode)
+#     columns = np.arange(0, COLUMNS*ACTIVE_ARRAYS, mode)
+
+#     arr_elem = ROWS*COLUMNS                       # elements in one array
+#     mics = np.linspace(0, arr_elem-1, arr_elem)   # mics in one array
+    
+#     microphones = np.linspace(0, arr_elem-1,arr_elem).reshape((ROWS, COLUMNS))
+
+#     for a in range(ACTIVE_ARRAYS-1):
+#         a += 1
+#         array = mics[0+a*arr_elem : arr_elem+a*arr_elem].reshape((ROWS, COLUMNS))
+#         microphones = np.hstack((microphones, array))
+
+#     active_mics = []
+#     for r in rows:
+#         for c in columns:
+#             mic = microphones[r,c]
+#             active_mics.append(int(mic))
+#     return np.sort(active_mics), len(active_mics)
+
 def calc_r_prime(d):
     half = d/2
-    r_prime = np.zeros((2, COLUMNS * ROWS))
+    r_prime = np.zeros((2, N_MICROPHONES))
     element_index = 0
     for array in range(ACTIVE_ARRAYS):
         for row in range(ROWS):
             for col in range(COLUMNS):
-                r_prime[0,element_index] = col * d + half + array*COLUMNS*d + array*ARRAY_SEPARATION - COLUMNS * ACTIVE_ARRAYS * half
+                r_prime[0,element_index] = col * d + half + array*COLUMNS*d + array*0 - COLUMNS* ACTIVE_ARRAYS * half
                 r_prime[1, element_index] = row * d - ROWS * half + half
                 element_index += 1
-    r_prime[0,:] -= ACTIVE_ARRAYS*ARRAY_SEPARATION/2
+    r_prime[0,:] -= ACTIVE_ARRAYS*0/2
     active_mics, n_active_mics = active_microphones()
 
     r_prime = r_prime[:,active_mics]
@@ -33,10 +71,9 @@ def active_microphones():
     rows = np.arange(0, ROWS, mode)
     columns = np.arange(0, COLUMNS*ACTIVE_ARRAYS, mode)
 
+    mics = np.linspace(0, N_MICROPHONES-1, N_MICROPHONES)   # mics in one array
     arr_elem = ROWS*COLUMNS                       # elements in one array
-    mics = np.linspace(0, arr_elem-1, arr_elem)   # mics in one array
-    
-    microphones = np.linspace(0, arr_elem-1,arr_elem).reshape((ROWS, COLUMNS))
+    microphones = np.linspace(0, ROWS*COLUMNS-1,ROWS*COLUMNS).reshape((ROWS, COLUMNS))
 
     for a in range(ACTIVE_ARRAYS-1):
         a += 1
@@ -48,7 +85,12 @@ def active_microphones():
         for c in columns:
             mic = microphones[r,c]
             active_mics.append(int(mic))
+    
+    # active_mics = np.delete(active_mics, np.where(active_mics == 71))
+
+    # active_mics = np.arange(64)
     return np.sort(active_mics), len(active_mics)
+
 
 def calculate_delays():
     c = PROPAGATION_SPEED             # from config
@@ -195,7 +237,7 @@ def compute_convolve_h():
 
 def calculate_coefficients():
 
-    samp_delay = calculate_delays_()
+    samp_delay = calculate_delays()
 
     #whole_sample_delay = samp_delay.astype(np.int32)
     whole_sample_delay = samp_delay.astype(int)

@@ -1,15 +1,15 @@
 //Do not edit this config file! Add constants and expressions in config.json and build with make. 
 
 //General constants for both c and python.
-#define N_MICROPHONES 192
+#define N_MICROPHONES 256
 #define N_SAMPLES 1024
 #define N_TAPS 64
 #define EVERY_N_SAMPLES 1
 #define COLUMNS 8
 #define ROWS 8
 #define MAX_RES 20
-#define MAX_RES_X 30
-#define MAX_RES_Y 30
+#define MAX_RES_X 40
+#define MAX_RES_Y 10
 #define Z 10.0
 #define MAX_ANGLE 70.0
 #define VIEW_ANGLE 68.0
@@ -17,8 +17,8 @@
 #define SAMPLE_RATE 48828.0
 #define ELEMENT_DISTANCE 0.02
 #define ARRAY_SEPARATION 0.0
-#define ACTIVE_ARRAYS 1
-#define SKIP_N_MICS 1
+#define ACTIVE_ARRAYS 4
+#define SKIP_N_MICS 2
 #define PROPAGATION_SPEED 340.0
 #define APPLICATION_WINDOW_WIDTH 720
 #define APPLICATION_WINDOW_HEIGHT 480
