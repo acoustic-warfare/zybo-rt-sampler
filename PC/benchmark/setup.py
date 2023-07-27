@@ -29,6 +29,7 @@ setup (
             #            extra_compile_args = ["-O3", "-march=native", "-mavx2", "-lm"]),
             Extension("directions", ["src/directions.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
             Extension("visual", ["src/visual.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
+            # Extension("kf", ["src/kf.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
         ],
 
         build_dir="build",
