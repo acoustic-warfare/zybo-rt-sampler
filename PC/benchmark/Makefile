@@ -16,7 +16,8 @@ config:
 lib/beamformer.so: config
 	python3 setup.py build_ext --inplace --build-lib=build
 	mv *.so lib/
-	cp lib/*.so ../application/lib/
+	ln src/visual.py lib/visual.py
+	cp lib/*.so ../application/lib/	
 
 # lib/beamformer.so1: config
 # 	cp -r src/* build/
