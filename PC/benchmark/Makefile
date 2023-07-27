@@ -16,7 +16,7 @@ config:
 lib/beamformer.so: config
 	python3 setup.py build_ext --inplace --build-lib=build
 	mv *.so lib/
-
+	cp lib/*.so ../application/lib/
 
 # lib/beamformer.so1: config
 # 	cp -r src/* build/
@@ -36,3 +36,4 @@ clean:
 	echo "Removing Generated Build Files"
 	ls build/ | grep -xv ".gitignore" | xargs -I {} sh -c "rm -r build/{}"
 	ls lib/ | grep -xv ".gitignore" | xargs -I {} sh -c "rm -r lib/{}"
+	ls ../application/lib/ | grep -xv ".gitignore" | xargs -I {} sh -c "rm -r ../application/lib/{}"
