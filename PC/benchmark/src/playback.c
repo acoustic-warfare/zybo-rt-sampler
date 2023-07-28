@@ -4,6 +4,8 @@
 #include "config.h"
 #include "playback.h"
 
+#define DEBUG_PLAYBACK 0
+
 PaStreamParameters outputParameters, inputParameters;
 PaStream *stream;
 PaError err;
@@ -45,19 +47,16 @@ static int playback_callback(const void *inputBuffer, void *outputBuffer,
             *out++ = data->out[i];
         }
         
-    } 
+    }
     
-    // else {
-    //     for (i = 0; i < N_SAMPLES; i++)
-    //     {
-    //         *out++ = 0.0;
-    //         *out++ = 0.0;
-    //     }
-    // }
-
     return paContinue;
 }
 
+/**
+ * @brief Stop the current playback audio stream
+ * 
+ * @return int 
+ */
 int stop_playback()
 {
     err = Pa_StopStream(stream);
@@ -78,9 +77,7 @@ int stop_playback()
  */
 static void StreamFinished(void *userData)
 {
-    // paTestData *data = (paTestData *)userData;
     printf("Stream completed\n");
-    // printf("Stream Completed: %s\n", data->message);
 }
 
 int load_playback(paData *data)
@@ -112,9 +109,9 @@ int load_playback(paData *data)
     if (err != paNoError)
         fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
 
-    // err = Pa_SetStreamFinishedCallback(stream, &StreamFinished);
-    // if (err != paNoError)
-    //     fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
+    err = Pa_SetStreamFinishedCallback(stream, &StreamFinished);
+    if (err != paNoError)
+        fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
 
     err = Pa_StartStream(stream);
     if (err != paNoError)
@@ -122,3 +119,12 @@ int load_playback(paData *data)
 
     printf("Streaming data in the background\n");
 }
+
+#if DEBUG_PLAYBACK
+int main(int argc, char const *argv[])
+{
+    paData data;
+    return 0;
+}
+
+#endif
