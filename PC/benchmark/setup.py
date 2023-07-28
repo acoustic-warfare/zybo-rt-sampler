@@ -12,7 +12,7 @@ c_files = []
 c_files.extend(glob.glob("src/*.c"))
 # c_files.extend(glob.glob("src/antenna/*.c"))
 
-CFLAGS = "-O3 -march=native -mavx2 -lm"
+CFLAGS = "-O3 -march=native -mavx2 -lm -lrt -lasound -ljack -lpthread -lportaudio"
 
 setup (
     name = 'Module',
@@ -28,8 +28,8 @@ setup (
             #Extension("Beamformer", ["src/modules/Beamformer.pyx"] + c_files, include_dirs=["src/"],
             #            extra_compile_args = ["-O3", "-march=native", "-mavx2", "-lm"]),
             Extension("directions", ["src/directions.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
-            Extension("visual", ["src/visual.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
-            # Extension("kf", ["src/kf.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
+            #Extension("visual", ["src/visual.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
+            Extension("kf", ["src/kf.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
         ],
 
         build_dir="build",
