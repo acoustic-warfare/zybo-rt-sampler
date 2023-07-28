@@ -27,6 +27,8 @@
 #include <string.h>
 #include <signal.h>
 
+#include <unistd.h> // Error
+
 #include "config.h"
 #include "receiver.h"
 
@@ -44,6 +46,23 @@ struct sembuf data_sem_signal = {0, 1, SEM_UNDO}; // Sig operation
 
 pid_t pid_child;
 
+#include "playback.h"
+// paData data;
+
+// /**
+//  * @brief Create a stream for portaudio
+//  *
+//  */
+// void init_portaudio_playback()
+// {
+//     data.can_read = 0;
+//     for (int i = 0; i < N_SAMPLES; i++)
+//     {
+//         data.out[i] = 0.0;
+//     }
+
+//     load_playback(&data);
+// }
 
 /**
  * @brief Remove shared memory and semafores
@@ -79,6 +98,7 @@ void init_shared_memory()
     if (shmid == -1)
     {
         perror("shmget not working");
+        // strerror("shmget not working");
         exit(1);
     }
 
@@ -87,6 +107,7 @@ void init_shared_memory()
     if (rb == (ring_buffer *)-1)
     {
         perror("shmat not working");
+        // strerror("shmat not working");
         exit(1);
     }
 
@@ -152,6 +173,7 @@ int load(bool replay_mode)
 
     init_shared_memory();
     init_semaphore();
+    // init_portaudio_playback();
 
     pid_t pid = fork(); // Fork child
 
@@ -192,7 +214,6 @@ int load(bool replay_mode)
     // Return to parent
     return 0;
 }
-
 
 
 // Algorithms
@@ -352,3 +373,13 @@ void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset)
 
     miso_pad(&signals[0], out, adaptive_array, n, steer_offset);
 }
+
+// void miso_steer_listen2(int *adaptive_array, int n, int steer_offset)
+// {
+//     float signals[BUFFER_LENGTH];
+
+//     get_data(&signals[0]);
+
+//     miso_pad(&signals[0], &data.out[0], adaptive_array, n, steer_offset);
+//     data.can_read = 1;
+// }

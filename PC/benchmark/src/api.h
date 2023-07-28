@@ -6,6 +6,7 @@
 int load(bool replay_mode);
 void get_data(float *signals);
 void stop_receiving();
+void signal_handler();
 
 void pad_mimo(float *image, int *adaptive_array, int n);
 void convolve_mimo_naive(float *image, int *adaptive_array, int n);
@@ -16,4 +17,5 @@ void mimo_truncated(float *image, int *adaptive_array, int n);
 void load_coefficients2(int *whole_samples, int n);
 
 void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset);
+// void miso_steer_listen2(int *adaptive_array, int n, int steer_offset);
 #endif

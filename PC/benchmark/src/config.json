@@ -1,14 +1,14 @@
 {
     "general": {
         "N_MICROPHONES": 256,
-        "N_SAMPLES": 1024,
+        "N_SAMPLES": 256,
         "N_TAPS": 64,
         "EVERY_N_SAMPLES": 1,
         "COLUMNS": 8,
         "ROWS": 8,
         "MAX_RES": 20,
         "MAX_RES_X": 40,
-        "MAX_RES_Y": 10,
+        "MAX_RES_Y": 20,
         "Z": 10.0,
         "MAX_ANGLE": 70.0,
         "VIEW_ANGLE": 68.0,
