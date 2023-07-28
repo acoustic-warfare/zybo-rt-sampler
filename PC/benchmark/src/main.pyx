@@ -39,6 +39,7 @@ cdef extern from "api.h":
     void mimo_truncated(float *image, int *adaptive_array, int n)
 
     void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset)
+    # void miso_steer_listen2(int *adaptive_array, int n, int steer_offset)
 
 def connect(replay_mode: bool = False, verbose=True) -> None:
     """
@@ -243,6 +244,27 @@ cdef void api_miso(q: JoinableQueue, running: Value):
         miso_steer_listen(&out[0], &active_micro[0], int(n_active_mics), steer_offset)
         q.put(out)
 
+# cdef void api_miso2(running: Value):
+#     cdef np.ndarray[np.float32_t, ndim=1, mode = 'c'] out = np.ascontiguousarray(np.zeros(N_SAMPLES, dtype=DTYPE_arr))
+    
+#     whole_samples, fractional_samples = calculate_coefficients()
+#     active_mics, n_active_mics = active_microphones()
+
+#     cdef np.ndarray[int, ndim=1, mode="c"] active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+#     cdef np.ndarray[int, ndim=3, mode="c"] i32_whole_samples
+
+#     i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
+
+#     # Pass int pointer to C function
+#     load_coefficients_pad(&i32_whole_samples[0, 0, 0], whole_samples.size)
+
+#     steer(0, 0)
+
+#     while running.value:
+#         global steer_offset
+#         miso_steer_listen2(&active_micro[0], int(n_active_mics), steer_offset)
+
 
 
 # Web interface
@@ -254,6 +276,9 @@ def conv_api(q: JoinableQueue, running: Value):
 
 def miso_api(q: JoinableQueue, running: Value):
     api_miso(q, running)
+
+# def miso_api2(running: Value):
+#     api_miso2(running)
 
 # Testing
 

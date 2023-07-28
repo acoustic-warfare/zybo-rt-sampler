@@ -55,9 +55,10 @@ def calc_r_prime(d):
     r_prime = np.zeros((2, N_MICROPHONES))
     element_index = 0
     for array in range(ACTIVE_ARRAYS):
+        array *= -1
         for row in range(ROWS):
             for col in range(COLUMNS):
-                r_prime[0,element_index] = col * d + half + array*COLUMNS*d + array*0 - COLUMNS* ACTIVE_ARRAYS * half
+                r_prime[0,element_index] = -col * d - half + array*COLUMNS*d + array*0 + COLUMNS* ACTIVE_ARRAYS * half
                 r_prime[1, element_index] = row * d - ROWS * half + half
                 element_index += 1
     r_prime[0,:] -= ACTIVE_ARRAYS*0/2
@@ -103,7 +104,7 @@ def calculate_delays():
 
     x_res = MAX_RES_X  # resolution in x, from config
     y_res = MAX_RES_Y  # resolution in y, from config
-    AS = 1 #16/9   # aspect ratio, from config
+    AS = 4/3#1 #16/9   # aspect ratio, from config
 
     # Calculations for time delay starts below
     r_prime = calc_r_prime(d)  # matrix holding the xy positions of each microphone
