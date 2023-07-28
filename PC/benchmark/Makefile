@@ -31,6 +31,9 @@ test: lib/beamformer.so
 fig: clean lib/beamformer.so
 	python3 exe.py
 
+listen: config
+	gcc -Wall -lm -o run src/*.c src/algorithms/*.c -O3 -march=native -mavx2 -lm -lrt -lasound -ljack -lpthread -lportaudio -lm
+
 .PHONY: clean
 
 clean:
