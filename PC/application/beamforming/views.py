@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, StreamingHttpResponse
 from camera import VideoCamera, gen
 import time
+from multiprocessing import Process
 from play import RealtimeSoundplayer
 from threading import Thread
 import os  
@@ -18,11 +19,15 @@ signal.signal(signal.SIGINT, my_signal_handler)
 
 
 def index(req):
-   # s = RealtimeSoundplayer()
-    #thread = Thread(target=s.play_sound, args=())
-    #thread.daemon = True
-    #thread.start()
-    return render(req, "stream.html")
+    threshold = req.GET.get('t', '-5')
+    print(threshold)
+    context = {
+        't': threshold
+    }
+    global v
+    v.quit()
+    v = VideoCamera()
+    return render(req, "stream.html", context)
 
 def stream(req):
     global v
@@ -31,21 +36,29 @@ def stream(req):
 def disableBackend(req):
     global v
     v.disableBeamforming()
+    v.quit()
+    v = VideoCamera()
     return render(req, "stream.html")
 
 def enablePadBackend(req):
     global v
+    v.quit()
+    v = VideoCamera()
     v.startBeamforming(0)
     return render(req, "stream.html")
 
 
 def enableConvolveBackend(req):
     global v
+    v.quit()
+    v = VideoCamera()
     v.startBeamforming(1)
     return render(req, "stream.html")
 
 def enableThirdBackend(req):
     global v
+    v.quit()
+    v = VideoCamera()
     v.startBeamforming(2)
     return render(req, "stream.html")
 

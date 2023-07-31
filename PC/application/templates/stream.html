@@ -9,6 +9,24 @@
         <button type="button" onclick="location.href = 'http://127.0.0.1:8000/disable/';">Disable</button>
         <button type="button" onclick="location.href = 'http://127.0.0.1:8000/disconnect/';">Disconnect</button>
         <button type="button" onclick="location.href = 'http://127.0.0.1:8000/replay_selection/';">Replay</button>
+        <div class="slidecontainer">
+            <input type="range" min="-10" max="0" value={{t}} class="slider" id="myRange">
+            <p>Value: <span id="value"></span></p>
+            <button type="button" id="threshold">Select threshold</button>
+        </div>
         <img src="http://127.0.0.1:8000/monitor" onclick="console.log(event.clientX, event.clientY)">
+
+        <script>
+            var slider = document.getElementById("myRange");
+            var output = document.getElementById("value");
+            output.innerHTML = slider.value;
+            slider.oninput = function() {
+                output.innerHTML = this.value;
+            }
+            document.getElementById("threshold").onclick = function() { 
+                url =  'http://127.0.0.1:8000/?t=' + slider.value;
+                location.href = url;
+            };  
+        </script>
     </body>
 </html>

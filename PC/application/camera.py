@@ -36,12 +36,10 @@ class VideoCamera(object):
         jobs = 1
         self.q = JoinableQueue(maxsize=2)
 
-        
-
-        connect()
+        connect(True)
         self.processStarted = False
-        self.p = Process(target=uti_api, args=(self.q, self.v))
-        #self.p.start()
+        self.p = Process(target=miso_api, args=(self.q, self.v))
+        self.p.start()
 
     def startBeamforming(self, backend = 0):
         if self.processStarted:
@@ -55,7 +53,6 @@ class VideoCamera(object):
             self.p = Process(target=conv_api, args=(self.q, self.v))
             self.processStarted = True
         elif backend == 2:
-            #TODO: Change conv_api to new backend
             self.p = Process(target=self.fftbackend, args=(self.q, self.v))
             self.processStarted = True
         self.p.start()
@@ -88,7 +85,7 @@ class VideoCamera(object):
     
     def get_frame(self):
         success, image = self.video.read()
-        image = self.handle_image(image)
+        #image = self.handle_image(image)
 
         ret, jpeg = cv2.imencode('.jpg', image)
         return jpeg.tobytes()
@@ -98,15 +95,20 @@ class VideoCamera(object):
             self.v.value = 0
             self.p.join()
             self.v.value = 1
+            self.processStarted = False
     
     def quit(self):
         self.v.value = 0
-        self.p.join()
+        if self.processStarted:
+            self.p.join()
+            self.processStarted = False
+            
         disconnect()
         self.video.release()
 
 def gen(camera):
-    while camera.v.value:
+    while True:
+        print("HEJ")
         frame = camera.get_frame()
         yield (b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
