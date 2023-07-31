@@ -17,7 +17,12 @@ lib/beamformer.so: config
 	python3 setup.py build_ext --inplace --build-lib=build
 	mv *.so lib/
 	ln src/visual.py lib/visual.py
-	cp lib/*.so ../application/lib/	
+	cp lib/*.so ../application/lib/
+
+bor: config
+	python3 setup.py build_ext --inplace --build-lib=build
+	mv *.so lib/
+	# cp lib/*.so ../application/lib/
 
 # lib/beamformer.so1: config
 # 	cp -r src/* build/
@@ -33,6 +38,15 @@ fig: clean lib/beamformer.so
 
 listen: config
 	gcc -Wall -lm -o run src/*.c src/algorithms/*.c -O3 -march=native -mavx2 -lm -lrt -lasound -ljack -lpthread -lportaudio -lm
+
+cytest: config
+	cp -r src/* build/
+	
+	$(CC) -O3 --shared -fPIC -march=native -mavx2 -lm build/*.c build/algorithms/*.c -o build/delay.so -march=native -mavx2 -lm -lrt -lasound -ljack -lpthread -lportaudio -lm
+	
+	$(CYCC) src/mic.pyx -o build/mic.c
+	$(CC) -shared -pthread -fPIC -fwrapv -O3 -Wall -fno-strict-aliasing -lm -march=native -mavx2 -I $(PYTHON_PATH) -o lib/mic.so build/mic.c build/delay.so -march=native -mavx2 -lm -lrt -lasound -ljack -lpthread -lportaudio -lm
+
 
 .PHONY: clean
 
