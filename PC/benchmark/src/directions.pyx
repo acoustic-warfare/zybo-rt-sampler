@@ -50,6 +50,8 @@ from config cimport *
 #             active_mics.append(int(mic))
 #     return np.sort(active_mics), len(active_mics)
 
+ban = [153, 188, 189]
+
 def calc_r_prime(d):
     half = d/2
     r_prime = np.zeros((2, N_MICROPHONES))
@@ -85,6 +87,8 @@ def active_microphones():
     for r in rows:
         for c in columns:
             mic = microphones[r,c]
+            if mic in ban:
+                continue
             active_mics.append(int(mic))
     
     # active_mics = np.delete(active_mics, np.where(active_mics == 71))

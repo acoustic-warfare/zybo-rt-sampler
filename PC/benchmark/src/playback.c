@@ -4,11 +4,20 @@
 #include "config.h"
 #include "playback.h"
 
+/**
+ * @brief TODO
+ *
+ * Known bugs:
+ *
+ * 1. having: PaError err in global scope results in SEGFAULT when compiling with cython, not in regular gcc
+ *
+ */
+
 #define DEBUG_PLAYBACK 0
 
 PaStreamParameters outputParameters, inputParameters;
 PaStream *stream;
-PaError err;
+// PaError err;
 
 /* This routine will be called by the PortAudio engine when audio is needed.
 ** It may called at interrupt level on some machines so don't do anything
@@ -59,6 +68,7 @@ static int playback_callback(const void *inputBuffer, void *outputBuffer,
  */
 int stop_playback()
 {
+    PaError err;
     err = Pa_StopStream(stream);
     if (err != paNoError)
         fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
@@ -82,10 +92,12 @@ static void StreamFinished(void *userData)
 
 int load_playback(paData *data)
 {
+    PaError err;
+    printf("Pa\n");
     err = Pa_Initialize();
     if (err != paNoError)
         fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
-
+    printf("Pa initied\n");
     outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
     if (outputParameters.device == paNoDevice)
     {
@@ -96,7 +108,7 @@ int load_playback(paData *data)
     outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
     outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultLowOutputLatency;
     outputParameters.hostApiSpecificStreamInfo = NULL;
-
+    printf("Starting stream\n");
     err = Pa_OpenStream(
         &stream,
         NULL, /* no input */
@@ -106,6 +118,7 @@ int load_playback(paData *data)
         paClipOff, /* we won't output out of range samples so don't bother clipping them */
         playback_callback,
         data);
+    printf("Started stream\n");
     if (err != paNoError)
         fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
 

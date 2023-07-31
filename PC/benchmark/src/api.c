@@ -31,6 +31,7 @@
 
 #include "config.h"
 #include "receiver.h"
+// #include "play.h"
 
 ring_buffer *rb; // Data to be stored in
 
@@ -46,7 +47,7 @@ struct sembuf data_sem_signal = {0, 1, SEM_UNDO}; // Sig operation
 
 pid_t pid_child;
 
-#include "playback.h"
+// #include "playback.h"
 // paData data;
 
 // /**

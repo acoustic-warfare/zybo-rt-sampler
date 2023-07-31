@@ -104,7 +104,7 @@ def receive(signals: np.ndarray[N_MICROPHONES, N_SAMPLES]) -> None:
     get_data(&sig[0, 0])
 
 # Exposing all beamforming algorithms in C
-cdef extern from "algorithms/pad_and_sum.c":
+cdef extern from "algorithms/pad_and_sum.h":
     void load_coefficients_pad(int *whole_samples, int n)
     void unload_coefficients_pad()
     void pad_delay(float *signal, float *out, int pos_pad)
@@ -112,7 +112,7 @@ cdef extern from "algorithms/pad_and_sum.c":
     void mimo_pad(float *signals, float *image, int *adaptive_array, int n)
 
 
-cdef extern from "algorithms/convolve_and_sum.c":
+cdef extern from "algorithms/convolve_and_sum.h":
     void convolve_delay_naive_add(float *signal, float *h, float *out)
     void convolve_delay_vectorized(float *signal, float *h, float *out)
     void convolve_delay_vectorized_add(float *signal, float *h, float *out)
