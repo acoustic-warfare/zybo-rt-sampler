@@ -19,10 +19,9 @@ signal.signal(signal.SIGINT, my_signal_handler)
 
 
 def index(req):
-    threshold = req.GET.get('t', '-5')
-    print(threshold)
+    slider = req.GET.get('t', '-8')
     context = {
-        't': threshold
+        'slider': slider,
     }
     global v
     v.quit()
