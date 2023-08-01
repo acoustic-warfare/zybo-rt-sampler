@@ -27,8 +27,6 @@
     start_playback
     stop_playback
 
-
-
  The interface for the beamforming algorithms and UDP-packets-receiver.
 
  This file spawns a child process that continiuosly stores the latest raw mic data
@@ -297,14 +295,12 @@ int miso_loop()
         get_data(&miso->signals[0]);
 
         // Perform MISO and write to paData
-        int level = 200;
         miso_pad(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
         for (int i = 0; i < N_SAMPLES; i++)
         {
-            // printf("%f ", data.out[i]);
             data.out[i] /= (float)miso->n;
 
-            data.out[i] *= level;
+            data.out[i] *= MIC_GAIN; // The amount to multiply with to get a higher volume
         }
 
         semop(misosemid, &misodata_sem_signal, 1);

@@ -185,7 +185,7 @@ cdef void api_with_miso(q: JoinableQueue, running: Value):
     load_pa(&active_micro[0], int(64))
     steer(0)
 
-    steer2(0, 90)
+    # steer2(0, 90)
 
     while running.value:
         pad_mimo(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))

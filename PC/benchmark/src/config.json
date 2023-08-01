@@ -58,6 +58,7 @@
         "NORM_FACTOR": 16777216.0,
         "NORM_FACTOR_SOUND": 2000000.0,
         "MISO_POWER": 15,
+        "MIC_GAIN": 200,
         "KEY": 1234,
         "KEY_SOUND": 1235,
         "expression": {}
