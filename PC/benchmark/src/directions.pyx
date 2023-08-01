@@ -12,46 +12,6 @@ sys.path.insert(0, "") # Access local modules located in . Enables 'from . impor
 
 from config cimport *
 
-# def calc_r_prime(d):
-#     half = d/2
-#     r_prime = np.zeros((2, COLUMNS * ROWS * ACTIVE_ARRAYS))
-#     element_index = 0
-#     for array in range(ACTIVE_ARRAYS):
-#         for row in range(ROWS):
-#             for col in range(COLUMNS):
-#                 r_prime[0,element_index] = col * d + half + array*COLUMNS*d + array*ARRAY_SEPARATION - COLUMNS * ACTIVE_ARRAYS * half
-#                 r_prime[1, element_index] = row * d - ROWS * half + half
-#                 element_index += 1
-#     r_prime[0,:] -= ACTIVE_ARRAYS*ARRAY_SEPARATION/2
-#     active_mics, n_active_mics = active_microphones()
-
-#     r_prime = r_prime[:,active_mics]
-#     return r_prime
-
-# def active_microphones():
-#     mode = SKIP_N_MICS
-#     rows = np.arange(0, ROWS, mode)
-#     columns = np.arange(0, COLUMNS*ACTIVE_ARRAYS, mode)
-
-#     arr_elem = ROWS*COLUMNS                       # elements in one array
-#     mics = np.linspace(0, arr_elem-1, arr_elem)   # mics in one array
-    
-#     microphones = np.linspace(0, arr_elem-1,arr_elem).reshape((ROWS, COLUMNS))
-
-#     for a in range(ACTIVE_ARRAYS-1):
-#         a += 1
-#         array = mics[0+a*arr_elem : arr_elem+a*arr_elem].reshape((ROWS, COLUMNS))
-#         microphones = np.hstack((microphones, array))
-
-#     active_mics = []
-#     for r in rows:
-#         for c in columns:
-#             mic = microphones[r,c]
-#             active_mics.append(int(mic))
-#     return np.sort(active_mics), len(active_mics)
-
-ban = [71, 153, 188, 189]
-
 def calc_r_prime(d):
     half = d/2
     r_prime = np.zeros((2, N_MICROPHONES))
@@ -69,32 +29,49 @@ def calc_r_prime(d):
     r_prime = r_prime[:,active_mics]
     return r_prime
 
-def active_microphones():
-    mode = SKIP_N_MICS
-    rows = np.arange(0, ROWS, mode)
-    columns = np.arange(0, COLUMNS*ACTIVE_ARRAYS, mode)
 
-    mics = np.linspace(0, N_MICROPHONES-1, N_MICROPHONES)   # mics in one array
-    arr_elem = ROWS*COLUMNS                       # elements in one array
+def active_microphones():
+    # depending on the chosen mode, the correct microphone indexes are calculated
+    # and stored in the list active_mics
+    #       mode = 1: alla mikrofoner, 
+    #       mode = 2: varannan
+    #       mode = 3: var tredje
+    #       mode = 4: var fjärde
+    #       (visualisera array setup med att sätta plot_setup = 1 i config.py)
+    
+    mode = SKIP_N_MICS 
+    rows = np.arange(0, ROWS, mode)                              # number of rows in array
+    columns = np.arange(0, COLUMNS*ACTIVE_ARRAYS, mode)   # number of columns in array
+
+    mics = np.linspace(0, N_MICROPHONES-1, N_MICROPHONES)           # vector holding all microphone indexes for all active arrays
+    arr_elem = ROWS*COLUMNS                               # number of elements in one array
+
+    # microphone indexes for one array, in a matrix
     microphones = np.linspace(0, ROWS*COLUMNS-1,ROWS*COLUMNS).reshape((ROWS, COLUMNS))
 
+    # for each additional array, stack a matrix of the microphone indexes of that array
     for a in range(ACTIVE_ARRAYS-1):
         a += 1
         array = mics[0+a*arr_elem : arr_elem+a*arr_elem].reshape((ROWS, COLUMNS))
         microphones = np.hstack((microphones, array))
 
+    # take out the active microphones from the microphones matrix, save in list active_mics
+    try:
+        unused_mics = np.load('unused_mics.npy')
+    except:
+        unused_mics = []
+        print("Will use all microphones")
     active_mics = []
     for r in rows:
         for c in columns:
             mic = microphones[r,c]
-            if mic in ban:
-                continue
-            active_mics.append(int(mic))
-    
-    # active_mics = np.delete(active_mics, np.where(active_mics == 71))
+            if mic not in unused_mics:
+                #continue
+                active_mics.append(int(mic))
 
-    active_mics = np.arange(64)
-    return np.sort(active_mics), len(active_mics)
+    # sort the list such that the mic indexes are in ascending order
+    active_mics = np.sort(active_mics)
+    return active_mics, len(active_mics)
 
 
 def calculate_delays():
@@ -130,11 +107,8 @@ def calculate_delays():
     samp_delay = (fs/c) * (x_scan*x_i + y_scan*y_i) / r_scan            # with shape: (x_res, y_res, n_active_mics)
     # adjust such that the microphone furthest away from the beam direction have 0 delay
     samp_delay -= np.amin(samp_delay, axis=2).reshape(x_res, y_res, 1)
-    print(samp_delay.shape)
+
     return samp_delay
-    # active_mics: holds index of active microphones for a specific mode
-    # n_active_mics: number of active microphones
-    active_mics, n_active_mics = active_microphones()
 
 def calculate_delays_():
 
