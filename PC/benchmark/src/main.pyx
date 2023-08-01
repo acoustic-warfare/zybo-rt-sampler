@@ -17,7 +17,7 @@ ctypedef np.float32_t DTYPE_t
 DTYPE_arr = np.float32
 
 try:
-    from lib.directions import calculate_coefficients, active_microphones, compute_convolve_h
+    from lib.directions import calculate_coefficients, active_microphones, compute_convolve_h, calculate_delay_miso
 except:
     print("You must build the directions library")
     exit(1)
@@ -40,6 +40,10 @@ cdef extern from "api.h":
 
     void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset)
     # void miso_steer_listen2(int *adaptive_array, int n, int steer_offset)
+    int load_miso()
+    void load_pa(int *adaptive_array, int n)
+    void stop_miso()
+    void steer(int offset)
 
 def connect(replay_mode: bool = False, verbose=True) -> None:
     """
@@ -106,7 +110,9 @@ def receive(signals: np.ndarray[N_MICROPHONES, N_SAMPLES]) -> None:
 # Exposing all beamforming algorithms in C
 cdef extern from "algorithms/pad_and_sum.h":
     void load_coefficients_pad(int *whole_samples, int n)
+    void load_coefficients_pad2(int *whole_miso, int n)
     void unload_coefficients_pad()
+    void unload_coefficients_pad2()
     void pad_delay(float *signal, float *out, int pos_pad)
     void miso_pad(float *signals, float *out, int *adaptive_array, int n, int offset)
     void mimo_pad(float *signals, float *image, int *adaptive_array, int n)
@@ -150,6 +156,13 @@ cdef void api(q: JoinableQueue, running: Value):
 
     cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
     mimo_arr = np.ascontiguousarray(x)
+    import time
+    load_miso()
+    time.sleep(1)
+    load_pa(&active_micro[0], int(n_active_mics))
+    steer(0)
+
+    steer2(0, 90)
 
     while running.value:
         pad_mimo(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
@@ -157,8 +170,9 @@ cdef void api(q: JoinableQueue, running: Value):
 
     # q.join()
 
-
+    stop_miso()
     unload_coefficients_pad()
+    # unload_coefficients_pad2()
 
 cdef void api_convolve(q: JoinableQueue, running: Value):
 
@@ -207,10 +221,27 @@ cdef void api_old(q: JoinableQueue, running: Value):
         mimo_truncated(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
         q.put(mimo_arr)
 
-def steer(azimuth: float, elevation: float):
+
+cdef void _steer2(azimuth, elevation):
+    whole_samples = calculate_delay_miso(azimuth, elevation)
+    cdef np.ndarray[int, ndim=1, mode="c"] i32_whole_samples
+
+    i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
+
+    # Pass int pointer to C function
+    unload_coefficients_pad2()
+    load_coefficients_pad2(&i32_whole_samples[0], whole_samples.size)
+
+
+
+def steer2(azimuth: float, elevation: float):
     """Steer a MISO into a specific direction"""
     assert -90<=azimuth<=90, "Invalid range"
     assert -90<=elevation<=90, "Invalid range"
+
+    # steer(0)
+
+    # _steer2(azimuth, elevation)
 
     azimuth += 90
     azimuth /= 180
@@ -223,6 +254,7 @@ def steer(azimuth: float, elevation: float):
 
     global steer_offset
     steer_offset = elevation * MAX_RES_X * n_active_mics + azimuth * n_active_mics
+    steer(steer_offset)
 
 cdef void api_miso(q: JoinableQueue, running: Value):
     cdef np.ndarray[np.float32_t, ndim=1, mode = 'c'] out = np.ascontiguousarray(np.zeros(N_SAMPLES, dtype=DTYPE_arr))

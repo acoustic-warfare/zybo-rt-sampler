@@ -72,7 +72,7 @@ def calculate_heatmap(image):
     """"""
     lmax = np.max(image)
 
-    print(lmax)
+    # print(lmax)
 
     threshold = 5e-8
     # image[image < threshold] = 0.0
@@ -254,7 +254,7 @@ def calculate_heatmap2(img):
 
     heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)
 
-    return heatmap
+    return heatmap, True
 
 import queue
 from multiprocessing import JoinableQueue, Value
