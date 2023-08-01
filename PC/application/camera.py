@@ -14,7 +14,7 @@ APPLICATION_WINDOW_WIDTH, APPLICATION_WINDOW_HEIGHT = WINDOW_DIMENSIONS
 
 te = 0
 class VideoCamera(object):
-    def __init__(self, threshold):
+    def __init__(self, threshold = 10e-8):
         # Using OpenCV to capture from device 0. If you have trouble capturing
         # from a webcam, comment the line below out and use a video file
         # instead.
@@ -37,7 +37,7 @@ class VideoCamera(object):
         jobs = 1
         self.q = JoinableQueue(maxsize=2)
 
-        connect()
+        connect(True)
         self.processStarted = False
         self.p = Process(target=miso_api, args=(self.q, self.v))
         #self.p.start()

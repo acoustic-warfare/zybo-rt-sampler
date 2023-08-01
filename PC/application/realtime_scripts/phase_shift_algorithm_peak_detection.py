@@ -1,7 +1,7 @@
 import numpy as np
 np.set_printoptions(threshold=np.inf)
 import time
-import interface.config
+import interface.config as config
 import realtime_scripts.calc_phase_shift_cartesian as calc_phase_shift_cartesian
 
 n_elements = config.N_MICROPHONES
