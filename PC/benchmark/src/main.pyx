@@ -218,33 +218,6 @@ cdef void api_convolve(q: JoinableQueue, running: Value):
     unload_coefficients_convolve()
 
 
-cdef void api_old(q: JoinableQueue, running: Value):
-    whole_samples, fractional_samples = calculate_coefficients()
-    active_mics, n_active_mics = active_microphones()
-
-    cdef np.ndarray[int, ndim=1, mode="c"] active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
-
-    cdef np.ndarray[int, ndim=3, mode="c"] i32_whole_samples
-
-    print(len(whole_samples), whole_samples.shape, whole_samples.size)
-
-    i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
-
-    # Pass int pointer to C function
-    load_coefficients2(&i32_whole_samples[0, 0, 0], whole_samples.size)
-
-    x = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
-
-    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
-    mimo_arr = np.ascontiguousarray(x)
-
-    #bf.connect()
-
-    while running.value:
-        mimo_truncated(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
-        q.put(mimo_arr)
-
-
 cdef void _steer2(azimuth, elevation):
     whole_samples = calculate_delay_miso(azimuth, elevation)
     cdef np.ndarray[int, ndim=1, mode="c"] i32_whole_samples
@@ -274,6 +247,7 @@ def steer2(azimuth: float, elevation: float):
     steer_offset = int(elevation * MAX_RES_X * n_active_mics + azimuth * n_active_mics)
     steer(steer_offset)
 
+
 cdef void api_miso(q: JoinableQueue, running: Value):
     cdef np.ndarray[np.float32_t, ndim=1, mode = 'c'] out = np.ascontiguousarray(np.zeros(N_SAMPLES, dtype=DTYPE_arr))
     
@@ -302,17 +276,14 @@ def uti_api(q: JoinableQueue, running: Value):
 
 def uti_api_with_miso(q: JoinableQueue, running: Value):
     api_with_miso(q, running)
+
 def conv_api(q: JoinableQueue, running: Value):
     api_convolve(q, running)
 
 def miso_api(q: JoinableQueue, running: Value):
     api_miso(q, running)
 
-# def miso_api2(running: Value):
-#     api_miso2(running)
-
 # Testing
-
 def main():
     jobs = 1
     q = JoinableQueue(maxsize=2)
@@ -347,11 +318,10 @@ def main():
             p.join()
 
 
-
     finally:
 
+        # Stop the program
         v.value = 0
-
         disconnect()
 
 
