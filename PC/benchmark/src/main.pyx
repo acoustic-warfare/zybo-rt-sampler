@@ -32,12 +32,10 @@ cdef extern from "api.h":
     void pad_mimo(float *image, int *adaptive_array, int n)
     void convolve_mimo_vectorized(float *image, int *adaptive_array, int n)
     void convolve_mimo_naive(float *image, int *adaptive_array, int n)
-
     void load_coefficients2(int *whole_sample_delay, int n)
     void mimo_truncated(float *image, int *adaptive_array, int n)
 
     void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset)
-    # void miso_steer_listen2(int *adaptive_array, int n, int steer_offset)
     int load_miso()
     void load_pa(int *adaptive_array, int n)
     void stop_miso()
@@ -183,7 +181,8 @@ cdef void api_with_miso(q: JoinableQueue, running: Value):
     import time
     load_miso()
     time.sleep(1)
-    load_pa(&active_micro[0], int(n_active_mics))
+    # load_pa(&active_micro[0], int(n_active_mics))
+    load_pa(&active_micro[0], int(64))
     steer(0)
 
     steer2(0, 90)
