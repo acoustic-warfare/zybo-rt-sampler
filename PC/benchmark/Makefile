@@ -24,6 +24,10 @@ bor: config
 	mv *.so lib/
 	# cp lib/*.so ../application/lib/
 
+yum: config	lib/beamformer.so
+	python3 -c "from lib.mic import *;start()"
+
+
 # lib/beamformer.so1: config
 # 	cp -r src/* build/
 # 	$(CYCC) src/main.pyx -o build/main.c

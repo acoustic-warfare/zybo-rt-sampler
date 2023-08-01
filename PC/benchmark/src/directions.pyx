@@ -50,7 +50,7 @@ from config cimport *
 #             active_mics.append(int(mic))
 #     return np.sort(active_mics), len(active_mics)
 
-ban = [153, 188, 189]
+ban = [71, 153, 188, 189]
 
 def calc_r_prime(d):
     half = d/2
@@ -93,7 +93,7 @@ def active_microphones():
     
     # active_mics = np.delete(active_mics, np.where(active_mics == 71))
 
-    # active_mics = np.arange(64)
+    active_mics = np.arange(64)
     return np.sort(active_mics), len(active_mics)
 
 
@@ -168,6 +168,36 @@ def calculate_delays_():
     samp_delay *= SAMPLE_RATE / PROPAGATION_SPEED
 
     return samp_delay
+
+def calculate_delay_miso(azimuth, elevation):
+    distance = 0.02
+
+    samp_delay = np.zeros((COLUMNS*ROWS*ACTIVE_ARRAYS), dtype=np.float32)
+
+    azimuth *= -np.pi / 180.0
+    x_factor = np.sin(azimuth)
+    elevation *= -np.pi / 180.0
+    y_factor = np.sin(elevation)
+
+    smallest = 0
+
+    for row in range(ROWS):
+        for col in range(COLUMNS):
+            half = distance / 2.0
+            tmp_col = col * distance - COLUMNS * half + half
+            tmp_row = row * distance - ROWS * half + half
+
+            tmp_delay = tmp_col * x_factor + tmp_row * y_factor
+            if (tmp_delay < smallest):
+                smallest = tmp_delay
+
+            samp_delay[row * COLUMNS + col] = tmp_delay
+
+    samp_delay -= smallest
+
+    samp_delay *= SAMPLE_RATE / PROPAGATION_SPEED
+
+    return samp_delay.astype(int)
 
 def get_h(delay, N=8):
     tau = - delay  # Fractional delay [samples].

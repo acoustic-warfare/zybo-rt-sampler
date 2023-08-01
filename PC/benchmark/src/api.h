@@ -18,4 +18,28 @@ void load_coefficients2(int *whole_samples, int n);
 
 void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset);
 // void miso_steer_listen2(int *adaptive_array, int n, int steer_offset);
+
+#include "portaudio.h"
+
+typedef struct
+{
+    int can_read;
+    float out[N_SAMPLES];
+} paData;
+
+typedef struct
+{
+    int steer_offset;
+    float signals[BUFFER_LENGTH];
+    int adaptive_array[N_MICROPHONES];
+    int n;
+} Miso;
+
+int load_playback(paData *data);
+int stop_playback();
+int load_miso();
+void load_pa(int *adaptive_array, int n);
+void stop_miso();
+void steer(int offset);
+
 #endif

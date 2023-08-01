@@ -16,6 +16,371 @@
 
 */
 
+#include "config.h"
+#include "portaudio.h"
+#include "api.h"
+
+// Semaphores
+#include <sys/sem.h>
+#include <sys/shm.h>
+#include <sys/ipc.h>
+#include <sys/types.h>
+
+#include <signal.h>
+
+#include <sys/sem.h>
+#include <sys/shm.h>
+#include <sys/ipc.h>
+#include <sys/types.h>
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdio.h>
+
+#include <unistd.h> // Error
+
+/**
+ * @brief MISO delay and sum beamforming - Together as one...
+ *
+ */
+
+int misoshmid; // Shared memory ID
+int misosemid; // Semaphore ID
+
+int misosocket_desc;
+
+struct sembuf misodata_sem_wait = {0, -1, SEM_UNDO};  // Wait operation
+struct sembuf misodata_sem_signal = {0, 1, SEM_UNDO}; // Sig operation
+
+pid_t misopid_child;
+
+PaStreamParameters outputParameters, inputParameters;
+PaStream *stream;
+
+paData data;
+
+Miso *miso;
+
+volatile sig_atomic_t stop = 0;
+
+/* This routine will be called by the PortAudio engine when audio is needed.
+** It may called at interrupt level on some machines so don't do anything
+** that could mess up the system like calling malloc() or free().
+*/
+static int playback_callback(const void *inputBuffer, void *outputBuffer,
+                             unsigned long framesPerBuffer,
+                             const PaStreamCallbackTimeInfo *timeInfo,
+                             PaStreamCallbackFlags statusFlags,
+                             void *userData)
+{
+    paData *data = (paData *)userData;
+    float *out = (float *)outputBuffer;
+    (void)inputBuffer;
+
+    unsigned long i;
+
+    if (data->can_read)
+    {
+        data->can_read = 0;
+        for (i = 0; i < N_SAMPLES; i++)
+        {
+            *out++ = data->out[i];
+            *out++ = data->out[i];
+        }
+    }
+
+    return paContinue;
+}
+
+/**
+ * @brief Stop the current playback audio stream
+ *
+ * @return int
+ */
+int stop_playback()
+{
+    printf("Stopping PortAudio Backend\n");
+    PaError err;
+    err = Pa_StopStream(stream);
+    if (err != paNoError)
+        fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
+
+    err = Pa_CloseStream(stream);
+    if (err != paNoError)
+        fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
+
+    Pa_Terminate();
+
+    printf("Stopped PortAudio Backend\n");
+
+    return err;
+}
+
+int load_playback(paData *data)
+{
+    PaError err;
+    printf("Pa\n");
+    err = Pa_Initialize();
+    if (err != paNoError)
+        fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
+    printf("Pa initied\n");
+    outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
+    if (outputParameters.device == paNoDevice)
+    {
+        fprintf(stderr, "Error: No default output device.\n");
+        fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
+    }
+    outputParameters.channelCount = 2;         /* stereo output */
+    outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
+    outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultLowOutputLatency;
+    outputParameters.hostApiSpecificStreamInfo = NULL;
+    printf("Starting stream\n");
+    err = Pa_OpenStream(
+        &stream,
+        NULL, /* no input */
+        &outputParameters,
+        SAMPLE_RATE,
+        N_SAMPLES,
+        paClipOff, /* we won't output out of range samples so don't bother clipping them */
+        playback_callback,
+        data);
+    printf("Started stream\n");
+    if (err != paNoError)
+        fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
+
+    err = Pa_StartStream(stream);
+    if (err != paNoError)
+        fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
+
+    printf("Streaming data in the background\n");
+
+    return 0;
+}
+
+/**
+ * @brief Create a stream for portaudio
+ *
+ */
+void init_portaudio_playback()
+{
+    data.can_read = 0;
+    for (int i = 0; i < N_SAMPLES; i++)
+    {
+        data.out[i] = 0.0;
+    }
+
+    load_playback(&data);
+}
+
+/**
+ * @brief Create the semaphore
+ *
+ */
+void miso_init_semaphore()
+{
+    misosemid = semget(KEY + 1, 1, IPC_CREAT | 0666);
+
+    if (misosemid == -1)
+    {
+        perror("semget");
+        exit(1);
+    }
+
+    union semun
+    {
+        int val;
+        struct semid_ds *buf;
+        short *array;
+    } argument;
+    argument.val = 1;
+
+    // Set semaphore to 1
+    if (semctl(misosemid, 0, SETVAL, argument) == -1)
+    {
+        perror("semctl");
+        exit(1);
+    }
+}
+
+/**
+ * @brief Create a shared memory ring buffer
+ *
+ */
+void miso_init_shared_memory()
+{
+    // Create
+    misoshmid = shmget(KEY + 1, sizeof(Miso), IPC_CREAT | 0666);
+
+    if (misoshmid == -1)
+    {
+        perror("shmget not working");
+        // strerror("shmget not working");
+        exit(1);
+    }
+
+    miso = (Miso *)shmat(misoshmid, NULL, 0);
+
+    if (miso == (Miso *)-1)
+    {
+        perror("shmat not working");
+        // strerror("shmat not working");
+        exit(1);
+    }
+
+    // Dummy to allow for free without undefined behaviour
+    // miso->adaptive_array = (int *)malloc(1 * sizeof(int));
+    // miso->adaptive_array[0] = 0;
+    for (int i = 0; i < N_MICROPHONES; i++)
+    {
+        miso->adaptive_array[i] = 0;
+    }
+
+    miso->n = 1;
+
+    for (int i = 0; i < BUFFER_LENGTH; i++)
+    {
+        miso->signals[i] = 0.0;
+    }
+}
+
+int miso_loop()
+{
+
+    // These should be called elsewhere...
+    //int coefficients[N_MICROPHONES] = {0};
+    //load_coefficients_pad(&coefficients[0], N_MICROPHONES);
+    steer(0);
+
+    init_portaudio_playback();
+
+    while (!stop)
+    {
+        // semop(misosemid, &misodata_sem_wait, 1);
+
+        // for (int i = 0; i < N_SAMPLES; i++)
+        // {
+        //     data.out[i] = 0.0;
+        // }
+
+        // semop(misosemid, &misodata_sem_signal, 1);
+        // continue;
+
+        semop(misosemid, &misodata_sem_wait, 1);
+
+        // Receive latest buffer
+        get_data(&miso->signals[0]);
+
+        // // Perform MISO and write to paData
+        // miso_pad(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
+        // for (int i = 0; i < N_SAMPLES; i++)
+        // {
+        //     data.out[i] /= (float)miso->n;
+
+        //     data.out[i] *= 100;
+        // }
+
+        // Perform MISO and write to paData
+        int nn = 64;
+        int level = 200;
+        miso_pad(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], nn, miso->steer_offset);
+        for (int i = 0; i < N_SAMPLES; i++)
+        {
+            // printf("%f ", data.out[i]);
+            data.out[i] /= (float)nn;
+
+            data.out[i] *= level;
+        }
+
+        semop(misosemid, &misodata_sem_signal, 1);
+
+        // Allow output for new frames
+        data.can_read = 1;
+    }
+
+    stop_playback();
+
+    return 0;
+}
+
+/**
+ * @brief Load config for mic configuration for MISO playback
+ *
+ * @param adaptive_array
+ * @param n
+ */
+void load_pa(int *adaptive_array, int n)
+{
+    semop(misosemid, &misodata_sem_wait, 1);
+    miso->n = n;
+    for (int i = 0; i < miso->n; i++)
+    {
+        miso->adaptive_array[i] = adaptive_array[i];
+    }
+    semop(misosemid, &misodata_sem_signal, 1);
+}
+
+void steer(int offset)
+{
+    semop(misosemid, &misodata_sem_wait, 1);
+    miso->steer_offset = offset;
+    semop(misosemid, &misodata_sem_signal, 1);
+}
+
+/**
+ * @brief Must call from parent loop to stop miso playback
+ *
+ */
+void stop_miso()
+{
+    // Send signal to interupt child process and stop playback
+    kill(misopid_child, SIGINT);
+
+    // Free shared memory and semaphores
+    shmctl(misoshmid, IPC_RMID, NULL);
+    semctl(misosemid, 0, IPC_RMID);
+}
+
+/**
+ * @brief Signal handler
+ *
+ */
+void stop_inside()
+{
+    stop = 1;
+}
+
+int load_miso()
+{
+    // load(false);
+
+    miso_init_shared_memory();
+    miso_init_semaphore();
+
+    pid_t misopid = fork(); // Fork child
+
+    if (misopid == -1)
+    {
+        perror("fork");
+        exit(1);
+    }
+    else if (misopid == 0) // Child
+    {
+        signal(SIGINT, stop_inside);
+        miso_loop();
+        exit(0); // Without exit, child returns to parent... took a while to realize
+    }
+    else
+    {
+        misopid_child = misopid;
+    }
+
+    // Return to parent
+    return 0;
+}
+
 // Semaphores
 #include <sys/sem.h>
 #include <sys/shm.h>
@@ -208,6 +573,8 @@ int load(bool replay_mode)
 
             semop(semid, &data_sem_signal, 1);
         }
+
+        exit(0);
     }
 
     pid_child = pid;
