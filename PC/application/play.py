@@ -2,7 +2,7 @@ import pyaudio
 
 from lib.beamformer import connect, receive, disconnect
 from multiprocessing import JoinableQueue
-import config
+import interface.config
 import numpy as np
 import time
 

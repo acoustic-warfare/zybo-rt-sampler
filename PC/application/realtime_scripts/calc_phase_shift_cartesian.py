@@ -1,7 +1,7 @@
 import numpy as np
 np.set_printoptions(threshold=np.inf)
 import time
-import config
+import interface.config
 import realtime_scripts.calc_r_prime as calc_r_prime
 import realtime_scripts.calc_mode_matrix as calc_mode_matrix
 import realtime_scripts.calc_mode_matrices as calc_mode_matrices

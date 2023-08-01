@@ -1,4 +1,4 @@
-import config
+import interface.config
 import numpy as np
 
 def active_microphones(mode):

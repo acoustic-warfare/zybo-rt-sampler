@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import config
+import interface.config
 import realtime_scripts.active_microphones as am
 
 from matplotlib import rc # only for plot

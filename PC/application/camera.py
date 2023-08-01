@@ -6,7 +6,7 @@ from lib.beamformer import *
 from lib.visual import calculate_heatmap, calculate_heatmap_fft
 
 import queue
-import config
+import interface.config
 import numpy as np
 from realtime_scripts.phase_shift_algorithm_peak_detection import main
 WINDOW_DIMENSIONS = (1920, 1080)# (720, 480)

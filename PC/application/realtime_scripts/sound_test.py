@@ -8,7 +8,7 @@ import cv2
 import os
 from lib.microphone_array import connect, disconnect, receive, convolve_backend_2, trunc_backend_2
 import numpy as np
-import config
+import interface.config
 import time
 import phase_shift_algorithm_peak_detection
 
