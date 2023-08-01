@@ -1,6 +1,6 @@
 import numpy as np
 np.set_printoptions(threshold=np.inf)
-import interface.config
+import interface.config as config
 import realtime_scripts.active_microphones_modes as amm
 
 c = config.PROPAGATION_SPEED
