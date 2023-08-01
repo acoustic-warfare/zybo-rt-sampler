@@ -156,6 +156,30 @@ cdef void api(q: JoinableQueue, running: Value):
 
     cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
     mimo_arr = np.ascontiguousarray(x)
+
+    while running.value:
+        pad_mimo(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
+        q.put(mimo_arr)
+    
+    unload_coefficients_pad()
+
+cdef void api_with_miso(q: JoinableQueue, running: Value):
+    whole_samples, fractional_samples = calculate_coefficients()
+    active_mics, n_active_mics = active_microphones()
+
+    cdef np.ndarray[int, ndim=1, mode="c"] active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+    cdef np.ndarray[int, ndim=3, mode="c"] i32_whole_samples
+
+    i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
+
+    # Pass int pointer to C function
+    load_coefficients_pad(&i32_whole_samples[0, 0, 0], whole_samples.size)
+
+    x = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
+
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
+    mimo_arr = np.ascontiguousarray(x)
     import time
     load_miso()
     time.sleep(1)
@@ -303,6 +327,8 @@ cdef void api_miso(q: JoinableQueue, running: Value):
 def uti_api(q: JoinableQueue, running: Value):
     api(q, running)
 
+def uti_api_with_miso(q: JoinableQueue, running: Value):
+    api_with_miso(q, running)
 def conv_api(q: JoinableQueue, running: Value):
     api_convolve(q, running)
 
