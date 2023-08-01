@@ -99,10 +99,6 @@ def calculate_heatmap(image, threshold=5e-8):
                     small_heatmap[MAX_RES_Y - 1 - y, MAX_RES_X - 1 - x] = colors[val]
                     should_overlay = True
                     # small_heatmap[x, y] = colors[val]
-
-    heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)
-    # heatmap = cv2.resize(small_heatmap, (1000, 1000), interpolation=cv2.INTER_NEAREST)
-    return heatmap, should_overlay
     
 
 def calculate_heatmap_fft(image, threshold=5e-8):
