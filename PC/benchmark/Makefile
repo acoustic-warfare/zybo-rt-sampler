@@ -18,7 +18,8 @@ lib/beamformer.so: config
 	mv *.so lib/
 	ln src/visual.py lib/visual.py
 	cp lib/* ../application/lib/
-
+	cp interface/config.py ../application/interface/config.py
+	
 bor: config
 	python3 setup.py build_ext --inplace --build-lib=build
 	mv *.so lib/
@@ -59,3 +60,4 @@ clean:
 	ls build/ | grep -xv ".gitignore" | xargs -I {} sh -c "rm -r build/{}"
 	ls lib/ | grep -xv ".gitignore" | xargs -I {} sh -c "rm -r lib/{}"
 	ls ../application/lib/ | grep -xv ".gitignore" | xargs -I {} sh -c "rm -r ../application/lib/{}"
+	ls ../application/interface/ | grep -xv ".gitignore" | xargs -I {} sh -c "rm -r ../application/interface/{}"
