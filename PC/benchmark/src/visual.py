@@ -68,13 +68,12 @@ def calculate_heatmap_old(image):
     # heatmap = cv2.resize(small_heatmap, (1000, 1000), interpolation=cv2.INTER_NEAREST)
     return heatmap
 
-def calculate_heatmap(image):
+def calculate_heatmap(image, threshold=5e-8):
     """"""
     lmax = np.max(image)
 
     # print(lmax)
 
-    threshold = 5e-8
     # image[image < threshold] = 0.0
 
     image /= lmax
@@ -102,6 +101,37 @@ def calculate_heatmap(image):
                     # small_heatmap[x, y] = colors[val]
     
 
+def calculate_heatmap_fft(image, threshold=5e-8):
+    """"""
+    lmax = np.max(image)
+
+    # print(lmax)
+
+    # image[image < threshold] = 0.0
+
+    image /= lmax
+    should_overlay = False
+
+    # image = image.T
+
+    small_heatmap = np.zeros((11, 11, 3), dtype=np.uint8)
+    # small_heatmap = np.zeros((MAX_RES_X, MAX_RES_Y, 3), dtype=np.uint8)
+
+    if lmax>threshold:
+        for x in range(11):
+            for y in range(11):
+                d = image[x, y]
+
+                if d >= 0.5:
+                    d -= 0.5
+                    d*= 2
+                    val = int(255 * d ** MISO_POWER)
+
+                    # small_heatmap[y, MAX_RES_X - 1 - x] = colors[val]
+                    # small_heatmap[MAX_RES_Y - 1 - y, x] = colors[val]
+                    small_heatmap[11 - 1 - y, 11 - 1 - x] = colors[val]
+                    should_overlay = True
+                    # small_heatmap[x, y] = colors[val]
     # for x in range(MAX_RES_X):
     #     for y in range(MAX_RES_Y):
     #         d = image[x, y]
