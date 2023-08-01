@@ -8,7 +8,7 @@
         "ROWS": 8,
         "MAX_RES": 20,
         "MAX_RES_X": 40,
-        "MAX_RES_Y": 30,
+        "MAX_RES_Y": 20,
         "Z": 10.0,
         "MAX_ANGLE": 70.0,
         "VIEW_ANGLE": 68.0,
@@ -28,7 +28,8 @@
         "UDP_REPLAY_IP": "127.0.0.1",
         "FPGA_PROTOCOL_VERSION": 2,
         "expression": {
-            "BUFFER_LENGTH": "N_SAMPLES * N_MICROPHONES"
+            "BUFFER_LENGTH": "N_SAMPLES * N_MICROPHONES",
+            "ASPECT_RATIO": "4/3"
         }
     },
     "python": {
@@ -45,6 +46,8 @@
         "propagation_speed": 340.0,
         "TIMEOUT": 30,
         "FLIP_IMAGE": true,
+        "mode": 1,
+        "modes": 7,
         "expression": {
             "DTYPE": "ctypes.c_int32",
             "NP_DTYPE": "numpy.float32",
@@ -55,7 +58,7 @@
         "NORM_FACTOR": 16777216.0,
         "NORM_FACTOR_SOUND": 2000000.0,
         "MISO_POWER": 15,
-        "KEY": 1236,
+        "KEY": 1234,
         "KEY_SOUND": 1235,
         "expression": {}
     }
