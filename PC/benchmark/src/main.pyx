@@ -22,11 +22,9 @@ except:
     print("You must build the directions library")
     exit(1)
 
-steer_offset = 0
-
-
 from config cimport *
 
+# API must contain all c functions that needs IPC
 cdef extern from "api.h":
     int load(bint)
     void get_data(float *signals)
@@ -44,6 +42,31 @@ cdef extern from "api.h":
     void load_pa(int *adaptive_array, int n)
     void stop_miso()
     void steer(int offset)
+
+# Exposing all pad and sum beamforming algorithms in C
+cdef extern from "algorithms/pad_and_sum.h":
+    void load_coefficients_pad(int *whole_samples, int n)
+    void load_coefficients_pad2(int *whole_miso, int n)
+    void unload_coefficients_pad()
+    void unload_coefficients_pad2()
+    void pad_delay(float *signal, float *out, int pos_pad)
+    void miso_pad(float *signals, float *out, int *adaptive_array, int n, int offset)
+    void mimo_pad(float *signals, float *image, int *adaptive_array, int n)
+
+# Exposing all convolve and sum beamforming algorithms in C
+cdef extern from "algorithms/convolve_and_sum.h":
+    void convolve_delay_naive_add(float *signal, float *h, float *out)
+    void convolve_delay_vectorized(float *signal, float *h, float *out)
+    void convolve_delay_vectorized_add(float *signal, float *h, float *out)
+    void convolve_delay_naive(float *signal, float *out, float *h)
+    void convolve_naive(float *signals, float *out, int *adaptive_array, int n, int offset)
+    void mimo_convolve_naive(float *signals, float *image, int *adaptive_array, int n)
+    void miso_convolve_vectorized(float *signals, float *out, int *adaptive_array, int n, int offset)
+    void mimo_convolve_vectorized(float *signals, float *image, int *adaptive_array, int n)
+    void load_coefficients_convolve(float *h, int n)
+    void unload_coefficients_convolve()
+
+
 
 def connect(replay_mode: bool = False, verbose=True) -> None:
     """
@@ -106,29 +129,6 @@ def receive(signals: np.ndarray[N_MICROPHONES, N_SAMPLES]) -> None:
     cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] sig = np.ascontiguousarray(signals)
     
     get_data(&sig[0, 0])
-
-# Exposing all beamforming algorithms in C
-cdef extern from "algorithms/pad_and_sum.h":
-    void load_coefficients_pad(int *whole_samples, int n)
-    void load_coefficients_pad2(int *whole_miso, int n)
-    void unload_coefficients_pad()
-    void unload_coefficients_pad2()
-    void pad_delay(float *signal, float *out, int pos_pad)
-    void miso_pad(float *signals, float *out, int *adaptive_array, int n, int offset)
-    void mimo_pad(float *signals, float *image, int *adaptive_array, int n)
-
-
-cdef extern from "algorithms/convolve_and_sum.h":
-    void convolve_delay_naive_add(float *signal, float *h, float *out)
-    void convolve_delay_vectorized(float *signal, float *h, float *out)
-    void convolve_delay_vectorized_add(float *signal, float *h, float *out)
-    void convolve_delay_naive(float *signal, float *out, float *h)
-    void convolve_naive(float *signals, float *out, int *adaptive_array, int n, int offset)
-    void mimo_convolve_naive(float *signals, float *image, int *adaptive_array, int n)
-    void miso_convolve_vectorized(float *signals, float *out, int *adaptive_array, int n, int offset)
-    void mimo_convolve_vectorized(float *signals, float *image, int *adaptive_array, int n)
-    void load_coefficients_convolve(float *h, int n)
-    void unload_coefficients_convolve()
 
 
 
@@ -263,10 +263,6 @@ def steer2(azimuth: float, elevation: float):
     assert -90<=azimuth<=90, "Invalid range"
     assert -90<=elevation<=90, "Invalid range"
 
-    # steer(0)
-
-    # _steer2(azimuth, elevation)
-
     azimuth += 90
     azimuth /= 180
     azimuth = int(azimuth * MAX_RES_X)
@@ -276,8 +272,7 @@ def steer2(azimuth: float, elevation: float):
 
     _, n_active_mics = active_microphones()
 
-    global steer_offset
-    steer_offset = elevation * MAX_RES_X * n_active_mics + azimuth * n_active_mics
+    steer_offset = int(elevation * MAX_RES_X * n_active_mics + azimuth * n_active_mics)
     steer(steer_offset)
 
 cdef void api_miso(q: JoinableQueue, running: Value):
@@ -299,27 +294,6 @@ cdef void api_miso(q: JoinableQueue, running: Value):
         global steer_offset
         miso_steer_listen(&out[0], &active_micro[0], int(n_active_mics), steer_offset)
         q.put(out)
-
-# cdef void api_miso2(running: Value):
-#     cdef np.ndarray[np.float32_t, ndim=1, mode = 'c'] out = np.ascontiguousarray(np.zeros(N_SAMPLES, dtype=DTYPE_arr))
-    
-#     whole_samples, fractional_samples = calculate_coefficients()
-#     active_mics, n_active_mics = active_microphones()
-
-#     cdef np.ndarray[int, ndim=1, mode="c"] active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
-
-#     cdef np.ndarray[int, ndim=3, mode="c"] i32_whole_samples
-
-#     i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
-
-#     # Pass int pointer to C function
-#     load_coefficients_pad(&i32_whole_samples[0, 0, 0], whole_samples.size)
-
-#     steer(0, 0)
-
-#     while running.value:
-#         global steer_offset
-#         miso_steer_listen2(&active_micro[0], int(n_active_mics), steer_offset)
 
 
 
@@ -356,7 +330,7 @@ def main():
     try:
 
         producers = [
-            Process(target=api, args=(q, v))
+            Process(target=api_with_miso, args=(q, v))
             for _ in range(jobs)
         ]
 
