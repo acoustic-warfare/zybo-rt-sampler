@@ -27,6 +27,7 @@
 #include "config.h"
 
 int *whole_samples_h;  // The 1D delay coefficients
+int *whole_miso_samples;
 
 // #ifndef DEBUG
 // #define DEBUG 1
@@ -66,6 +67,28 @@ void miso_pad(float *signals, float *out, int *adaptive_array, int n, int offset
         // pad_delay(&signals[pos_mic * N_SAMPLES], out, pos_pad);
     }
     
+}
+
+/*
+Perform a MISO for a certain direction
+
+int offset: if you need coefficients in a specific direction = (y * MAX_RES_X * n + x * n)
+*/
+void miso_pad2(float *signals, float *out, int *adaptive_array, int n, int offset)
+{
+    // Reset the output for the new direction
+    memset(out, 0, (N_SAMPLES) * sizeof(float));
+
+    int pos_pad, pos_mic;
+
+    for (int m = 0; m < n; m++)
+    {
+        pos_mic = adaptive_array[m];           // Which mic to use
+        pos_pad = whole_miso_samples[pos_mic]; // Delay amount
+
+        pad_delay(signals + pos_mic * N_SAMPLES, out, pos_pad);
+        // pad_delay(&signals[pos_mic * N_SAMPLES], out, pos_pad);
+    }
 }
 
 /*
@@ -127,9 +150,20 @@ void load_coefficients_pad(int *whole_samples, int n)
     memcpy(whole_samples_h, whole_samples, n * sizeof(int));
 }
 
+void load_coefficients_pad2(int *whole_miso, int n)
+{
+    whole_miso_samples = (int*) malloc(n * sizeof(int));
+    memcpy(whole_miso_samples, whole_miso, n * sizeof(int));
+}
+
 void unload_coefficients_pad()
 {
     free(whole_samples_h);
+}
+
+void unload_coefficients_pad2()
+{
+    free(whole_miso_samples);
 }
 
 // /*
