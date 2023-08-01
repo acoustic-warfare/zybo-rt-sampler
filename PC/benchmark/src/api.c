@@ -9,6 +9,26 @@
  * Notes                 :   None
  ******************************************************************************
 
+ This file contains code for Python (Cython) to interface with functions that share
+ the same variables in the same global scope. However the necessary C functions are
+ located in their respective files inside src/
+
+ This file contains the following APIs:
+
+ 1. Connect/Disconnect - Microphone array
+
+ 2. Middle-interfaces for MIMO and MISO
+    load_coefficients
+    pad_mimo
+    convolve_mimo_vectorized
+    convolve_mimo_naive
+
+ 3. Portaudio loudspeaker playback interface
+    start_playback
+    stop_playback
+
+
+
  The interface for the beamforming algorithms and UDP-packets-receiver.
 
  This file spawns a child process that continiuosly stores the latest raw mic data
@@ -41,6 +61,22 @@
 #include <stdio.h>
 
 #include <unistd.h> // Error
+
+// Semaphores
+#include <sys/sem.h>
+#include <sys/shm.h>
+#include <sys/ipc.h>
+#include <sys/types.h>
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>
+
+#include <unistd.h> // Error
+
+#include "config.h"
+#include "receiver.h"
 
 /**
  * @brief MISO delay and sum beamforming - Together as one...
@@ -119,6 +155,12 @@ int stop_playback()
     return err;
 }
 
+/**
+ * @brief Start a Port Audio continious playback stream 
+ * 
+ * @param data 
+ * @return int 
+ */
 int load_playback(paData *data)
 {
     PaError err;
@@ -176,7 +218,7 @@ void init_portaudio_playback()
 }
 
 /**
- * @brief Create the semaphore
+ * @brief Create the semaphore for miso data
  *
  */
 void miso_init_semaphore()
@@ -206,7 +248,7 @@ void miso_init_semaphore()
 }
 
 /**
- * @brief Create a shared memory ring buffer
+ * @brief Create shared memory for miso data, such as angle and signalbuffer
  *
  */
 void miso_init_shared_memory()
@@ -217,7 +259,6 @@ void miso_init_shared_memory()
     if (misoshmid == -1)
     {
         perror("shmget not working");
-        // strerror("shmget not working");
         exit(1);
     }
 
@@ -226,13 +267,9 @@ void miso_init_shared_memory()
     if (miso == (Miso *)-1)
     {
         perror("shmat not working");
-        // strerror("shmat not working");
         exit(1);
     }
 
-    // Dummy to allow for free without undefined behaviour
-    // miso->adaptive_array = (int *)malloc(1 * sizeof(int));
-    // miso->adaptive_array[0] = 0;
     for (int i = 0; i < N_MICROPHONES; i++)
     {
         miso->adaptive_array[i] = 0;
@@ -248,48 +285,24 @@ void miso_init_shared_memory()
 
 int miso_loop()
 {
-
-    // These should be called elsewhere...
-    //int coefficients[N_MICROPHONES] = {0};
-    //load_coefficients_pad(&coefficients[0], N_MICROPHONES);
     steer(0);
 
     init_portaudio_playback();
 
     while (!stop)
     {
-        // semop(misosemid, &misodata_sem_wait, 1);
-
-        // for (int i = 0; i < N_SAMPLES; i++)
-        // {
-        //     data.out[i] = 0.0;
-        // }
-
-        // semop(misosemid, &misodata_sem_signal, 1);
-        // continue;
-
         semop(misosemid, &misodata_sem_wait, 1);
 
         // Receive latest buffer
         get_data(&miso->signals[0]);
 
-        // // Perform MISO and write to paData
-        // miso_pad(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
-        // for (int i = 0; i < N_SAMPLES; i++)
-        // {
-        //     data.out[i] /= (float)miso->n;
-
-        //     data.out[i] *= 100;
-        // }
-
         // Perform MISO and write to paData
-        int nn = 64;
         int level = 200;
-        miso_pad(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], nn, miso->steer_offset);
+        miso_pad(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
         for (int i = 0; i < N_SAMPLES; i++)
         {
             // printf("%f ", data.out[i]);
-            data.out[i] /= (float)nn;
+            data.out[i] /= (float)miso->n;
 
             data.out[i] *= level;
         }
@@ -354,8 +367,6 @@ void stop_inside()
 
 int load_miso()
 {
-    // load(false);
-
     miso_init_shared_memory();
     miso_init_semaphore();
 
@@ -381,22 +392,7 @@ int load_miso()
     return 0;
 }
 
-// Semaphores
-#include <sys/sem.h>
-#include <sys/shm.h>
-#include <sys/ipc.h>
-#include <sys/types.h>
-
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-
-#include <unistd.h> // Error
-
-#include "config.h"
-#include "receiver.h"
-// #include "play.h"
+// ---- BEGIN MIMO ----
 
 ring_buffer *rb; // Data to be stored in
 
@@ -411,24 +407,6 @@ struct sembuf data_sem_wait = {0, -1, SEM_UNDO};  // Wait operation
 struct sembuf data_sem_signal = {0, 1, SEM_UNDO}; // Sig operation
 
 pid_t pid_child;
-
-// #include "playback.h"
-// paData data;
-
-// /**
-//  * @brief Create a stream for portaudio
-//  *
-//  */
-// void init_portaudio_playback()
-// {
-//     data.can_read = 0;
-//     for (int i = 0; i < N_SAMPLES; i++)
-//     {
-//         data.out[i] = 0.0;
-//     }
-
-//     load_playback(&data);
-// }
 
 /**
  * @brief Remove shared memory and semafores
@@ -741,13 +719,3 @@ void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset)
 
     miso_pad(&signals[0], out, adaptive_array, n, steer_offset);
 }
-
-// void miso_steer_listen2(int *adaptive_array, int n, int steer_offset)
-// {
-//     float signals[BUFFER_LENGTH];
-
-//     get_data(&signals[0]);
-
-//     miso_pad(&signals[0], &data.out[0], adaptive_array, n, steer_offset);
-//     data.can_read = 1;
-// }
