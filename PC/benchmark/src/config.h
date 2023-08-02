@@ -8,9 +8,9 @@
 #define COLUMNS 8
 #define ROWS 8
 #define MAX_RES 20
-#define MAX_RES_X 40
-#define MAX_RES_Y 20
-#define Z 10.0
+#define MAX_RES_X 57
+#define MAX_RES_Y 32
+#define Z 1.0
 #define MAX_ANGLE 70.0
 #define VIEW_ANGLE 68.0
 #define UDP_PORT 21844
@@ -36,5 +36,5 @@
 #define NORM_FACTOR_SOUND 2000000.0
 #define MISO_POWER 15
 #define MIC_GAIN 200
-#define KEY 1234
+#define KEY 1238
 #define KEY_SOUND 1235

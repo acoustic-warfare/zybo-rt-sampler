@@ -1,6 +1,21 @@
 # cython: language_level=3
 # distutils: language=c
 
+__doc__ = """
+This is the Python -> Cython -> C interface used to communicate with the microphone_array,
+perform beamforming, start receivers and playbacks.
+
+The reason for all functionality to be located in this file is because the functions inside
+needs to communicate with each other in the C scope. Therefore, they won't share variables
+if they are located in different runtimes. As the user, you may simply inside your python
+interpreter or python program use:
+
+>>> from beamformer import WHAT_YOU_NEED_TO_IMPORT
+
+Most of the functionality can be further explained in src/api.c which this file "sits" on top
+of.
+"""
+
 import numpy as np
 cimport numpy as np
 
@@ -8,7 +23,8 @@ cimport numpy as np
 np.import_array()
 
 import sys
-sys.path.insert(0, "") # Access local modules located in . Enables 'from . import MODULE'
+# Access local modules located in . Enables 'from . import MODULE'
+sys.path.insert(0, "") 
 
 # Create specific data-types "ctypedef" assigns a corresponding compile-time type to DTYPE_t.
 ctypedef np.float32_t DTYPE_t
@@ -22,9 +38,10 @@ except:
     print("You must build the directions library")
     exit(1)
 
+# Import configuration variables from config.pxd <- config.h
 from config cimport *
 
-# API must contain all c functions that needs IPC
+# API must contain all C functions that needs IPC
 cdef extern from "api.h":
     int load(bint)
     void get_data(float *signals)
@@ -65,6 +82,7 @@ cdef extern from "algorithms/convolve_and_sum.h":
     void unload_coefficients_convolve()
 
 
+# ---- BEGIN LIBRARY FUNCTIONS ----
 
 def connect(replay_mode: bool = False, verbose=True) -> None:
     """
@@ -72,12 +90,12 @@ def connect(replay_mode: bool = False, verbose=True) -> None:
 
     [NOTICE]
 
-    You must remember to disconnect after you are done, to let the internal c child process terminate
-    safely.
+    You must remember to disconnect after you are done, to let the internal C
+    child process terminate safely.
 
     Args:
-        replay_mode     bool    True for using replay mode everything else or nothing
-                                will result in using real data
+        replay_mode     bool    True for using replay mode everything 
+                                else or nothing will result in using real data
 
     Kwargs:
         verbose         bool    If you want to display terminal output or not
@@ -109,8 +127,11 @@ def receive(signals: np.ndarray[N_MICROPHONES, N_SAMPLES]) -> None:
     Receive the N_SAMPLES latest samples from the Zybo.
 
     [NOTICE]
-
-    It is important to have the correct datatype and shape as defined in src/config.json
+    This function is "slow" in the regard that is checks if the `signals` is
+    of correct data-type and shape, but fine if you only need the latest sample.
+ 
+    It is important to have the correct datatype and shape as defined 
+    in src/config.json
 
     Usage:
 
@@ -118,7 +139,8 @@ def receive(signals: np.ndarray[N_MICROPHONES, N_SAMPLES]) -> None:
         >>>receive(data)
 
     Args:
-        signals     np.ndarray The array to be filled with the latest microphone data
+        signals     np.ndarray The array to be filled with the 
+                    latest microphone data
     
     """
     assert signals.shape == (N_MICROPHONES, N_SAMPLES), "Arrays do not match shape"
@@ -129,13 +151,15 @@ def receive(signals: np.ndarray[N_MICROPHONES, N_SAMPLES]) -> None:
     get_data(&sig[0, 0])
 
 
+# ---- BEGIN BEAMFORMING FUNCTIONS ----
+
+from multiprocessing import JoinableQueue, Process, Value
+
 
 cdef _convolve_coefficients_load(h):
     cdef np.ndarray[float, ndim=4, mode="c"] f32_h = np.ascontiguousarray(h)
     load_coefficients_convolve(&f32_h[0, 0, 0, 0], int(h.size))
 
-
-from multiprocessing import JoinableQueue, Process, Value
 
 cdef void api(q: JoinableQueue, running: Value):
     whole_samples, fractional_samples = calculate_coefficients()
@@ -161,6 +185,16 @@ cdef void api(q: JoinableQueue, running: Value):
     
     unload_coefficients_pad()
 
+"""
+The following functions are producers of data since the only create their coefficients
+during call. They are also meant to be run in a separate Process and to be stopped
+by the Variable `running`.
+
+All these functions use a queue to put their 
+
+
+"""
+
 cdef void api_with_miso(q: JoinableQueue, running: Value):
     whole_samples, fractional_samples = calculate_coefficients()
     active_mics, n_active_mics = active_microphones()
@@ -181,8 +215,8 @@ cdef void api_with_miso(q: JoinableQueue, running: Value):
     import time
     load_miso()
     time.sleep(1)
-    # load_pa(&active_micro[0], int(n_active_mics))
-    load_pa(&active_micro[0], int(64))
+    load_pa(&active_micro[0], int(n_active_mics))
+    # load_pa(&active_micro[0], int(64))
     steer(0)
 
     # steer2(0, 90)
@@ -196,6 +230,37 @@ cdef void api_with_miso(q: JoinableQueue, running: Value):
     stop_miso()
     unload_coefficients_pad()
     # unload_coefficients_pad2()
+
+cdef void just_miso(q: JoinableQueue, running: Value):
+    whole_samples, fractional_samples = calculate_coefficients()
+    active_mics, n_active_mics = active_microphones()
+
+    cdef np.ndarray[int, ndim=1, mode="c"] active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+    cdef np.ndarray[int, ndim=3, mode="c"] i32_whole_samples
+
+    i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
+
+    # Pass int pointer to C function
+    load_coefficients_pad(&i32_whole_samples[0, 0, 0], whole_samples.size)
+
+    x = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
+
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
+    mimo_arr = np.ascontiguousarray(x)
+    import time
+    load_miso()
+    time.sleep(1)
+    # n_active_mics = 1
+    load_pa(&active_micro[0], int(n_active_mics))
+    # load_pa(&active_micro[0], int(64))
+    steer(0)
+
+    while running.value:
+        time.sleep(0.1)
+
+    stop_miso()
+    unload_coefficients_pad()
 
 cdef void api_convolve(q: JoinableQueue, running: Value):
 
@@ -283,24 +348,33 @@ def conv_api(q: JoinableQueue, running: Value):
 def miso_api(q: JoinableQueue, running: Value):
     api_miso(q, running)
 
+def just_miso_api(q: JoinableQueue, running: Value):
+    just_miso(q, running)
+
+
+def just_miso_loop(q: JoinableQueue, running: Value):
+    import time
+    while running.value:
+        try:
+            time.sleep(0.1)
+        except KeyboardInterrupt:
+            running.value = 0
+
+
+
 # Testing
-def main():
+def _main(consumer, producer):
     jobs = 1
     q = JoinableQueue(maxsize=2)
 
     v = Value('i', 1)
-
-    from lib.visual import Viewer
-
-    consumer = Viewer().loop
-
     connect()
 
 
     try:
 
         producers = [
-            Process(target=api_with_miso, args=(q, v))
+            Process(target=producer, args=(q, v))
             for _ in range(jobs)
         ]
 
@@ -323,5 +397,17 @@ def main():
         # Stop the program
         v.value = 0
         disconnect()
+
+def mimo():
+    from lib.visual import Viewer
+    consumer = Viewer().loop
+    producer = uti_api
+    _main(consumer, producer)
+
+def miso():
+    producer = just_miso_api
+    consumer = just_miso_loop
+    _main(consumer, producer)
+
 
 

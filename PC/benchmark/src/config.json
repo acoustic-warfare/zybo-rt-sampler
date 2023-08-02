@@ -7,9 +7,9 @@
         "COLUMNS": 8,
         "ROWS": 8,
         "MAX_RES": 20,
-        "MAX_RES_X": 40,
-        "MAX_RES_Y": 20,
-        "Z": 10.0,
+        "MAX_RES_X": 57,
+        "MAX_RES_Y": 32,
+        "Z": 1.0,
         "MAX_ANGLE": 70.0,
         "VIEW_ANGLE": 68.0,
         "UDP_PORT": 21844,
@@ -59,7 +59,7 @@
         "NORM_FACTOR_SOUND": 2000000.0,
         "MISO_POWER": 15,
         "MIC_GAIN": 200,
-        "KEY": 1234,
+        "KEY": 1238,
         "KEY_SOUND": 1235,
         "expression": {}
     }

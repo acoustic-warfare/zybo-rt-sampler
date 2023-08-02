@@ -12,18 +12,20 @@ sys.path.insert(0, "") # Access local modules located in . Enables 'from . impor
 
 from config cimport *
 
+_N_MICS = 192
+_ACTIVE_MICS = 3
 def calc_r_prime(d):
     half = d/2
-    r_prime = np.zeros((2, N_MICROPHONES))
+    r_prime = np.zeros((2, _N_MICS))
     element_index = 0
-    for array in range(ACTIVE_ARRAYS):
+    for array in range(_ACTIVE_MICS):
         array *= -1
         for row in range(ROWS):
             for col in range(COLUMNS):
-                r_prime[0,element_index] = -col * d - half + array*COLUMNS*d + array*0 + COLUMNS* ACTIVE_ARRAYS * half
+                r_prime[0,element_index] = -col * d - half + array*COLUMNS*d + array*0 + COLUMNS* _ACTIVE_MICS * half
                 r_prime[1, element_index] = row * d - ROWS * half + half
                 element_index += 1
-    r_prime[0,:] -= ACTIVE_ARRAYS*0/2
+    r_prime[0,:] -= _ACTIVE_MICS*0/2
     active_mics, n_active_mics = active_microphones()
 
     r_prime = r_prime[:,active_mics]
@@ -41,16 +43,16 @@ def active_microphones():
     
     mode = SKIP_N_MICS 
     rows = np.arange(0, ROWS, mode)                              # number of rows in array
-    columns = np.arange(0, COLUMNS*ACTIVE_ARRAYS, mode)   # number of columns in array
+    columns = np.arange(0, COLUMNS*_ACTIVE_MICS, mode)   # number of columns in array
 
-    mics = np.linspace(0, N_MICROPHONES-1, N_MICROPHONES)           # vector holding all microphone indexes for all active arrays
+    mics = np.linspace(0, _N_MICS-1, _N_MICS)           # vector holding all microphone indexes for all active arrays
     arr_elem = ROWS*COLUMNS                               # number of elements in one array
 
     # microphone indexes for one array, in a matrix
     microphones = np.linspace(0, ROWS*COLUMNS-1,ROWS*COLUMNS).reshape((ROWS, COLUMNS))
 
     # for each additional array, stack a matrix of the microphone indexes of that array
-    for a in range(ACTIVE_ARRAYS-1):
+    for a in range(_ACTIVE_MICS-1):
         a += 1
         array = mics[0+a*arr_elem : arr_elem+a*arr_elem].reshape((ROWS, COLUMNS))
         microphones = np.hstack((microphones, array))
@@ -81,11 +83,11 @@ def calculate_delays():
     d = ELEMENT_DISTANCE            # distance between elements, from config
 
     alpha = VIEW_ANGLE  # total scanning angle (bildvinkel) in theta-direction [degrees], from config
-    z_scan = 10  # distance to scanning window, from config
+    z_scan = Z  # distance to scanning window, from config
 
     x_res = MAX_RES_X  # resolution in x, from config
     y_res = MAX_RES_Y  # resolution in y, from config
-    AS = 4/3#1 #16/9   # aspect ratio, from config
+    AS = 16/9 #4/3#1 #16/9   # aspect ratio, from config
 
     # Calculations for time delay starts below
     r_prime = calc_r_prime(d)  # matrix holding the xy positions of each microphone
@@ -114,7 +116,7 @@ def calculate_delays_():
 
     distance = 0.02
 
-    samp_delay = np.zeros((MAX_RES_X, MAX_RES_Y, COLUMNS*ROWS*ACTIVE_ARRAYS), dtype=np.float32)
+    samp_delay = np.zeros((MAX_RES_X, MAX_RES_Y, COLUMNS*ROWS*_ACTIVE_MICS), dtype=np.float32)
 
     for xi, x in enumerate(np.linspace(-MAX_ANGLE, MAX_ANGLE, MAX_RES_X)):
         azimuth = x * -np.pi / 180.0
@@ -146,7 +148,7 @@ def calculate_delays_():
 def calculate_delay_miso(azimuth, elevation):
     distance = 0.02
 
-    samp_delay = np.zeros((COLUMNS*ROWS*ACTIVE_ARRAYS), dtype=np.float32)
+    samp_delay = np.zeros((COLUMNS*ROWS*_ACTIVE_MICS), dtype=np.float32)
 
     azimuth *= -np.pi / 180.0
     x_factor = np.sin(azimuth)
@@ -224,7 +226,7 @@ def compute_convolve_h():
 
     h = np.zeros((*samp_delay.shape, N_TAPS), dtype=np.float32)
 
-    #h = np.zeros((MAX_RES_X, MAX_RES_Y, COLUMNS*ROWS*ACTIVE_ARRAYS, 8), dtype=np.float32)
+    #h = np.zeros((MAX_RES_X, MAX_RES_Y, COLUMNS*ROWS*_ACTIVE_MICS, 8), dtype=np.float32)
 
     
     for y in range(MAX_RES_Y):
@@ -254,7 +256,7 @@ def calculate_coefficients():
 
     h = np.zeros((*samp_delay.shape, 8), dtype=np.float32)
 
-    #h = np.zeros((MAX_RES_X, MAX_RES_Y, COLUMNS*ROWS*ACTIVE_ARRAYS, 8), dtype=np.float32)
+    #h = np.zeros((MAX_RES_X, MAX_RES_Y, COLUMNS*ROWS*_ACTIVE_MICS, 8), dtype=np.float32)
 
     for x in range(MAX_RES_X):
         for y in range(MAX_RES_Y):
