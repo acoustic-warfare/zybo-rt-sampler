@@ -1,3 +1,10 @@
 from lib.beamformer import *
 
-main()
+import sys
+
+if sys.argv[1] == "miso":
+    miso()
+elif sys.argv[1] == "mimo":
+    mimo()
+else:
+    print("invalid argument")

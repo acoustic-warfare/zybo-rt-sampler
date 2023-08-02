@@ -16,6 +16,7 @@ config:
 lib/beamformer.so: config
 	python3 setup.py build_ext --inplace --build-lib=build
 	mv *.so lib/
+	cp unused_mics.npy lib/
 	ln src/visual.py lib/visual.py
 	cp lib/* ../application/lib/
 
@@ -27,7 +28,8 @@ bor: config
 yum: config	lib/beamformer.so
 	python3 -c "from lib.mic import *;start()"
 
-
+sym: config
+	gcc -Wall -lm -o run playback.c src/*.c src/algorithms/*.c -O3 -march=native -mavx2 -lm -lrt -lasound -ljack -lpthread -lportaudio -lm
 # lib/beamformer.so1: config
 # 	cp -r src/* build/
 # 	$(CYCC) src/main.pyx -o build/main.c
