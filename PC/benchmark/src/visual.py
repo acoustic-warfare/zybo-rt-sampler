@@ -9,17 +9,23 @@ WINDOW_DIMENSIONS = (APPLICATION_WINDOW_WIDTH, APPLICATION_WINDOW_HEIGHT)
 WINDOW_DIMENSIONS = (1920,1080)
 APPLICATION_NAME = "Demo App"
 
-MISO_POWER = 5
+POWER = 5
 
-from lib.kf import *
-kf = CyKF()
+try:
+    from lib.kf import *
+    kf = CyKF()
+except ModuleNotFoundError:
+    print("Unable to find kalman filter, has it been compiled?")
 
-# kf.update([1, 2, 4])
-# kf.update([1, 2, 5])
+def generate_color_map(name="jet") -> np.ndarray:
+    """Create a color lookup table for values between 0 - 255
 
-# print(kf.get_state())
+    Args:
+        name (str, optional): Matplotlib CMap. Defaults to "jet".
 
-def generate_color_map(name="jet"):
+    Returns:
+        np.ndarray: the lookup-table
+    """
     
     cmap = plt.cm.get_cmap(name)
 
@@ -37,71 +43,50 @@ def generate_color_map(name="jet"):
 colors = generate_color_map()
 
 
-def calculate_heatmap_old(image):
-    """"""
-    lmax = np.max(image)
+def calculate_heatmap(image, threshold=5e-8, amount = 0.5, exponent = POWER):
+    """Create a heatmap over the perceived powerlevel
 
-    image /= lmax
+    Args:
+        image (np.ndarray[MAX_RES_X, MAX_RES_Y]): The calculated powerlevels for each anlge
+        threshold (float, optional): minimum max value to print out. Defaults to 5e-8.
 
-    # image = image.T
-
-    small_heatmap = np.zeros((MAX_RES_Y, MAX_RES_X, 3), dtype=np.uint8)
-    # small_heatmap = np.zeros((MAX_RES_X, MAX_RES_Y, 3), dtype=np.uint8)
-
-    if lmax>1e-8:
-        for x in range(MAX_RES_X):
-            for y in range(MAX_RES_Y):
-                d = image[x, y]
-
-                if d > 0.9:
-                    val = int(255 * d ** MISO_POWER)
-
-                    small_heatmap[MAX_RES_Y - 1 - y, x] = colors[val]
-                    # small_heatmap[x, y] = colors[val]
-
-    # cv2.imshow()
-
-    # small_heatmap = np.reshape(small_heatmap, (MAX_RES_Y, MAX_RES_X, 3))
-
-
-    heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)
-    # heatmap = cv2.resize(small_heatmap, (1000, 1000), interpolation=cv2.INTER_NEAREST)
-    return heatmap
-
-def calculate_heatmap(image, threshold=5e-8):
-    """"""
-    lmax = np.max(image)
-
-    # print(lmax)
-
-    # image[image < threshold] = 0.0
-
-    image /= lmax
+    Returns:
+        (heatmap, bool): the calculated heatmap and if it should be output or not
+    """
+    # placeholder
     should_overlay = False
-
-    # image = image.T
-
     small_heatmap = np.zeros((MAX_RES_Y, MAX_RES_X, 3), dtype=np.uint8)
-    # small_heatmap = np.zeros((MAX_RES_X, MAX_RES_Y, 3), dtype=np.uint8)
+    
+    max_power_level = np.max(image)
 
-    if lmax>threshold:
+    # Normalize the image
+    image /= max_power_level
+
+    # Only calculate heatmap if the maximum powerlevel is above a certain threshold 
+    if max_power_level > threshold:
+
+        should_overlay = True
+        # Convert image value in range between [0, 1] to a RGB color value
         for x in range(MAX_RES_X):
             for y in range(MAX_RES_Y):
-                d = image[x, y]
+                power_level = image[x, y]
 
-                if d >= 0.5:
-                    d -= 0.5
-                    d*= 2
-                    val = int(255 * d ** MISO_POWER)
+                # Only paint levels above a certain amount, i.e 50%
+                if power_level >= amount:
+                    power_level -= amount
+                    power_level /= amount
 
-                    # small_heatmap[y, MAX_RES_X - 1 - x] = colors[val]
-                    # small_heatmap[MAX_RES_Y - 1 - y, x] = colors[val]
-                    small_heatmap[MAX_RES_Y - 1 - y, MAX_RES_X - 1 - x] = colors[val]
-                    should_overlay = True
-                    # small_heatmap[x, y] = colors[val]
-    
+                    # Some heatmaps are very flat, so the power of the power
+                    # May give more sharper results
+                    color_val = int(255 * power_level ** exponent)
+
+                    # This indexing is a bit strange, but CV2 orders it like this (Same as flip operation)
+                    small_heatmap[MAX_RES_Y - 1 - y, MAX_RES_X - 1 - x] = colors[color_val]
+
+
+    # Must resize to fit camera dimensions
     heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)
-    # heatmap = cv2.resize(small_heatmap, (1000, 1000), interpolation=cv2.INTER_NEAREST)
+    
     return heatmap, should_overlay
 
 def calculate_heatmap_fft(image, threshold=5e-8):
@@ -128,27 +113,10 @@ def calculate_heatmap_fft(image, threshold=5e-8):
                 if d >= 0.5:
                     d -= 0.5
                     d*= 2
-                    val = int(255 * d ** MISO_POWER)
+                    val = int(255 * d ** POWER)
 
-                    # small_heatmap[y, MAX_RES_X - 1 - x] = colors[val]
-                    # small_heatmap[MAX_RES_Y - 1 - y, x] = colors[val]
                     small_heatmap[11 - 1 - y, 11 - 1 - x] = colors[val]
                     should_overlay = True
-                    # small_heatmap[x, y] = colors[val]
-    # for x in range(MAX_RES_X):
-    #     for y in range(MAX_RES_Y):
-    #         d = image[x, y]
-
-    #         # if d > 0.9:
-    #         val = int(255 * d ** MISO_POWER)
-
-    #         # small_heatmap[y, MAX_RES_X - 1 - x] = colors[val]
-    #         small_heatmap[MAX_RES_Y - 1 - y, MAX_RES_X - 1 - x] = colors[val]
-
-    # cv2.imshow()
-
-    # small_heatmap = np.reshape(small_heatmap, (MAX_RES_Y, MAX_RES_X, 3))
-
 
     heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)
     # heatmap = cv2.resize(small_heatmap, (1000, 1000), interpolation=cv2.INTER_NEAREST)
@@ -174,7 +142,7 @@ def calculate_heatmap2_(img):
                 d = res[x, y]
 
                 if d > 0.9:
-                    val = int(255 * d ** MISO_POWER)
+                    val = int(255 * d ** POWER)
 
                     small_heatmap[MAX_RES_Y - 1 - y, x] = colors[val]
                     # small_heatmap[MAX_RES_Y - 1 - y, MAX_RES_X - 1 - x] = colors[val]
@@ -294,7 +262,14 @@ from multiprocessing import JoinableQueue, Value
 
 
 class Viewer:
+    """Test viewer used for outputting calculated heatmaps onto a screen
+    """
     def __init__(self, src="/dev/video2"):
+        """constructor with the camera source to use
+
+        Args:
+            src (str, optional): which camera index to use. Defaults to "/dev/video2".
+        """
         self.src = src
         self.capture = cv2.VideoCapture(self.src)
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
@@ -302,6 +277,12 @@ class Viewer:
         self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 
     def loop(self, q: JoinableQueue, v: Value):
+        """Threaded or Multiprocessing loop that should not be called by the user
+
+        Args:
+            q (JoinableQueue): FIFO containing the latest powermaps from the algorithm
+            v (Value): a value that will stop this thread or process when other than 1
+        """
         prev = np.zeros((1080, 1920, 3), dtype=np.uint8)
         while v.value == 1:
             try:
