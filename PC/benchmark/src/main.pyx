@@ -33,7 +33,7 @@ ctypedef np.float32_t DTYPE_t
 DTYPE_arr = np.float32
 
 try:
-    from lib.directions import calculate_coefficients, active_microphones, compute_convolve_h, calculate_delay_miso
+    from lib.directions import calculate_coefficients, active_microphones, compute_convolve_h, calculate_delay_miso, calculate_delays
 except:
     print("You must build the directions library")
     exit(1)
@@ -79,6 +79,13 @@ cdef extern from "algorithms/convolve_and_sum.h":
     void mimo_convolve_vectorized(float *signals, float *image, int *adaptive_array, int n)
     void load_coefficients_convolve(float *h, int n)
     void unload_coefficients_convolve()
+
+# Exposing all convolve and sum beamforming algorithms in C
+cdef extern from "algorithms/lerp_and_sum.h":
+    void lerp_delay(float *signal, float *out, float h, int pad)
+    void miso_lerp(float *signals, float *out, int *adaptive_array, int n, int offset)
+    void load_coefficients_lerp(float *delays, int n)
+    void unload_coefficients_lerp()
 
 
 # ---- BEGIN LIBRARY FUNCTIONS ----
@@ -204,11 +211,14 @@ cdef void _loop_miso_pad(q: JoinableQueue, running: Value):
     active_mics, n_active_mics = active_microphones()
     active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
 
+    print("Cython: Starting miso")
     # Setup audio playback (Order is important)
     load_miso()
     n_active_mics = 64
+    print("Cython: enabling microphones")
     load_pa(&active_micro[0], int(n_active_mics))
 
+    print("Cython: Steering beam")
     steer_cartesian_degree(0, 0) # Listen at zero bearing
 
     while running.value:
@@ -219,8 +229,95 @@ cdef void _loop_miso_pad(q: JoinableQueue, running: Value):
         except Exception as e:
             print(e)
 
+    print("Cython: Stopping audio playback")
     stop_miso()
     unload_coefficients_pad()
+
+
+cdef void _loop_miso_lerp(q: JoinableQueue, running: Value):
+    # Calculating time delay for each microphone and each direction
+    cdef np.ndarray[float, ndim=3, mode="c"] f32_fractional_samples
+    fractional_samples = calculate_delays()
+
+    f32_fractional_samples = np.ascontiguousarray(fractional_samples.astype(np.float32))
+
+    load_coefficients_lerp(&f32_fractional_samples[0, 0, 0], fractional_samples.size)
+
+    # Finding which microphones to use
+    cdef np.ndarray[int, ndim=1, mode="c"] active_micro
+    active_mics, n_active_mics = active_microphones()
+    active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+    print("Cython: Starting miso")
+    # Setup audio playback (Order is important)
+    load_miso()
+    n_active_mics = 64
+    print("Cython: enabling microphones")
+    load_pa(&active_micro[0], int(n_active_mics))
+
+    print("Cython: Steering beam")
+    steer_cartesian_degree(0, 0) # Listen at zero bearing
+
+    while running.value:
+        try:
+            (x, y) = q.get()
+            q.task_done()
+            steer4(x, y)
+        except Exception as e:
+            print(e)
+
+    print("Cython: Stopping audio playback")
+    stop_miso()
+    unload_coefficients_lerp()
+
+cdef void _loop_mimo_and_miso_pad(q_steer: JoinableQueue, q_out: JoinableQueue, running: Value):
+    # Calculating time delay for each microphone and each direction
+    cdef np.ndarray[int, ndim=3, mode="c"] i32_whole_samples
+    whole_samples, fractional_samples = calculate_coefficients()
+    i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
+
+    # Pass int pointer to C function
+    load_coefficients_pad(&i32_whole_samples[0, 0, 0], whole_samples.size)
+
+    # Finding which microphones to use
+    cdef np.ndarray[int, ndim=1, mode="c"] active_micro
+    active_mics, n_active_mics = active_microphones()
+    active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+    # Setting up output buffer
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] power_map
+    _power_map = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
+    power_map = np.ascontiguousarray(_power_map)
+
+    print("Cython: Starting miso")
+    # Setup audio playback (Order is important)
+    load_miso()
+    # n_active_mics = 64
+    print("Cython: enabling microphones")
+    load_pa(&active_micro[0], int(n_active_mics))
+
+    print("Cython: Steering beam")
+    steer_cartesian_degree(0, 0) # Listen at zero bearing
+
+
+    import queue
+    while running.value:
+        pad_mimo(&power_map[0, 0], &active_micro[0], int(n_active_mics))
+        q_out.put(power_map)
+
+        try:
+            (x, y) = q_steer.get(block=False)
+            q_steer.task_done()
+            steer4(x, y)
+        except queue.Empty:
+            pass
+        except Exception as e:
+            print(e)
+    
+    # Unload when done
+    stop_miso()
+    unload_coefficients_pad()
+
 
 cdef void api(q: JoinableQueue, running: Value):
     whole_samples, fractional_samples = calculate_coefficients()
@@ -409,6 +506,8 @@ def miso_api(q: JoinableQueue, running: Value):
 def just_miso_api(q: JoinableQueue, running: Value):
     just_miso(q, running)
 
+def b(q: JoinableQueue, running: Value):
+    _loop_mimo_pad(q, running)
 
 def just_miso_loop(q: JoinableQueue, running: Value):
     """Dummy loop for testing miso"""
@@ -456,7 +555,8 @@ def _main(consumer, producer):
 def mimo():
     from lib.visual import Viewer
     consumer = Viewer().loop
-    producer = uti_api
+    # producer = uti_api
+    producer = b
     _main(consumer, producer)
 
 # def __miso():
@@ -470,8 +570,14 @@ def mimo():
 def lop(q: JoinableQueue, running: Value):
     _loop_miso_pad(q, running)
 
-def miso():
-    producer = lop
+def lop2(q: JoinableQueue, running: Value):
+    _loop_miso_lerp(q, running)
+
+def multi(q_steer: JoinableQueue, q_out: JoinableQueue, running: Value):
+    _loop_mimo_and_miso_pad(q_steer, q_out, running)
+
+def _miso():
+    producer = lop2
     from lib.visual import Front
     
 
@@ -482,6 +588,7 @@ def miso():
     f = Front(q_rec, q_out, v)
     consumer = f.loop
 
+    print("Cython: Connecting to FPGA")
     connect()
 
     try:
@@ -510,3 +617,42 @@ def miso():
         disconnect()
 
 
+def miso():
+    producer = multi
+    from lib.visual import Front
+    
+
+    q_rec = JoinableQueue(maxsize=2)
+    q_out = JoinableQueue(maxsize=2)
+
+    v = Value('i', 1)
+    f = Front(q_rec, q_out, v)
+    consumer = f.multi_loop
+
+    print("Cython: Connecting to FPGA")
+    connect()
+
+    try:
+
+        producers = [
+            Process(target=producer, args=(q_out, q_rec, v))
+        ]
+
+        # daemon=True is important here
+        consumers = [
+            Process(target=consumer, daemon=True)
+        ]
+
+        # + order here doesn't matter
+        for p in consumers + producers:
+            p.start()
+
+        for p in producers:
+            p.join()
+
+
+    finally:
+
+        # Stop the program
+        v.value = 0
+        disconnect()

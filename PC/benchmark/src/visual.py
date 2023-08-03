@@ -388,6 +388,42 @@ class Front:
                 self.running.value = 0
                 break
 
+    def multi_loop(self, *args, **kwargs):
+        prev = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        self.MAX_X = MAX_ANGLE
+        self.MAX_Y = MAX_ANGLE /  ASPECT_RATIO
+        while self.running:
+            try:
+                output = self.q_rec.get(block=False)
+                self.q_rec.task_done()
+                status, frame = self.capture.read()
+                frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
+                try:
+                    frame = cv2.resize(frame, WINDOW_DIMENSIONS)
+                except cv2.error as e:
+                    print("An error ocurred with image processing! Check if camera and antenna connected properly")
+                    self.running.value = 0
+                    break
+
+                res1, should_overlay = calculate_heatmap(output, threshold=0)
+
+                res = cv2.addWeighted(prev, 0.5, res1, 0.5, 0)
+                prev = res
+
+                if should_overlay:
+                    image = cv2.addWeighted(frame, 0.9, res, 0.9, 0)
+                else:
+                    image = frame
+
+                cv2.imshow(APPLICATION_NAME, image)
+                cv2.setMouseCallback(APPLICATION_NAME, self.mouse_click_handler)
+                cv2.waitKey(1)
+            except queue.Empty:
+                pass
+            except KeyboardInterrupt:
+                self.running.value = 0
+                break
+
     def mouse_click_handler(self, event, x, y, flags, params):
         """Steers the antenna to listen in a specific direction"""
         if event == cv2.EVENT_LBUTTONDOWN:

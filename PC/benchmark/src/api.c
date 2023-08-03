@@ -62,7 +62,7 @@
 // Beamforming algorithms
 #include "algorithms/pad_and_sum.h"
 #include "algorithms/convolve_and_sum.h"
-
+#include "algorithms/lerp_and_sum.h"
 
 #define DEBUG 0
 
@@ -424,6 +424,7 @@ int miso_loop()
 
         // Perform MISO and write to paData
         miso_pad(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
+        // miso_lerp(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
         for (int i = 0; i < N_SAMPLES; i++)
         {
             data.out[i] /= (float)miso->n;

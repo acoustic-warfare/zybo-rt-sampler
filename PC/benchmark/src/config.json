@@ -1,7 +1,7 @@
 {
     "general": {
         "N_MICROPHONES": 256,
-        "N_SAMPLES": 1024,
+        "N_SAMPLES": 256,
         "N_TAPS": 64,
         "EVERY_N_SAMPLES": 1,
         "COLUMNS": 8,
@@ -11,7 +11,7 @@
         "MAX_RES_Y": 32,
         "Z": 1.0,
         "MAX_ANGLE": 70.0,
-        "VIEW_ANGLE": 160.0,
+        "VIEW_ANGLE": 62.0,
         "UDP_PORT": 21844,
         "SAMPLE_RATE": 48828.0,
         "ELEMENT_DISTANCE": 0.02,
@@ -59,7 +59,7 @@
         "NORM_FACTOR_SOUND": 2000000.0,
         "MISO_POWER": 15,
         "MIC_GAIN": 200,
-        "KEY": 1240,
+        "KEY": 1242,
         "KEY_SOUND": 1235,
         "expression": {}
     }
