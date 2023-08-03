@@ -2,7 +2,7 @@
 
 //General constants for both c and python.
 #define N_MICROPHONES 256
-#define N_SAMPLES 256
+#define N_SAMPLES 1024
 #define N_TAPS 64
 #define EVERY_N_SAMPLES 1
 #define COLUMNS 8
@@ -12,7 +12,7 @@
 #define MAX_RES_Y 32
 #define Z 1.0
 #define MAX_ANGLE 70.0
-#define VIEW_ANGLE 68.0
+#define VIEW_ANGLE 160.0
 #define UDP_PORT 21844
 #define SAMPLE_RATE 48828.0
 #define ELEMENT_DISTANCE 0.02
@@ -36,5 +36,5 @@
 #define NORM_FACTOR_SOUND 2000000.0
 #define MISO_POWER 15
 #define MIC_GAIN 200
-#define KEY 1238
+#define KEY 1240
 #define KEY_SOUND 1235

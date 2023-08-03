@@ -51,7 +51,6 @@ cdef extern from "api.h":
     void convolve_mimo_naive(float *image, int *adaptive_array, int n)
     void load_coefficients2(int *whole_sample_delay, int n)
     void mimo_truncated(float *image, int *adaptive_array, int n)
-
     void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset)
     int load_miso()
     void load_pa(int *adaptive_array, int n)
@@ -111,7 +110,7 @@ def connect(replay_mode: bool = False, verbose=True) -> None:
         print("Receiver process is forked.\nContinue your program!\n")
 
 
-def disconnect():
+def disconnect() -> None:
     """
     Disconnect from a stream
 
@@ -160,6 +159,68 @@ cdef _convolve_coefficients_load(h):
     cdef np.ndarray[float, ndim=4, mode="c"] f32_h = np.ascontiguousarray(h)
     load_coefficients_convolve(&f32_h[0, 0, 0, 0], int(h.size))
 
+
+cdef void _loop_mimo_pad(q: JoinableQueue, running: Value):
+    """Producer loop for MIMO using pad-delay algorithm"""
+    
+    # Calculating time delay for each microphone and each direction
+    cdef np.ndarray[int, ndim=3, mode="c"] i32_whole_samples
+    whole_samples, fractional_samples = calculate_coefficients()
+    i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
+
+    # Pass int pointer to C function
+    load_coefficients_pad(&i32_whole_samples[0, 0, 0], whole_samples.size)
+
+    # Finding which microphones to use
+    cdef np.ndarray[int, ndim=1, mode="c"] active_micro
+    active_mics, n_active_mics = active_microphones()
+    active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+    # Setting up output buffer
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] power_map
+    _power_map = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
+    power_map = np.ascontiguousarray(_power_map)
+
+    while running.value:
+        pad_mimo(&power_map[0, 0], &active_micro[0], int(n_active_mics))
+        q.put(power_map)
+    
+    # Unload when done
+    unload_coefficients_pad()
+
+cdef void _loop_miso_pad(q: JoinableQueue, running: Value):
+    """Consumer loop for MISO using pad-delay algorithm"""
+
+    # Calculating time delay for each microphone and each direction
+    cdef np.ndarray[int, ndim=3, mode="c"] i32_whole_samples
+    whole_samples, fractional_samples = calculate_coefficients()
+    i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
+
+    # Pass int pointer to C function
+    load_coefficients_pad(&i32_whole_samples[0, 0, 0], whole_samples.size)
+
+    # Finding which microphones to use
+    cdef np.ndarray[int, ndim=1, mode="c"] active_micro
+    active_mics, n_active_mics = active_microphones()
+    active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+    # Setup audio playback (Order is important)
+    load_miso()
+    n_active_mics = 64
+    load_pa(&active_micro[0], int(n_active_mics))
+
+    steer_cartesian_degree(0, 0) # Listen at zero bearing
+
+    while running.value:
+        try:
+            (x, y) = q.get()
+            q.task_done()
+            steer4(x, y)
+        except Exception as e:
+            print(e)
+
+    stop_miso()
+    unload_coefficients_pad()
 
 cdef void api(q: JoinableQueue, running: Value):
     whole_samples, fractional_samples = calculate_coefficients()
@@ -214,22 +275,18 @@ cdef void api_with_miso(q: JoinableQueue, running: Value):
     mimo_arr = np.ascontiguousarray(x)
     import time
     load_miso()
-    time.sleep(1)
+    # time.sleep(1)
     load_pa(&active_micro[0], int(n_active_mics))
-    # load_pa(&active_micro[0], int(64))
     steer(0)
 
-    # steer2(0, 90)
+    steer_cartesian_degree(0, 0)
 
     while running.value:
         pad_mimo(&mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
         q.put(mimo_arr)
 
-    # q.join()
-
     stop_miso()
     unload_coefficients_pad()
-    # unload_coefficients_pad2()
 
 cdef void just_miso(q: JoinableQueue, running: Value):
     whole_samples, fractional_samples = calculate_coefficients()
@@ -244,21 +301,18 @@ cdef void just_miso(q: JoinableQueue, running: Value):
     # Pass int pointer to C function
     load_coefficients_pad(&i32_whole_samples[0, 0, 0], whole_samples.size)
 
-    x = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
-
-    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
-    mimo_arr = np.ascontiguousarray(x)
-    import time
+    
     load_miso()
-    time.sleep(1)
-    # n_active_mics = 1
     load_pa(&active_micro[0], int(n_active_mics))
-    # load_pa(&active_micro[0], int(64))
-    steer(0)
+    # steer(0) # This will set the offset to zero, which is quite bad
 
+    steer_cartesian_degree(0, 0)
+
+    import time
     while running.value:
-        time.sleep(0.1)
+        time.sleep(0.1) # Do nothing during loop
 
+    # When not running anymore, stop the audio playback and free the coefficients
     stop_miso()
     unload_coefficients_pad()
 
@@ -283,20 +337,9 @@ cdef void api_convolve(q: JoinableQueue, running: Value):
     unload_coefficients_convolve()
 
 
-cdef void _steer2(azimuth, elevation):
-    whole_samples = calculate_delay_miso(azimuth, elevation)
-    cdef np.ndarray[int, ndim=1, mode="c"] i32_whole_samples
-
-    i32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.int32))
-
-    # Pass int pointer to C function
-    unload_coefficients_pad2()
-    load_coefficients_pad2(&i32_whole_samples[0], whole_samples.size)
-
-
-
-def steer2(azimuth: float, elevation: float):
+def steer_cartesian_degree(azimuth: float, elevation: float):
     """Steer a MISO into a specific direction"""
+
     assert -90<=azimuth<=90, "Invalid range"
     assert -90<=elevation<=90, "Invalid range"
 
@@ -310,6 +353,21 @@ def steer2(azimuth: float, elevation: float):
     _, n_active_mics = active_microphones()
 
     steer_offset = int(elevation * MAX_RES_X * n_active_mics + azimuth * n_active_mics)
+    
+    steer(steer_offset)
+
+def steer4(azimuth: float, elevation: float):
+    """Steer a MISO into a specific direction"""
+    # print("Lol got angles from python")
+    
+    azimuth = int(azimuth * MAX_RES_X)
+    elevation = int(elevation * MAX_RES_Y)
+
+    _, n_active_mics = active_microphones()
+
+    steer_offset = int(elevation * MAX_RES_X * n_active_mics + azimuth * n_active_mics)
+    
+    print(steer_offset)
     steer(steer_offset)
 
 
@@ -353,6 +411,7 @@ def just_miso_api(q: JoinableQueue, running: Value):
 
 
 def just_miso_loop(q: JoinableQueue, running: Value):
+    """Dummy loop for testing miso"""
     import time
     while running.value:
         try:
@@ -361,15 +420,14 @@ def just_miso_loop(q: JoinableQueue, running: Value):
             running.value = 0
 
 
-
 # Testing
 def _main(consumer, producer):
     jobs = 1
     q = JoinableQueue(maxsize=2)
 
     v = Value('i', 1)
-    connect()
 
+    connect()
 
     try:
 
@@ -391,10 +449,7 @@ def _main(consumer, producer):
         for p in producers:
             p.join()
 
-
-    finally:
-
-        # Stop the program
+    finally: # Stop the program
         v.value = 0
         disconnect()
 
@@ -404,10 +459,54 @@ def mimo():
     producer = uti_api
     _main(consumer, producer)
 
-def miso():
-    producer = just_miso_api
-    consumer = just_miso_loop
-    _main(consumer, producer)
+# def __miso():
+#     producer = uti_api_with_miso #just_miso_api
+#     from lib.visual import Viewer
+#     consumer = Viewer(cb=steer2).loop
+#     # consumer = just_miso_loop
+#     _main(consumer, producer)
 
+
+def lop(q: JoinableQueue, running: Value):
+    _loop_miso_pad(q, running)
+
+def miso():
+    producer = lop
+    from lib.visual import Front
+    
+
+    q_rec = JoinableQueue(maxsize=2)
+    q_out = JoinableQueue(maxsize=2)
+
+    v = Value('i', 1)
+    f = Front(q_rec, q_out, v)
+    consumer = f.loop
+
+    connect()
+
+    try:
+
+        producers = [
+            Process(target=producer, args=(q_out, v))
+        ]
+
+        # daemon=True is important here
+        consumers = [
+            Process(target=consumer, daemon=True)
+        ]
+
+        # + order here doesn't matter
+        for p in consumers + producers:
+            p.start()
+
+        for p in producers:
+            p.join()
+
+
+    finally:
+
+        # Stop the program
+        v.value = 0
+        disconnect()
 
 
