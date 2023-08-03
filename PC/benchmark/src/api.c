@@ -55,8 +55,8 @@
 
 #include "portaudio.h"
 
-#include "api.h"
 #include "config.h"
+#include "api.h"
 #include "receiver.h"
 
 // Beamforming algorithms
@@ -65,6 +65,8 @@
 
 
 #define DEBUG 0
+
+#define RINGBUFFER 1
 
 /**
  * @brief MISO delay and sum beamforming - Together as one...
@@ -90,6 +92,8 @@ Miso *miso;
 
 // Global stop for audio playback
 volatile sig_atomic_t stop = 0;
+
+#if RINGBUFFER
 
 #define BUFFER_Z N_SAMPLES * 10
 typedef struct {
@@ -165,8 +169,34 @@ void read_rb(RB *buffer, float *out, int n)
     buffer->count -= n;
 }
 
+/**
+ * @brief PortAudio callback function, should not be called from the user same as above
+ *
+ * @param inputBuffer
+ * @param outputBuffer
+ * @param framesPerBuffer
+ * @param timeInfo
+ * @param statusFlags
+ * @param userData
+ * @return int
+ */
+static int playback_callback(const void *inputBuffer, void *outputBuffer,
+                             unsigned long framesPerBuffer,
+                             const PaStreamCallbackTimeInfo *timeInfo,
+                             PaStreamCallbackFlags statusFlags,
+                             void *userData)
+{
+    RB *data = (RB *)userData;
+    float *out = (float *)outputBuffer;
+    (void)inputBuffer; // Cast to void to prevent compile warnings
 
+    // Write framesPerBuffer of data into the out stream
+    read_rb(data, out, framesPerBuffer);
 
+    return paContinue;
+}
+
+#else
 
 /* This routine will be called by the PortAudio engine when audio is needed.
 ** It may called at interrupt level on some machines so don't do anything
@@ -198,32 +228,12 @@ static int playback_callback(const void *inputBuffer, void *outputBuffer,
     return paContinue;
 }
 
-/**
- * @brief PortAudio callback function, should not be called from the user same as above
- * 
- * @param inputBuffer 
- * @param outputBuffer 
- * @param framesPerBuffer 
- * @param timeInfo 
- * @param statusFlags 
- * @param userData 
- * @return int 
- */
-static int playback_callback_rb(const void *inputBuffer, void *outputBuffer,
-                             unsigned long framesPerBuffer,
-                             const PaStreamCallbackTimeInfo *timeInfo,
-                             PaStreamCallbackFlags statusFlags,
-                             void *userData)
-{
-    RB *data = (RB *)userData;
-    float *out = (float *)outputBuffer;
-    (void)inputBuffer; // Cast to void to prevent compile warnings
+#endif
 
-    // Write framesPerBuffer of data into the out stream
-    read_rb(data, out, framesPerBuffer);
 
-    return paContinue;
-}
+
+
+
 
 /**
  * @brief Stop the current playback audio stream
@@ -257,7 +267,9 @@ int stop_playback()
  */
 int load_playback(paData *data)
 {
-    initRingBuffer(&rb2);
+
+
+
     PaError err;
     err = Pa_Initialize();
     if (err != paNoError)
@@ -275,15 +287,9 @@ int load_playback(paData *data)
     // outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultHighOutputLatency;
     outputParameters.hostApiSpecificStreamInfo = NULL;
     printf("Starting stream\n");
-    // err = Pa_OpenStream(
-    //     &stream,
-    //     NULL, /* no input */
-    //     &outputParameters,
-    //     SAMPLE_RATE,
-    //     N_SAMPLES,
-    //     NULL, //paClipOff, /* we won't output out of range samples so don't bother clipping them */
-    //     playback_callback,
-    //     data);
+
+#if RINGBUFFER
+    initRingBuffer(&rb2);
 
     err = Pa_OpenStream(
         &stream,
@@ -292,8 +298,21 @@ int load_playback(paData *data)
         SAMPLE_RATE,
         N_SAMPLES / 2,
         paNoFlag, // paClipOff, /* we won't output out of range samples so don't bother clipping them */
-        playback_callback_rb,
+        playback_callback,
         &rb2);
+#else
+    err = Pa_OpenStream(
+        &stream,
+        NULL, /* no input */
+        &outputParameters,
+        SAMPLE_RATE,
+        N_SAMPLES,
+        NULL, //paClipOff, /* we won't output out of range samples so don't bother clipping them */
+        playback_callback,
+        data);
+#endif
+    
+
     printf("Started stream\n");
     if (err != paNoError)
         fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
@@ -412,8 +431,10 @@ int miso_loop()
         }
         data.can_read = 1;
 
+#if RINGBUFFER
         // Write the computed MISO to the audio output buffer
         write_rb(&rb2, &data.out[0], N_SAMPLES);
+#endif
 
         semop(misosemid, &misodata_sem_signal, 1);
 
@@ -646,7 +667,6 @@ int load(bool replay_mode)
 
     init_shared_memory();
     init_semaphore();
-    // init_portaudio_playback();
 
     pid_t pid = fork(); // Fork child
 
@@ -661,14 +681,16 @@ int load(bool replay_mode)
         socket_desc = create_and_bind_socket(replay_mode);
         if (socket_desc == -1)
         {
-            return -1;
+            exit(1);
         }
         client_msg = create_msg();
+
         int n_arrays = receive_header_data(socket_desc);
         if (n_arrays == -1)
         {
-            return -1;
+            exit(1);
         }
+
         while (1)
         {
             semop(semid, &data_sem_wait, 1);
