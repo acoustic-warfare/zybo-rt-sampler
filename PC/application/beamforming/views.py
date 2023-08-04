@@ -17,18 +17,23 @@ def my_signal_handler(*args):
 
 signal.signal(signal.SIGINT, my_signal_handler) 
 
+def setupThresholdSliders(req):
+    sliderRange = req.GET.get('range', '5')
+    sliderExp = req.GET.get('exp', '-8')
+    context = {
+        'sliderRange': sliderRange,
+        'sliderExp': sliderExp,
+    }
+    threshold_str=sliderRange + 'e' + sliderExp
+    threshold = float(threshold_str)
+
+    return context, threshold
 
 def index(req):
-    slider = req.GET.get('t', '-8')
-    context = {
-        'slider': slider,
-    }
-    threshold_str="5e"+slider
-    threshold = float(threshold_str)
     global v
     v.quit()
-    v = VideoCamera(threshold=threshold)
-    return render(req, "stream.html", context)
+    v = VideoCamera()
+    return render(req, "stream.html")
 
 def stream(req):
     global v
@@ -42,14 +47,7 @@ def disableBackend(req):
     return render(req, "stream.html")
 
 def enablePadBackend(req):
-    sliderRange = req.GET.get('range', '5')
-    sliderExp = req.GET.get('exp', '-8')
-    context = {
-        'sliderRange': sliderRange,
-        'sliderExp': sliderExp,
-    }
-    threshold_str=sliderRange + 'e' + sliderExp
-    threshold = float(threshold_str)
+    context, threshold = setupThresholdSliders(req)
     print(threshold)
     global v
     v.quit()
@@ -59,14 +57,7 @@ def enablePadBackend(req):
 
 
 def enableConvolveBackend(req):
-    sliderRange = req.GET.get('range', '5')
-    sliderExp = req.GET.get('exp', '-8')
-    context = {
-        'sliderRange': sliderRange,
-        'sliderExp': sliderExp,
-    }
-    threshold_str=sliderRange + 'e' + sliderExp
-    threshold = float(threshold_str)
+    context, threshold = setupThresholdSliders(req)
     print(threshold)
     global v
     v.quit()
@@ -75,14 +66,7 @@ def enableConvolveBackend(req):
     return render(req, "streamWithBackend.html", context)
 
 def enableThirdBackend(req):
-    sliderRange = req.GET.get('range', '5')
-    sliderExp = req.GET.get('exp', '-8')
-    context = {
-        'sliderRange': sliderRange,
-        'sliderExp': sliderExp,
-    }
-    threshold_str=sliderRange + 'e' + sliderExp
-    threshold = float(threshold_str)
+    context, threshold = setupThresholdSliders(req)
     print(threshold)
     global v
     v.quit()
