@@ -1,0 +1,46 @@
+<html>
+    <head>
+        <title>Video Streaming Demonstration</title>
+    </head>
+    <body>
+        <button type="button" onclick="location.href = 'http://127.0.0.1:8000/enablePad/';">Trunc and sum backend</button>
+        <button type="button" onclick="location.href = 'http://127.0.0.1:8000/enableConvolve/';">Convolve</button>
+        <button type="button" onclick="location.href = 'http://127.0.0.1:8000/enableThirdBackend/';">Backend 3</button>
+        <button type="button" onclick="location.href = 'http://127.0.0.1:8000/disable/';">Disable</button>
+        <button type="button" onclick="location.href = 'http://127.0.0.1:8000/disconnect/';">Disconnect</button>
+        <button type="button" onclick="location.href = 'http://127.0.0.1:8000/sound/';">Sound</button>
+        <div class="slidecontainer">
+            <input type="range" min="-9" max="-3" value={{slider}} class="slider" id="myRange">
+            <p>Threshold: <span id="value"></span></p>
+            <button type="button" id="threshold">Select threshold</button>
+        </div>
+        <img src="http://127.0.0.1:8000/monitor" onclick="console.log(event.clientX, event.clientY)">
+
+        <script>
+            var slider = document.getElementById("myRange");
+            var output = document.getElementById("value");
+            
+            function removeGarbageURL(url){
+                lastIndex = url.length-1;
+                if(url[lastIndex] == '/'){
+                    return url;
+                }
+                else{
+                    new_url = url.slice(0, -1);
+                    return removeGarbageURL(new_url);
+                } 
+            };
+            
+            output.innerHTML = "5e" + slider.value;
+            slider.oninput = function() {
+                output.innerHTML = "5e" + this.value;
+            }
+            document.getElementById("threshold").onclick = function() { 
+                url =  removeGarbageURL(window.location.href) + '?t=' + slider.value;
+                location.href = url;
+            };  
+
+            
+        </script>
+    </body>
+</html>

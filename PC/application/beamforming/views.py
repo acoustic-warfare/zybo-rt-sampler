@@ -53,7 +53,7 @@ def enablePadBackend(req):
     v.quit()
     v = VideoCamera(threshold=threshold)
     v.startBeamforming(0)
-    return render(req, "stream.html", context)
+    return render(req, "streamWithBackend.html", context)
 
 
 def enableConvolveBackend(req):
@@ -68,7 +68,7 @@ def enableConvolveBackend(req):
     v.quit()
     v = VideoCamera(threshold=threshold)
     v.startBeamforming(1)
-    return render(req, "stream.html", context)
+    return render(req, "streamWithBackend.html", context)
 
 def enableThirdBackend(req):
     slider = req.GET.get('t', '-8')
@@ -82,7 +82,7 @@ def enableThirdBackend(req):
     v.quit()
     v = VideoCamera(threshold=threshold)
     v.startBeamforming(2)
-    return render(req, "stream.html", context)
+    return render(req, "streamWithBackend.html", context)
 
 def connect(req):
     global v
@@ -94,7 +94,7 @@ def sound(req):
     v.quit()
     v = VideoCamera()
     v.startBeamforming(3)
-    return render(req, "stream.html")
+    return render(req, "streamWithBackend.html")
 
 def replay(req):
     # Start replay transmission
