@@ -57,6 +57,10 @@ class VideoCamera(object):
         elif backend == 2:
             self.p = Process(target=self.fftbackend, args=(self.q, self.v))
             self.processStarted = True
+        elif backend == 3:
+            self.p = Process(target=uti_api_with_miso, args=(self.q, self.v))
+            self.processStarted = True
+
         self.p.start()
 
     def fftbackend(self, q: JoinableQueue, v: Value):

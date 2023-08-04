@@ -3,7 +3,7 @@ from django.http import HttpResponse, StreamingHttpResponse
 from camera import VideoCamera, gen
 import time
 from multiprocessing import Process
-from play import RealtimeSoundplayer
+#from play import RealtimeSoundplayer
 from threading import Thread
 import os  
 import signal  
@@ -23,9 +23,11 @@ def index(req):
     context = {
         'slider': slider,
     }
+    threshold_str="5e"+slider
+    threshold = float(threshold_str)
     global v
     v.quit()
-    v = VideoCamera()
+    v = VideoCamera(threshold=threshold)
     return render(req, "stream.html", context)
 
 def stream(req):
@@ -66,13 +68,12 @@ def connect(req):
     v = VideoCamera()
     return render(req, "stream.html")
 
-def replaySelection(req):
-    # If connected, release video capture object
-    #TODO
-    # Disconnect and reconnect with replay mode
-    #TODO
-    # Open stream.html
-    return render(req, "replay_selection.html")
+def sound(req):
+    global v
+    v.quit()
+    v = VideoCamera()
+    v.startBeamforming(3)
+    return render(req, "stream.html")
 
 def replay(req):
     # Start replay transmission
