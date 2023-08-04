@@ -11,6 +11,7 @@ cdef extern from "config.h":
     int MAX_RES
     int MAX_RES_X
     int MAX_RES_Y
+    float Z
     float MAX_ANGLE
     float SAMPLE_RATE
     float ELEMENT_DISTANCE

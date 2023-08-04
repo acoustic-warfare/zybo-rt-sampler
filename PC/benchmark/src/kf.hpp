@@ -7,11 +7,25 @@
  * 
  * @copyright Copyright (c) 2023
  * 
+ * This filter is being used to get a more stabilized prediction of where the current
+ * peak is located. It was implemented in C++ since it provided a more efficient and
+ * faster way to perform the vector and matrix operations compared to Python's NumPy
+ * but the functions should be transferrable to that of NumPy.
+ * 
+ * This filter provides to two functions: predict(N), getState and update for 3D position 
+ * (X, Y, Z) predict will give a vague future prediction of where to position may be N times ahead.
+ * Not so deep research revealed that its practically useless beyond 5. However getState
+ * will give a good estimate on the current position, when the sensor input is alternating
+ * rapidly. 
  */
 
 #include <iostream>
 #include <Eigen/Dense>
 #include <vector>
+
+#ifndef DEBUG_KF
+#define DEBUG_KF 0
+#endif
 
 using namespace Eigen;
 
@@ -150,39 +164,41 @@ public:
     }
 };
 
-// int main()
-// {
-//     KalmanFilter3D kf;
+#if DEBUG_KF
+int main()
+{
+    KalmanFilter3D kf;
 
-//     std::vector<Vector3f> measurements = {
-//         Vector3f(1, 1, 0),
-//         Vector3f(2, 2, 0),
-//         Vector3f(3, 4, 0),
-//         Vector3f(4, 8, 0),
-//         Vector3f(5, 16, 0),
-//         Vector3f(6, 32, 0),
-//         Vector3f(7, 64, 0),
-//         Vector3f(8, 128, 0),
-//         Vector3f(9, 256, 0),
-//         Vector3f(10, 512, 0)};
+    std::vector<Vector3f> measurements = {
+        Vector3f(1, 1, 0),
+        Vector3f(2, 2, 0),
+        Vector3f(3, 4, 0),
+        Vector3f(4, 8, 0),
+        Vector3f(5, 16, 0),
+        Vector3f(6, 32, 0),
+        Vector3f(7, 64, 0),
+        Vector3f(8, 128, 0),
+        Vector3f(9, 256, 0),
+        Vector3f(10, 512, 0)};
 
-//     Vector3f vec_(1, 2, 3);
+    Vector3f vec_(1, 2, 3);
 
-//     std::cout << "Filtered state: " << vec_(0)<< std::endl;
+    std::cout << "Filtered state: " << vec_(0)<< std::endl;
 
-//     // Apply Kalman filter to each measurement
-//     for (const auto &measurement : measurements)
-//     {
-//         std::cout << "Measured state: " << measurement.transpose() << std::endl;
-//         kf.update(measurement);
-//         Vector3f state = kf.getState();
-//         std::cout << "Filtered state: " << state.transpose() << std::endl;
+    // Apply Kalman filter to each measurement
+    for (const auto &measurement : measurements)
+    {
+        std::cout << "Measured state: " << measurement.transpose() << std::endl;
+        kf.update(measurement);
+        Vector3f state = kf.getState();
+        std::cout << "Filtered state: " << state.transpose() << std::endl;
 
-//         int N = 10; // Number of seconds to predict ahead
-//         Vector3f predictedState = kf.predict(N);
-//         // std::cout << "Predicted state (" << N << " seconds ahead): " << predictedState.x << ", " << predictedState.y << ", " << predictedState.z << std::endl;
-//         std::cout << "Predicted state: " << predictedState.transpose() << " (" << N << " seconds ahead): " << std::endl;
-//     }
+        int N = 10; // Number of seconds to predict ahead
+        Vector3f predictedState = kf.predict(N);
+        // std::cout << "Predicted state (" << N << " seconds ahead): " << predictedState.x << ", " << predictedState.y << ", " << predictedState.z << std::endl;
+        std::cout << "Predicted state: " << predictedState.transpose() << " (" << N << " seconds ahead): " << std::endl;
+    }
 
-//     return 0;
-// }
+    return 0;
+}
+#endif

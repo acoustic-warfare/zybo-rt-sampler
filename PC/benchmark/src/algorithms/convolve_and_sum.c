@@ -215,9 +215,9 @@ void miso_convolve_naive(float *signals, float *out, int *adaptive_array, int n,
     // Reset the output for the new direction
     memset(out, 0, (N_SAMPLES) * sizeof(float));
 
-    int pos_pad, pos_mic;
+    int pos_mic;
 
-    float *h;
+    // float *h;
 
     for (int m = 0; m < n; m++)
     {
@@ -278,7 +278,7 @@ void miso_convolve_vectorized(float *signals, float *out, int *adaptive_array, i
     // Reset the output for the new direction
     memset(out, 0, (N_SAMPLES) * sizeof(float));
 
-    int pos_pad, pos_mic;
+    int pos_mic;
 
     // float *h;
 

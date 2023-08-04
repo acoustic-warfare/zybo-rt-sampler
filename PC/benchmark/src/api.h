@@ -20,6 +20,7 @@ void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset)
 // void miso_steer_listen2(int *adaptive_array, int n, int steer_offset);
 
 #include "portaudio.h"
+#include "config.h"
 
 typedef struct
 {

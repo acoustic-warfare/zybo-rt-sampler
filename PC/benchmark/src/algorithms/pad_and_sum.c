@@ -62,7 +62,7 @@ void miso_pad(float *signals, float *out, int *adaptive_array, int n, int offset
     {
         pos_mic = adaptive_array[m]; // Which mic to use
         pos_pad = whole_samples_h[offset + m]; // Delay amount
-
+        // pos_pad = whole_samples_h[offset + pos_mic]; // Delay amount
         pad_delay(signals + pos_mic * N_SAMPLES, out, pos_pad);
         // pad_delay(&signals[pos_mic * N_SAMPLES], out, pos_pad);
     }

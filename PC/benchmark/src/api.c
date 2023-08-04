@@ -27,8 +27,6 @@
     start_playback
     stop_playback
 
-
-
  The interface for the beamforming algorithms and UDP-packets-receiver.
 
  This file spawns a child process that continiuosly stores the latest raw mic data
@@ -36,18 +34,9 @@
 
 */
 
-#include "config.h"
-#include "portaudio.h"
-#include "api.h"
+
 
 // Semaphores
-#include <sys/sem.h>
-#include <sys/shm.h>
-#include <sys/ipc.h>
-#include <sys/types.h>
-
-#include <signal.h>
-
 #include <sys/sem.h>
 #include <sys/shm.h>
 #include <sys/ipc.h>
@@ -61,22 +50,23 @@
 #include <stdio.h>
 
 #include <unistd.h> // Error
+#include <time.h>
+#include <math.h>
 
-// Semaphores
-#include <sys/sem.h>
-#include <sys/shm.h>
-#include <sys/ipc.h>
-#include <sys/types.h>
-
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-
-#include <unistd.h> // Error
+#include "portaudio.h"
 
 #include "config.h"
+#include "api.h"
 #include "receiver.h"
+
+// Beamforming algorithms
+#include "algorithms/pad_and_sum.h"
+#include "algorithms/convolve_and_sum.h"
+#include "algorithms/lerp_and_sum.h"
+
+#define DEBUG 0
+
+#define RINGBUFFER 1
 
 /**
  * @brief MISO delay and sum beamforming - Together as one...
@@ -100,7 +90,113 @@ paData data;
 
 Miso *miso;
 
+// Global stop for audio playback
 volatile sig_atomic_t stop = 0;
+
+#if RINGBUFFER
+
+#define BUFFER_Z N_SAMPLES * 10
+typedef struct {
+    float data[BUFFER_Z];
+    int read_index;
+    int write_index;
+    int count;
+} RB;
+
+RB rb2;
+
+
+// ---- BEGIN AUDIO RINGBUFFER ----
+void initRingBuffer(RB *buffer)
+{
+    buffer->read_index = 0;
+    buffer->write_index = 0;
+    buffer->count = 0;
+}
+
+/**
+ * @brief Write n data to a ringbuffer
+ * 
+ * @param buffer 
+ * @param data 
+ * @param n 
+ */
+void write_rb(RB *buffer, float *data, int n)
+{
+    while (buffer->count == BUFFER_Z)
+    {
+        usleep(1);
+        ;
+    }
+
+    int i;
+
+    for (i = 0; i < n; i++)
+    {
+        
+        buffer->data[buffer->write_index] = data[i];
+        buffer->write_index += 1;
+        buffer->write_index %= BUFFER_Z;
+    }
+
+    buffer->count += n;
+}
+
+/**
+ * @brief Read n data from a ringbuffer
+ * 
+ * @param buffer 
+ * @param out 
+ * @param n 
+ */
+void read_rb(RB *buffer, float *out, int n)
+{
+    while (buffer->count < n)
+    {
+        usleep(1);
+        ;
+    }
+
+    int i;
+
+    for (i = 0; i < n; i++)
+    {
+        out[i] = buffer->data[buffer->read_index];
+        buffer->read_index += 1;
+        buffer->read_index %= BUFFER_Z;
+    }
+
+    buffer->count -= n;
+}
+
+/**
+ * @brief PortAudio callback function, should not be called from the user same as above
+ *
+ * @param inputBuffer
+ * @param outputBuffer
+ * @param framesPerBuffer
+ * @param timeInfo
+ * @param statusFlags
+ * @param userData
+ * @return int
+ */
+static int playback_callback(const void *inputBuffer, void *outputBuffer,
+                             unsigned long framesPerBuffer,
+                             const PaStreamCallbackTimeInfo *timeInfo,
+                             PaStreamCallbackFlags statusFlags,
+                             void *userData)
+{
+    RB *data = (RB *)userData;
+    float *out = (float *)outputBuffer;
+    (void)inputBuffer; // Cast to void to prevent compile warnings
+
+    // Write framesPerBuffer of data into the out stream
+    read_rb(data, out, framesPerBuffer);
+
+    return paContinue;
+}
+
+#else
 
 /* This routine will be called by the PortAudio engine when audio is needed.
 ** It may called at interrupt level on some machines so don't do anything
@@ -114,22 +210,30 @@ static int playback_callback(const void *inputBuffer, void *outputBuffer,
 {
     paData *data = (paData *)userData;
     float *out = (float *)outputBuffer;
-    (void)inputBuffer;
+    (void)inputBuffer; // Cast to void to prevent compile warnings
 
     unsigned long i;
 
-    if (data->can_read)
+    while (!data->can_read)
     {
-        data->can_read = 0;
-        for (i = 0; i < N_SAMPLES; i++)
-        {
-            *out++ = data->out[i];
-            *out++ = data->out[i];
-        }
+        usleep(1);
+        ;
     }
 
+    data->can_read = 0;
+    for (i = 0; i < N_SAMPLES; i++)
+    {
+        *out++ = data->out[i];
+    }
     return paContinue;
 }
+
+#endif
+
+
+
+
+
 
 /**
  * @brief Stop the current playback audio stream
@@ -163,8 +267,10 @@ int stop_playback()
  */
 int load_playback(paData *data)
 {
+
+
+
     PaError err;
-    printf("Pa\n");
     err = Pa_Initialize();
     if (err != paNoError)
         fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
@@ -175,20 +281,38 @@ int load_playback(paData *data)
         fprintf(stderr, "Error: No default output device.\n");
         fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
     }
-    outputParameters.channelCount = 2;         /* stereo output */
+    outputParameters.channelCount = 1;         /* stereo output */
     outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
     outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultLowOutputLatency;
+    // outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultHighOutputLatency;
     outputParameters.hostApiSpecificStreamInfo = NULL;
     printf("Starting stream\n");
+
+#if RINGBUFFER
+    initRingBuffer(&rb2);
+
+    err = Pa_OpenStream(
+        &stream,
+        NULL, /* no input */
+        &outputParameters,
+        SAMPLE_RATE,
+        N_SAMPLES / 2,
+        paNoFlag, // paClipOff, /* we won't output out of range samples so don't bother clipping them */
+        playback_callback,
+        &rb2);
+#else
     err = Pa_OpenStream(
         &stream,
         NULL, /* no input */
         &outputParameters,
         SAMPLE_RATE,
         N_SAMPLES,
-        paClipOff, /* we won't output out of range samples so don't bother clipping them */
+        NULL, //paClipOff, /* we won't output out of range samples so don't bother clipping them */
         playback_callback,
         data);
+#endif
+    
+
     printf("Started stream\n");
     if (err != paNoError)
         fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
@@ -276,11 +400,7 @@ void miso_init_shared_memory()
     }
 
     miso->n = 1;
-
-    for (int i = 0; i < BUFFER_LENGTH; i++)
-    {
-        miso->signals[i] = 0.0;
-    }
+    memset((void *)&miso->signals[0], 0, BUFFER_LENGTH * sizeof(float));
 }
 
 int miso_loop()
@@ -291,26 +411,39 @@ int miso_loop()
 
     while (!stop)
     {
+
+#if DEBUG
+        // Time the duration of the DSP loop
+        clock_t tic = clock();
+#endif
+
         semop(misosemid, &misodata_sem_wait, 1);
 
         // Receive latest buffer
         get_data(&miso->signals[0]);
 
         // Perform MISO and write to paData
-        int level = 200;
         miso_pad(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
+        // miso_lerp(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
         for (int i = 0; i < N_SAMPLES; i++)
         {
-            // printf("%f ", data.out[i]);
             data.out[i] /= (float)miso->n;
-
-            data.out[i] *= level;
+            data.out[i] *= MIC_GAIN / 2; // The amount to multiply with to get a higher volume
         }
+        data.can_read = 1;
+
+#if RINGBUFFER
+        // Write the computed MISO to the audio output buffer
+        write_rb(&rb2, &data.out[0], N_SAMPLES);
+#endif
 
         semop(misosemid, &misodata_sem_signal, 1);
 
-        // Allow output for new frames
-        data.can_read = 1;
+#if DEBUG
+        clock_t toc = clock();
+        printf("Elapsed: %f seconds\n", (double)(toc - tic) / CLOCKS_PER_SEC);
+#endif    
+    
     }
 
     stop_playback();
@@ -319,22 +452,36 @@ int miso_loop()
 }
 
 /**
- * @brief Load config for mic configuration for MISO playback
+ * @brief Load config for mic configuration for MISO playback.
+ * 
+ * Load which microphones to use as indexes in an array.
  *
- * @param adaptive_array
- * @param n
+ * @param adaptive_array array of microphone indexes
+ * @param n length of adaptive_array
  */
 void load_pa(int *adaptive_array, int n)
 {
     semop(misosemid, &misodata_sem_wait, 1);
     miso->n = n;
+    printf("Loading pa\n");
     for (int i = 0; i < miso->n; i++)
     {
+        printf("%d ", adaptive_array[i]);
         miso->adaptive_array[i] = adaptive_array[i];
     }
+    printf("\n");
     semop(misosemid, &misodata_sem_signal, 1);
 }
 
+/**
+ * @brief low-level steer function that changes the steer_offset
+ * of the miso coefficients pointer such that it points to the desired
+ * coefficients starting-index in memory. This function should probably 
+ * NOT be called on its own, but instead as a result of a function that calculates
+ * the offset based on the structure of coefficients to get the desired offset
+ * 
+ * @param offset 
+ */
 void steer(int offset)
 {
     semop(misosemid, &misodata_sem_wait, 1);
@@ -365,11 +512,15 @@ void stop_inside()
     stop = 1;
 }
 
-int load_miso()
+void init_miso()
 {
     miso_init_shared_memory();
     miso_init_semaphore();
+}
 
+int load_miso()
+{
+    init_miso();
     pid_t misopid = fork(); // Fork child
 
     if (misopid == -1)
@@ -517,7 +668,6 @@ int load(bool replay_mode)
 
     init_shared_memory();
     init_semaphore();
-    // init_portaudio_playback();
 
     pid_t pid = fork(); // Fork child
 
@@ -532,14 +682,16 @@ int load(bool replay_mode)
         socket_desc = create_and_bind_socket(replay_mode);
         if (socket_desc == -1)
         {
-            return -1;
+            exit(1);
         }
         client_msg = create_msg();
+
         int n_arrays = receive_header_data(socket_desc);
         if (n_arrays == -1)
         {
-            return -1;
+            exit(1);
         }
+
         while (1)
         {
             semop(semid, &data_sem_wait, 1);
@@ -564,8 +716,6 @@ int load(bool replay_mode)
 
 // Algorithms
 
-#include "algorithms/pad_and_sum.h"
-
 /**
  * @brief Cython wrapper for MIMO using naive padding
  *
@@ -583,7 +733,7 @@ void pad_mimo(float *image, int *adaptive_array, int n)
 }
 
 
-#include "algorithms/convolve_and_sum.h"
+
 
 /**
  * @brief Cython wrapper for MIMO using vectorized convolve
@@ -618,7 +768,7 @@ void convolve_mimo_naive(float *image, int *adaptive_array, int n)
 }
 
 int whole_samples_h_[MAX_RES_X * MAX_RES_Y * ACTIVE_ARRAYS * COLUMNS * ROWS];
-#include <math.h>
+
 
 /**
  * @brief TODO
@@ -649,7 +799,6 @@ void mimo_truncated_algorithm(float *signals, float *image, int *adaptive_array,
             for (int s = 0; s < n; s++)
             {
                 pos_u = adaptive_array[s];
-                // printf("(%d %d) ", pos_u, n);
                 pos = whole_samples_h_[xi + yi + s];
                 for (int i = 0; i < N_SAMPLES - pos; i++)
                 {
@@ -719,3 +868,46 @@ void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset)
 
     miso_pad(&signals[0], out, adaptive_array, n, steer_offset);
 }
+
+// Local main for quick access
+#if 0
+int runnin = 1;
+int stoper()
+{
+    runnin = 0;
+    stop_miso();
+    stop_receiving();
+}
+
+int main()
+{
+    int h[N_MICROPHONES] = {0};
+    memset(&h[0], 0, N_MICROPHONES * sizeof(int));
+
+    load_coefficients_pad(&h[0], N_MICROPHONES);
+
+    load(false);
+    load_miso();
+
+    int adaptive_array[N_MICROPHONES];
+    for (int i = 0; i < N_MICROPHONES; i++)
+    {
+        adaptive_array[i] = i;
+    }
+
+    load_pa(&adaptive_array[0], 128);
+    steer(0);
+
+    for (int i = 0; i < N_MICROPHONES; i++)
+    {
+        miso->adaptive_array[i] = i;
+    }
+
+    signal(SIGINT, stoper);
+    signal(SIGKILL, stoper);
+
+    while (runnin)
+        usleep(100);
+}
+
+#endif
