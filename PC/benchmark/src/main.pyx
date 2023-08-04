@@ -36,7 +36,7 @@ try:
     from lib.directions import calculate_coefficients, active_microphones, compute_convolve_h, calculate_delay_miso, calculate_delays
 except:
     print("You must build the directions library")
-    exit(1)
+    sys.exit(1)
 
 # Import configuration variables from config.pxd <- config.h
 from config cimport *
@@ -615,6 +615,7 @@ def _miso():
         # Stop the program
         v.value = 0
         disconnect()
+
 
 
 def miso():
