@@ -24,12 +24,12 @@ def fun(s):
 urlpatterns = [
     path('', index),
     path('disable/', disableBackend),
-    path('enablePad/', enablePadBackend),
-    path('enableConvolve/', enableConvolveBackend),
+    path('enableBackend1/', enablePadBackend),
+    path('enableBackend2/', enableConvolveBackend),
     path('disconnect/', disconnect),
     path('connect/', connect),
     path('monitor/', stream),
     path('sound/', sound),
     path('replay/', replay),
-    path('enableThirdBackend/', enableThirdBackend)
+    path('enableBackend3/', enableThirdBackend)
 ]
