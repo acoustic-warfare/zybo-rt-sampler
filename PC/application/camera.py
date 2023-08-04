@@ -25,6 +25,8 @@ class VideoCamera(object):
         # If you decide to use video.mp4, you must have this file in the folder
         # as the main.py.
         # self.video = cv2.VideoCapture('video.mp4')
+        self.hasPrev = False
+        self.prevHeatmap = None
         self.v = Value('i', 1)
         self.backend = 0
         self.threshold = threshold
@@ -87,6 +89,13 @@ class VideoCamera(object):
                 res, should_overlay = calculate_heatmap_fft(output, threshold=self.threshold)
             if should_overlay:
                 res = cv2.resize(res, WINDOW_DIMENSIONS)
+                if self.hasPrev:
+                    res = cv2.addWeighted(res, 1.0, self.prevHeatmap, 0.8, 0)                
+                else:
+                    self.hasPrev = True
+
+                self.prevHeatmap = res
+
                 image = cv2.addWeighted(image, 1.0, res, 0.8, 0)
 
         except queue.Empty:
