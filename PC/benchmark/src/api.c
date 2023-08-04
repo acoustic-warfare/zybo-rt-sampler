@@ -428,7 +428,7 @@ int miso_loop()
         for (int i = 0; i < N_SAMPLES; i++)
         {
             data.out[i] /= (float)miso->n;
-            data.out[i] *= 20; // The amount to multiply with to get a higher volume
+            data.out[i] *= 40.0; // The amount to multiply with to get a higher volume
         }
         data.can_read = 1;
 
@@ -698,8 +698,15 @@ int load(bool replay_mode)
 
             if (receive_and_write_to_buffer(socket_desc, rb, client_msg, n_arrays) == -1)
             {
+                printf("Failure\n");
                 return -1;
             }
+
+            // for (int i = 0; i < N_SAMPLES; i++)
+            // {
+            //     printf("%f ", rb->data[N_SAMPLES * 30 + i]);
+            // }
+            
 
             semop(semid, &data_sem_signal, 1);
         }
@@ -870,7 +877,7 @@ void miso_steer_listen(float *out, int *adaptive_array, int n, int steer_offset)
 }
 
 // Local main for quick access
-#if 0
+#if 1
 int runnin = 1;
 int stoper()
 {
@@ -887,6 +894,24 @@ int main()
     load_coefficients_pad(&h[0], N_MICROPHONES);
 
     load(false);
+
+    #if 0
+    float data[BUFFER_LENGTH];
+    while (runnin)
+    {
+        get_data(&data[0]);
+        // for (int i = 0; i < N_SAMPLES; i++)
+        // {
+        //     printf("%f ", data[N_SAMPLES * 6 + i]);
+        // }
+
+        // break;
+        
+    }
+
+    stop_receiving();
+    #else
+
     load_miso();
 
     int adaptive_array[N_MICROPHONES];
@@ -895,19 +920,21 @@ int main()
         adaptive_array[i] = i;
     }
 
-    load_pa(&adaptive_array[0], 128);
+    load_pa(&adaptive_array[0], 150);
     steer(0);
 
-    for (int i = 0; i < N_MICROPHONES; i++)
-    {
-        miso->adaptive_array[i] = i;
-    }
+    // for (int i = 0; i < N_MICROPHONES; i++)
+    // {
+    //     miso->adaptive_array[i] = i;
+    // }
 
     signal(SIGINT, stoper);
     signal(SIGKILL, stoper);
 
     while (runnin)
         usleep(100);
+
+    #endif
 }
 
 #endif

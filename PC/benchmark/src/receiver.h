@@ -41,10 +41,11 @@ ring_buffer *destroy_ring_buffer(ring_buffer *rb);
 /// @brief FPGA Protocol Version 2
 typedef struct _msg
 {
-    int16_t frequency;
+    u_int16_t frequency;
     int8_t n_arrays;
     int8_t protocol_ver;
     int32_t counter;
+    
     int32_t stream[N_MICROPHONES];
 } msg;
 

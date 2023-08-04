@@ -90,17 +90,93 @@ int create_and_bind_socket(bool replay_mode)
     return socket_desc;
 }
 
+// int convertTo24Bit(int twoCom)
+// {
+//     if (twoCom & (1 << 8))
+//     {
+//         twoCom = ~twoCom;
+//         int orig = twoCom >> 8;
+
+
+//         orig += 1;
+
+//         orig = -orig;
+//         // printf("Orig\n");
+
+//         return orig;
+//     }
+
+//     else {
+//         return twoCom >> 8;
+//     }
+// }
+#include <stdio.h>
+void bin(unsigned n)
+{
+    unsigned i;
+    for (i = 1 << 31; i > 0; i = i / 2)
+        (n & i) ? printf("1") : printf("0");
+}
+int convertTo24Bit(int twoCom)
+{
+    // printf("\n");
+    // bin((unsigned)twoCom);
+    // printf("\n");
+    // return twoCom;
+    if (twoCom & (1 << 23))
+    {
+
+
+        int high = twoCom;
+        high = ~high;
+        // return high;
+        int orig = -high;
+        return orig;
+        // // orig = (high << 24) | orig;
+
+
+
+        // return orig >> 8;
+    }
+
+    else
+    {
+        return twoCom;
+    }
+}
+
 int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, int n_arrays)
 {
     int msg_offset = 0;
     int step = 0;
     for (int i = 0; i < BUFFER_LENGTH; i += N_MICROPHONES)
     {
+        
+        // n_arrays = 3;
+        // int si = 1458;
+        // uint32_t msg1[1458];
+        // recv(socket_desc, msg1, 1458, 0);
         if (recv(socket_desc, message, sizeof(msg), 0) < 0)
+        // if (recv(socket_desc, message, si, 0) < 0)
         {
             printf("Couldn't receive\n");
             return -1;
         }
+
+        // printf("%d %d %d %d\n", message->counter, message->frequency, message->n_arrays, message->protocol_ver);
+
+        
+        // printf("%d\n", sizeof(msg));
+        // int orig = message->stream[3] << 8;
+        // // int orig = msg1[3];
+        // int num = convertTo24Bit(orig);
+        // float val = ((float)num / 16777216);
+        // bin(message->stream[3]);
+        // printf("(%f, %d, %d) ", val, num, orig);
+        // // printf("%d ", num);
+        // // printf("%f ", val);
+
+        // continue;
 
         // if (i%EVERY_N_SAMPLES != 0)
         // {
@@ -128,8 +204,15 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, 
         // {
         //     rb->data[step + t * N_SAMPLES] = (float)((double)(message->stream[t]) / NORM_FACTOR);
         // }
-        
 
+#if 0
+        for (int i = 0; i < N_MICROPHONES; i++)
+        {
+            rb->data[step + N_SAMPLES * i] = (float)((double)convertTo24Bit(message->stream[msg_offset + i] << 8) / NORM_FACTOR);
+        }
+        
+        
+#else
         for (int n = 0; n < n_arrays; n++)
         {
             for (int y = 0; y < ROWS; y++)
@@ -139,7 +222,10 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, 
                 {
                     for (int x = 0; x < COLUMNS; x++)
                     {
-                        rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[msg_offset + row + x]) / NORM_FACTOR);
+                        // rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[msg_offset + row + x]) / NORM_FACTOR);
+                        // rb->data[step + N_SAMPLES * s] = (float)((double)convertTo24Bit(message->stream[msg_offset + row + x]<<8) / NORM_FACTOR);
+                        rb->data[step + N_SAMPLES * s] = (float)((double)convertTo24Bit(message->stream[msg_offset + row + x]) / NORM_FACTOR);
+
                         s++;
                     }
                 }
@@ -147,12 +233,15 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, 
                 {
                     for (int x = 0; x < COLUMNS; x++)
                     {
-                        rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[msg_offset + row + COLUMNS - x]) / NORM_FACTOR);
+                        // rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[msg_offset + row + COLUMNS - x]) / NORM_FACTOR);
+                        // rb->data[step + N_SAMPLES * s] = (float)((double)convertTo24Bit(message->stream[msg_offset + row + COLUMNS - x]<<8) / NORM_FACTOR);
+                        rb->data[step + N_SAMPLES * s] = (float)((double)convertTo24Bit(message->stream[msg_offset + row + COLUMNS - x]) / NORM_FACTOR);
                         s++;
                     }
                 }
             }
         }
+#endif
 
         step++;
     }
