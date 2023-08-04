@@ -71,6 +71,7 @@ def active_microphones():
                 #continue
                 active_mics.append(int(mic))
 
+    # active_mics = np.arange(64)
     # sort the list such that the mic indexes are in ascending order
     active_mics = np.sort(active_mics)
     return active_mics, len(active_mics)

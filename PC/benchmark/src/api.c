@@ -296,7 +296,7 @@ int load_playback(paData *data)
         NULL, /* no input */
         &outputParameters,
         SAMPLE_RATE,
-        N_SAMPLES / 2,
+        N_SAMPLES * 2,
         paNoFlag, // paClipOff, /* we won't output out of range samples so don't bother clipping them */
         playback_callback,
         &rb2);
@@ -428,7 +428,7 @@ int miso_loop()
         for (int i = 0; i < N_SAMPLES; i++)
         {
             data.out[i] /= (float)miso->n;
-            data.out[i] *= MIC_GAIN / 2; // The amount to multiply with to get a higher volume
+            data.out[i] *= 20; // The amount to multiply with to get a higher volume
         }
         data.can_read = 1;
 
