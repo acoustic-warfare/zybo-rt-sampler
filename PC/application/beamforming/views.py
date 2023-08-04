@@ -42,11 +42,13 @@ def disableBackend(req):
     return render(req, "stream.html")
 
 def enablePadBackend(req):
-    slider = req.GET.get('t', '-8')
+    sliderRange = req.GET.get('range', '5')
+    sliderExp = req.GET.get('exp', '-8')
     context = {
-        'slider': slider,
+        'sliderRange': sliderRange,
+        'sliderExp': sliderExp,
     }
-    threshold_str="5e"+slider
+    threshold_str=sliderRange + 'e' + sliderExp
     threshold = float(threshold_str)
     print(threshold)
     global v
@@ -57,11 +59,13 @@ def enablePadBackend(req):
 
 
 def enableConvolveBackend(req):
-    slider = req.GET.get('t', '-8')
+    sliderRange = req.GET.get('range', '5')
+    sliderExp = req.GET.get('exp', '-8')
     context = {
-        'slider': slider,
+        'sliderRange': sliderRange,
+        'sliderExp': sliderExp,
     }
-    threshold_str="5e"+slider
+    threshold_str=sliderRange + 'e' + sliderExp
     threshold = float(threshold_str)
     print(threshold)
     global v
@@ -71,11 +75,13 @@ def enableConvolveBackend(req):
     return render(req, "streamWithBackend.html", context)
 
 def enableThirdBackend(req):
-    slider = req.GET.get('t', '-8')
+    sliderRange = req.GET.get('range', '5')
+    sliderExp = req.GET.get('exp', '-8')
     context = {
-        'slider': slider,
+        'sliderRange': sliderRange,
+        'sliderExp': sliderExp,
     }
-    threshold_str="5e"+slider
+    threshold_str=sliderRange + 'e' + sliderExp
     threshold = float(threshold_str)
     print(threshold)
     global v
