@@ -19,14 +19,28 @@
         <script>
             var slider = document.getElementById("myRange");
             var output = document.getElementById("value");
+            
+            function removeGarbageURL(url){
+                lastIndex = url.length-1;
+                if(url[lastIndex] == '/'){
+                    return url;
+                }
+                else{
+                    new_url = url.slice(0, -1);
+                    return removeGarbageURL(new_url);
+                } 
+            };
+            
             output.innerHTML = "5e" + slider.value;
             slider.oninput = function() {
                 output.innerHTML = "5e" + this.value;
             }
             document.getElementById("threshold").onclick = function() { 
-                url =  'http://127.0.0.1:8000/?t=' + slider.value;
+                url =  removeGarbageURL(window.location.href) + '?t=' + slider.value;
                 location.href = url;
             };  
+
+            
         </script>
     </body>
 </html>

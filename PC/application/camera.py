@@ -6,7 +6,7 @@ from lib.beamformer import *
 from lib.visual import calculate_heatmap, calculate_heatmap_fft
 
 import queue
-import interface.config
+import interface.config as config
 import numpy as np
 from realtime_scripts.phase_shift_algorithm_peak_detection import main
 WINDOW_DIMENSIONS = (1920, 1080)# (720, 480)
@@ -37,7 +37,7 @@ class VideoCamera(object):
         jobs = 1
         self.q = JoinableQueue(maxsize=2)
 
-        connect(True)
+        connect()
         self.processStarted = False
         self.p = Process(target=miso_api, args=(self.q, self.v))
         #self.p.start()
@@ -82,9 +82,9 @@ class VideoCamera(object):
             self.q.task_done()
             print(output.shape)
             if self.backend != 2:
-                res, should_overlay = calculate_heatmap(output)
+                res, should_overlay = calculate_heatmap(output, threshold=self.threshold)
             else:
-                res, should_overlay = calculate_heatmap_fft(output)
+                res, should_overlay = calculate_heatmap_fft(output, threshold=self.threshold)
             if should_overlay:
                 res = cv2.resize(res, WINDOW_DIMENSIONS)
                 image = cv2.addWeighted(image, 1.0, res, 0.8, 0)

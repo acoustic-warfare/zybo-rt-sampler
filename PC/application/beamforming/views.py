@@ -42,26 +42,47 @@ def disableBackend(req):
     return render(req, "stream.html")
 
 def enablePadBackend(req):
+    slider = req.GET.get('t', '-8')
+    context = {
+        'slider': slider,
+    }
+    threshold_str="5e"+slider
+    threshold = float(threshold_str)
+    print(threshold)
     global v
     v.quit()
-    v = VideoCamera()
+    v = VideoCamera(threshold=threshold)
     v.startBeamforming(0)
-    return render(req, "stream.html")
+    return render(req, "stream.html", context)
 
 
 def enableConvolveBackend(req):
+    slider = req.GET.get('t', '-8')
+    context = {
+        'slider': slider,
+    }
+    threshold_str="5e"+slider
+    threshold = float(threshold_str)
+    print(threshold)
     global v
     v.quit()
-    v = VideoCamera()
+    v = VideoCamera(threshold=threshold)
     v.startBeamforming(1)
-    return render(req, "stream.html")
+    return render(req, "stream.html", context)
 
 def enableThirdBackend(req):
+    slider = req.GET.get('t', '-8')
+    context = {
+        'slider': slider,
+    }
+    threshold_str="5e"+slider
+    threshold = float(threshold_str)
+    print(threshold)
     global v
     v.quit()
-    v = VideoCamera()
+    v = VideoCamera(threshold=threshold)
     v.startBeamforming(2)
-    return render(req, "stream.html")
+    return render(req, "stream.html", context)
 
 def connect(req):
     global v
