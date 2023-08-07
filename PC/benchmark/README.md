@@ -10,7 +10,14 @@ sudo apt upgrade -y
 Building requirements:
 ```bash
 sudo apt install \
-            cython3 gcc make
+            cython3 python3-cython gcc make
+```
+
+Libraries:
+```bash
+
+sudo apt install \
+    python3-numpy python3-opencv python3-matplotlib qtbase5-dev
 ```
 
 ## Building
