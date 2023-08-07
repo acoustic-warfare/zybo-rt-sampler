@@ -8,17 +8,17 @@
 #define COLUMNS 8
 #define ROWS 8
 #define MAX_RES 20
-#define MAX_RES_X 40
-#define MAX_RES_Y 20
-#define Z 10.0
+#define MAX_RES_X 57
+#define MAX_RES_Y 32
+#define Z 1.0
 #define MAX_ANGLE 70.0
-#define VIEW_ANGLE 68.0
+#define VIEW_ANGLE 59.0
 #define UDP_PORT 21844
 #define SAMPLE_RATE 48828.0
 #define ELEMENT_DISTANCE 0.02
 #define ARRAY_SEPARATION 0.0
 #define ACTIVE_ARRAYS 4
-#define SKIP_N_MICS 2
+#define SKIP_N_MICS 1
 #define PROPAGATION_SPEED 340.0
 #define APPLICATION_WINDOW_WIDTH 720
 #define APPLICATION_WINDOW_HEIGHT 480
@@ -29,10 +29,12 @@
 #define UDP_REPLAY_IP "127.0.0.1"
 #define FPGA_PROTOCOL_VERSION 2
 #define BUFFER_LENGTH N_SAMPLES * N_MICROPHONES
+#define ASPECT_RATIO 4/3
 
 //C specific constants
 #define NORM_FACTOR 16777216.0
 #define NORM_FACTOR_SOUND 2000000.0
 #define MISO_POWER 15
-#define KEY 1234
+#define MIC_GAIN 200
+#define KEY 1244
 #define KEY_SOUND 1235

@@ -123,9 +123,10 @@ void initRingBuffer(RB *buffer)
  */
 void write_rb(RB *buffer, float *data, int n)
 {
-    while (buffer->count == BUFFER_Z)
+    while (buffer->count >= BUFFER_Z)
     {
-        usleep(1);
+        printf("Too fast XD\n");
+        usleep(10);
         ;
     }
 
@@ -153,6 +154,7 @@ void read_rb(RB *buffer, float *out, int n)
 {
     while (buffer->count < n)
     {
+        // printf("Waiting :(\n");
         usleep(1);
         ;
     }
@@ -296,7 +298,7 @@ int load_playback(paData *data)
         NULL, /* no input */
         &outputParameters,
         SAMPLE_RATE,
-        N_SAMPLES * 2,
+        N_SAMPLES * 1,
         paNoFlag, // paClipOff, /* we won't output out of range samples so don't bother clipping them */
         playback_callback,
         &rb2);
@@ -620,6 +622,7 @@ void init_shared_memory()
  */
 void init_semaphore()
 {
+    // Mask 0666 enables us to reuse the semaphore
     semid = semget(KEY, 1, IPC_CREAT | 0666);
 
     if (semid == -1)
@@ -665,7 +668,7 @@ void get_data(float *out)
  */
 int load(bool replay_mode)
 {
-
+    
     init_shared_memory();
     init_semaphore();
 

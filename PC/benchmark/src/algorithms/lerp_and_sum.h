@@ -5,6 +5,8 @@ void lerp_delay(float *signal, float *out, float h, int pad);
 
 void miso_lerp(float *signals, float *out, int *adaptive_array, int n, int offset);
 
+void mimo_lerp(float *signals, float *image, int *adaptive_array, int n);
+
 void load_coefficients_lerp(float *delays, int n);
 
 void unload_coefficients_lerp();

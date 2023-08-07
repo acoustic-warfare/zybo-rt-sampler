@@ -58,6 +58,36 @@ void miso_lerp(float *signals, float *out, int *adaptive_array, int n, int offse
     // }
 }
 
+void mimo_lerp(float *signals, float *image, int *adaptive_array, int n)
+{
+    // dummy output
+    float out[N_SAMPLES];
+    float sum;
+
+    int x_offset, y_offset;
+
+    for (int y = 0; y < MAX_RES_Y; y++)
+    {
+        y_offset = y * MAX_RES_X * n;
+        for (int x = 0; x < MAX_RES_X; x++)
+        {
+            x_offset = x * n;
+            miso_lerp(signals, &out[0], adaptive_array, n, y_offset + x_offset);
+
+            sum = 0.0;
+            for (int k = 0; k < N_SAMPLES; k++)
+            {
+                out[k] /= (float)n; // Divide by number of microphones
+                sum += powf(out[k], 2);
+            }
+
+            sum /= (float)N_SAMPLES;
+
+            image[y * MAX_RES_X + x] = sum;
+        }
+    }
+}
+
 
 void load_coefficients_lerp(float *delays, int n)
 {
