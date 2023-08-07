@@ -133,7 +133,7 @@ def calculate_heatmap2(image, threshold=1e-7, amount = 0.5, exponent = POWER):
     cv2.circle(heatmap,(X, Y), 50, (0,255,0), 5)
     return heatmap, should_overlay
 
-def calculate_heatmap(image, threshold=5e-8, amount = 0.5, exponent = POWER):
+def calculate_heatmap(image, threshold=1e-7, amount = 0.5, exponent = POWER):
     """Create a heatmap over the perceived powerlevel
 
     Args:
@@ -149,7 +149,7 @@ def calculate_heatmap(image, threshold=5e-8, amount = 0.5, exponent = POWER):
     
     max_power_level = np.max(image)
 
-    if max_power_level > 0:
+    if max_power_level > threshold:
 
         # Normalize the image
         image /= max_power_level
