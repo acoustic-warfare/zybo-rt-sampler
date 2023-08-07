@@ -25,6 +25,26 @@ def get_name(iterations):
 
     return file_name
 
+def get_recording(seconds: float) -> np.ndarray:
+    n_iters = int((config.SAMPLE_RATE * seconds) // config.N_SAMPLES)
+    RANGE = 80
+    total_data = np.zeros((config.N_MICROPHONES, n_iters*config.N_SAMPLES), dtype=np.float32)
+
+    data = np.zeros((config.N_MICROPHONES, config.N_SAMPLES), dtype=np.float32)
+
+    connect()
+
+    for i in range(n_iters):
+        receive(data)
+        total_data[:,i*config.N_SAMPLES:(i+1)*config.N_SAMPLES] = data.copy()
+        n = int((i/(n_iters-1))*RANGE)
+        print(f"Recording [{'='*n}{' '*(RANGE-n)}] {round(i/(n_iters-1)*100, 2)}%", end="\r")
+
+    
+    disconnect()
+
+    return total_data
+
 usage = f"python3 record.py <SECONDS>"
 
 if __name__ == "__main__":
