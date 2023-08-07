@@ -189,8 +189,11 @@ cdef void _loop_mimo_pad(q: JoinableQueue, running: Value):
     power_map = np.ascontiguousarray(_power_map)
 
     while running.value:
-        pad_mimo(&power_map[0, 0], &active_micro[0], int(n_active_mics))
-        q.put(power_map)
+        try:
+            pad_mimo(&power_map[0, 0], &active_micro[0], int(n_active_mics))
+            q.put(power_map)
+        except:
+            break
     
     # Unload when done
     unload_coefficients_pad()
@@ -292,9 +295,9 @@ cdef void _loop_mimo_and_miso_pad(q_steer: JoinableQueue, q_out: JoinableQueue, 
     print("Cython: Starting miso")
     # Setup audio playback (Order is important)
     load_miso()
-    # n_active_mics = 64
+    mics = 64
     print("Cython: enabling microphones")
-    load_pa(&active_micro[0], int(n_active_mics))
+    load_pa(&active_micro[0], int(mics))
 
     print("Cython: Steering beam")
     steer_cartesian_degree(0, 0) # Listen at zero bearing
@@ -302,17 +305,20 @@ cdef void _loop_mimo_and_miso_pad(q_steer: JoinableQueue, q_out: JoinableQueue, 
 
     import queue
     while running.value:
-        pad_mimo(&power_map[0, 0], &active_micro[0], int(n_active_mics))
-        q_out.put(power_map)
-
         try:
-            (x, y) = q_steer.get(block=False)
-            q_steer.task_done()
-            steer4(x, y)
-        except queue.Empty:
-            pass
-        except Exception as e:
-            print(e)
+            pad_mimo(&power_map[0, 0], &active_micro[0], int(n_active_mics))
+            q_out.put(power_map)
+
+            try:
+                (x, y) = q_steer.get(block=False)
+                q_steer.task_done()
+                steer4(x, y)
+            except queue.Empty:
+                pass
+            except Exception as e:
+                print(e)
+        except:
+            break
     
     # Unload when done
     stop_miso()
