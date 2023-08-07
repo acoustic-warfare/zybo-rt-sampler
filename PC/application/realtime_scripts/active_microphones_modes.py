@@ -1,4 +1,4 @@
-import interface.config as config
+import realtime_scripts.config as config
 import numpy as np
 
 def active_microphones(mode):

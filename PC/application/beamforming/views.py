@@ -48,7 +48,6 @@ def disableBackend(req):
 
 def enablePadBackend(req):
     context, threshold = setupThresholdSliders(req)
-    print(threshold)
     global v
     v.quit()
     v = VideoCamera(threshold=threshold)
@@ -58,7 +57,6 @@ def enablePadBackend(req):
 
 def enableConvolveBackend(req):
     context, threshold = setupThresholdSliders(req)
-    print(threshold)
     global v
     v.quit()
     v = VideoCamera(threshold=threshold)
@@ -67,7 +65,6 @@ def enableConvolveBackend(req):
 
 def enableThirdBackend(req):
     context, threshold = setupThresholdSliders(req)
-    print(threshold)
     global v
     v.quit()
     v = VideoCamera(threshold=threshold)

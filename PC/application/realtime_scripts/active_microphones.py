@@ -1,4 +1,4 @@
-import interface.config as config
+import realtime_scripts.config as config
 import numpy as np
 
 def active_microphones():
@@ -10,7 +10,7 @@ def active_microphones():
     #       mode = 4: var fjärde
     #       (visualisera array setup med att sätta plot_setup = 1 i config.py)
     
-    mode = config.mode
+    mode = config.mode 
     rows = np.arange(0, config.rows, mode)                              # number of rows in array
     columns = np.arange(0, config.columns*config.ACTIVE_ARRAYS, mode)   # number of columns in array
 
@@ -27,12 +27,20 @@ def active_microphones():
         microphones = np.hstack((microphones, array))
 
     # take out the active microphones from the microphones matrix, save in list active_mics
+    try:
+        unused_mics = np.load('unused_mics.npy')
+    except:
+        unused_mics = []
     active_mics = []
     for r in rows:
         for c in columns:
             mic = microphones[r,c]
-            active_mics.append(int(mic))
+            if mic not in unused_mics:
+                #continue
+                active_mics.append(int(mic))
+                
 
     # sort the list such that the mic indexes are in ascending order
     active_mics = np.sort(active_mics)
     return active_mics
+

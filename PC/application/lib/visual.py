@@ -101,6 +101,7 @@ def calculate_heatmap2(image, threshold=1e-7, amount = 0.5, exponent = POWER):
 
     max_power_level = np.max(image)
 
+
     # Normalize the image
     image /= max_power_level
 
@@ -148,30 +149,33 @@ def calculate_heatmap(image, threshold=5e-8, amount = 0.5, exponent = POWER):
     
     max_power_level = np.max(image)
 
-    # Normalize the image
-    image /= max_power_level
+    if max_power_level > 0:
 
-    # Only calculate heatmap if the maximum powerlevel is above a certain threshold 
-    if max_power_level > threshold:
+        # Normalize the image
+        image /= max_power_level
 
-        should_overlay = True
-        # Convert image value in range between [0, 1] to a RGB color value
-        for x in range(MAX_RES_X):
-            for y in range(MAX_RES_Y):
-                power_level = image[x, y]
+        # Only calculate heatmap if the maximum powerlevel is above a certain threshold 
+        if max_power_level > threshold:
 
-                # Only paint levels above a certain amount, i.e 50%
-                if power_level >= amount:
-                    power_level -= amount
-                    power_level /= amount
+            should_overlay = True
+            # Convert image value in range between [0, 1] to a RGB color value
+            for x in range(MAX_RES_X):
+                for y in range(MAX_RES_Y):
+                    power_level = image[x, y]
 
-                    # Some heatmaps are very flat, so the power of the power
-                    # May give more sharper results
-                    color_val = int(255 * power_level ** exponent)
+                    # Only paint levels above a certain amount, i.e 50%
+                    if power_level >= amount:
+                        power_level -= amount
+                        power_level /= amount
 
-                    # This indexing is a bit strange, but CV2 orders it like this (Same as flip operation)
-                    small_heatmap[MAX_RES_Y - 1 - y, MAX_RES_X - 1 - x] = colors[color_val]
+                        # Some heatmaps are very flat, so the power of the power
+                        # May give more sharper results
+                        color_val = int(255 * power_level ** exponent)
 
+                        # This indexing is a bit strange, but CV2 orders it like this (Same as flip operation)
+                        small_heatmap[MAX_RES_Y - 1 - y, MAX_RES_X - 1 - x] = colors[color_val]
+    else:
+        print("Empty image")
 
     # Must resize to fit camera dimensions
     heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)

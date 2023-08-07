@@ -8,13 +8,13 @@ from lib.visual import calculate_heatmap, calculate_heatmap_fft
 import queue
 import interface.config as config
 import numpy as np
-from realtime_scripts.phase_shift_algorithm_peak_detection import main
+from realtime_scripts.phase_shift_algorithm import main
 WINDOW_DIMENSIONS = (1920, 1080)# (720, 480)
 APPLICATION_WINDOW_WIDTH, APPLICATION_WINDOW_HEIGHT = WINDOW_DIMENSIONS
 
 te = 0
 class VideoCamera(object):
-    def __init__(self, threshold = 10e-8):
+    def __init__(self, threshold = 5e-8):
         # Using OpenCV to capture from device 0. If you have trouble capturing
         # from a webcam, comment the line below out and use a video file
         # instead.
@@ -90,12 +90,12 @@ class VideoCamera(object):
             if should_overlay:
                 res = cv2.resize(res, WINDOW_DIMENSIONS)
                 if self.hasPrev:
-                    res = cv2.addWeighted(res, 1.0, self.prevHeatmap, 0.8, 0)                
+                    res = cv2.addWeighted(res, 0.7, self.prevHeatmap, 0.3, 0)                
                 else:
                     self.hasPrev = True
 
                 self.prevHeatmap = res
-
+                #image = res 
                 image = cv2.addWeighted(image, 1.0, res, 0.8, 0)
 
         except queue.Empty:
