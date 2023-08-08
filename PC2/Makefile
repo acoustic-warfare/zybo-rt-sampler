@@ -12,6 +12,7 @@ all: lib/beamformer.so
 
 config:
 	python3 src/build_config.py
+	cp -u -n src/config.h src/algorithms/config.h
 
 lib/beamformer.so: config
 	python3 setup.py build_ext --inplace --build-lib=build
