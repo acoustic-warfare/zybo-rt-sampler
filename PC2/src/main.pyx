@@ -295,7 +295,7 @@ cdef void _loop_mimo_and_miso_pad(q_steer: JoinableQueue, q_out: JoinableQueue, 
     print("Cython: Starting miso")
     # Setup audio playback (Order is important)
     load_miso()
-    mics = 64
+    mics = n_active_mics
     print("Cython: enabling microphones")
     load_pa(&active_micro[0], int(mics))
 
