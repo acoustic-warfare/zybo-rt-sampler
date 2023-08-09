@@ -49,6 +49,10 @@ cdef extern from "algorithms/lerp_and_sum.c":
     void load_coefficients_lerp(float *delays, int n)
     void unload_coefficients_lerp()
 
+cdef extern from "algorithms/hybrid_convolve_and_sum.c":
+    void mimo_convolve_hybrid(float *signals, float *image, int *adaptive_array, int n)
+    void load_coefficients_convolve_hybrid(float *delays, int n)
+    void unload_coefficients_convolve_hybrid()
 
 # Exporting functions
 
@@ -148,7 +152,7 @@ cdef np.ndarray _mimo_lerp(signals):
     # _convolve_coefficients_load(h)
 
     h = np.float32(calculate_delays())
-    cdef np.ndarray[float, ndim=3, mode="c"] f32_h = np.ascontiguousarray(h)
+    cdef np.ndarray[np.float32_t, ndim=3, mode="c"] f32_h = np.ascontiguousarray(h)
     load_coefficients_lerp(&f32_h[0, 0, 0], int(h.size))
 
     mimo_lerp(&_signals[0, 0], &mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
@@ -157,11 +161,38 @@ cdef np.ndarray _mimo_lerp(signals):
 
     return mimo_arr
 
+cdef np.ndarray _mimo_hybrid_convolve(signals):
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] _signals = np.ascontiguousarray(signals)
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
+    
+    image = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
+    mimo_arr = np.ascontiguousarray(image)
+
+    active_mics, n_active_mics = active_microphones()
+
+    cdef np.ndarray[int, ndim=1, mode="c"] active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+    # _convolve_coefficients_load(h)
+
+    h = np.float32(calculate_delays())
+    cdef np.ndarray[np.float32_t, ndim=3, mode="c"] f32_h = np.ascontiguousarray(h)
+    load_coefficients_convolve_hybrid(&f32_h[0, 0, 0], int(h.size))
+    print("Could load")
+
+    mimo_convolve_hybrid(&_signals[0, 0], &mimo_arr[0, 0], &active_micro[0], int(n_active_mics))
+    print("Could convolve")
+    # unload_coefficients_convolve_hybrid()
+
+    return mimo_arr
+
 def mimo_convolve_wrapper(signals):
     return _mimo_convolve(signals)
 
 def mimo_lerp_wrapper(signals):
     return _mimo_lerp(signals)
+
+def mimo_hybrid_convolve_wrapper(signals):
+    return _mimo_hybrid_convolve(signals)
 
 
 
