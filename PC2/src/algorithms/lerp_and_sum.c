@@ -38,10 +38,14 @@ float *fractional_samples_lerp;
  * 
  * WARNING you must convert the fraction to: h := 1 - h
  * 
- * @param signal 
- * @param out 
- * @param h 
- * @param pad 
+ * This interpolation works like this:
+ * 
+ * y = x1 + h * (x2 - x1)
+ * 
+ * @param signal The signal that will be delayed
+ * @param out Output
+ * @param h fractional delay
+ * @param pad whole delay
  */
 inline void lerp_delay(float *signal, float *out, float h, int pad)
 {
@@ -51,6 +55,15 @@ inline void lerp_delay(float *signal, float *out, float h, int pad)
     }
 }
 
+/**
+ * @brief steer a beam in a specific direction using the lerp delay
+ * 
+ * @param signals 
+ * @param out 
+ * @param adaptive_array 
+ * @param n 
+ * @param offset 
+ */
 void miso_lerp(float *signals, float *out, int *adaptive_array, int n, int offset)
 {
     // Reset the output for the new direction
@@ -78,12 +91,23 @@ void miso_lerp(float *signals, float *out, int *adaptive_array, int n, int offse
     // }
 }
 
+/**
+ * @brief Create an image by measuring the power-level for each
+ * direction that correlates to an pixel in the image. 
+ * 
+ * @param signals 
+ * @param image 
+ * @param adaptive_array 
+ * @param n 
+ */
 void mimo_lerp(float *signals, float *image, int *adaptive_array, int n)
 {
     // dummy output
     float out[N_SAMPLES];
     float sum;
 
+    // Since the delay coefficients are 1D, we need to point to the correct
+    // position in the delay vector.
     int x_offset, y_offset;
 
     for (int y = 0; y < MAX_RES_Y; y++)
@@ -92,8 +116,11 @@ void mimo_lerp(float *signals, float *image, int *adaptive_array, int n)
         for (int x = 0; x < MAX_RES_X; x++)
         {
             x_offset = x * n;
+
+            // Get the signal from the current direction
             miso_lerp(signals, &out[0], adaptive_array, n, y_offset + x_offset);
 
+            // Compute the mean power of the signal
             sum = 0.0;
             for (int k = 0; k < N_SAMPLES; k++)
             {
@@ -123,7 +150,6 @@ void load_coefficients_lerp(float *delays, int n)
         fractional_samples_lerp[i] = 1.0 - (float)modf(delays[i], &pad);
         whole_samples_lerp[i] = (int)pad;
     }
-    
 }
 
 void unload_coefficients_lerp()
