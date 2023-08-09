@@ -7,38 +7,9 @@ an Docker image has been made for that purpose.
 
 The only requirements for Ubuntu is a an available Docker runtime
 
-Docker can be installed in the following way (Copied from https://docs.docker.com/engine/install/ubuntu/):
+Follow the required steps in https://docs.docker.com/engine/install/ubuntu/
+before proceeding.
 
-```bash
-sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-```
-
-Test that it is working:
-
-```bash
-sudo docker run hello-world
-```
-
-Be able to run Docker containers without elevated privilegies:
-
-Create the docker group.
-```bash
-sudo groupadd docker
-```
-
-Add your user to the docker group.
-```bash
-sudo usermod -aG docker $USER
-``````
-
-**[Notice]** you might have to logout of the system in order for your
-membership to be updated.
-
-Verify that it is working without root:
-
-```bash
-docker run hello-world
-```
 
 ### Git (Optional)
 
