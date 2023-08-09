@@ -95,7 +95,7 @@ volatile sig_atomic_t stop = 0;
 
 #if RINGBUFFER
 
-#define BUFFER_Z N_SAMPLES * 10
+#define BUFFER_Z N_SAMPLES * 3
 typedef struct {
     float data[BUFFER_Z];
     int read_index;
@@ -103,7 +103,7 @@ typedef struct {
     int count;
 } RB;
 
-RB rb2;
+RB rb_audio;
 
 
 // ---- BEGIN AUDIO RINGBUFFER ----
@@ -291,7 +291,7 @@ int load_playback(paData *data)
     printf("Starting stream\n");
 
 #if RINGBUFFER
-    initRingBuffer(&rb2);
+    initRingBuffer(&rb_audio);
 
     err = Pa_OpenStream(
         &stream,
@@ -301,7 +301,7 @@ int load_playback(paData *data)
         N_SAMPLES,
         paNoFlag, // paClipOff, /* we won't output out of range samples so don't bother clipping them */
         playback_callback,
-        &rb2);
+        &rb_audio);
 #else
     err = Pa_OpenStream(
         &stream,
@@ -425,18 +425,18 @@ int miso_loop()
         get_data(&miso->signals[0]);
 
         // Perform MISO and write to paData
-        miso_pad(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
-        // miso_lerp(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
+        // miso_pad(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
+        miso_lerp(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
         for (int i = 0; i < N_SAMPLES; i++)
         {
             data.out[i] /= (float)miso->n;
-            data.out[i] *= 40.0; // The amount to multiply with to get a higher volume
+            data.out[i] *= (float)MIC_GAIN * 4.0; // The amount to multiply with to get a higher volume
         }
         data.can_read = 1;
 
 #if RINGBUFFER
         // Write the computed MISO to the audio output buffer
-        write_rb(&rb2, &data.out[0], N_SAMPLES);
+        write_rb(&rb_audio, &data.out[0], N_SAMPLES);
 #endif
 
         semop(misosemid, &misodata_sem_signal, 1);
@@ -742,6 +742,15 @@ void pad_mimo(float *image, int *adaptive_array, int n)
     mimo_pad(&signals[0], image, adaptive_array, n);
 }
 
+void lerp_mimo(float *image, int *adaptive_array, int n)
+{
+    float signals[BUFFER_LENGTH];
+
+    get_data(&signals[0]);
+
+    mimo_lerp(&signals[0], image, adaptive_array, n);
+}
+
 
 
 
@@ -923,13 +932,8 @@ int main()
         adaptive_array[i] = i;
     }
 
-    load_pa(&adaptive_array[0], 150);
+    load_pa(&adaptive_array[0], 60);
     steer(0);
-
-    // for (int i = 0; i < N_MICROPHONES; i++)
-    // {
-    //     miso->adaptive_array[i] = i;
-    // }
 
     signal(SIGINT, stop_signal_handler);
     signal(SIGKILL, stop_signal_handler);

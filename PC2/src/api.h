@@ -9,6 +9,7 @@ void stop_receiving();
 void signal_handler();
 
 void pad_mimo(float *image, int *adaptive_array, int n);
+void lerp_mimo(float *image, int *adaptive_array, int n);
 void convolve_mimo_naive(float *image, int *adaptive_array, int n);
 void convolve_mimo_vectorized(float *image, int *adaptive_array, int n);
 

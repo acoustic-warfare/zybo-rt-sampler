@@ -47,6 +47,7 @@ cdef extern from "api.h":
     void get_data(float *signals)
     void stop_receiving()
     void pad_mimo(float *image, int *adaptive_array, int n)
+    void lerp_mimo(float *image, int *adaptive_array, int n)
     void convolve_mimo_vectorized(float *image, int *adaptive_array, int n)
     void convolve_mimo_naive(float *image, int *adaptive_array, int n)
     void load_coefficients2(int *whole_sample_delay, int n)
@@ -84,6 +85,7 @@ cdef extern from "algorithms/convolve_and_sum.h":
 cdef extern from "algorithms/lerp_and_sum.h":
     void lerp_delay(float *signal, float *out, float h, int pad)
     void miso_lerp(float *signals, float *out, int *adaptive_array, int n, int offset)
+    void mimo_lerp(float *signals, float *image, int *adaptive_array, int n)
     void load_coefficients_lerp(float *delays, int n)
     void unload_coefficients_lerp()
 
@@ -324,6 +326,58 @@ cdef void _loop_mimo_and_miso_pad(q_steer: JoinableQueue, q_out: JoinableQueue, 
     stop_miso()
     unload_coefficients_pad()
 
+cdef void _loop_mimo_and_miso_lerp(q_steer: JoinableQueue, q_out: JoinableQueue, running: Value):
+    # Calculating time delay for each microphone and each direction
+    cdef np.ndarray[float, ndim=3, mode="c"] f32_whole_samples
+    # whole_samples, fractional_samples = calculate_coefficients()
+    whole_samples = calculate_delays()
+    f32_whole_samples = np.ascontiguousarray(whole_samples.astype(np.float32))
+
+    # Pass int pointer to C function
+    load_coefficients_lerp(&f32_whole_samples[0, 0, 0], whole_samples.size)
+
+    # Finding which microphones to use
+    cdef np.ndarray[int, ndim=1, mode="c"] active_micro
+    active_mics, n_active_mics = active_microphones()
+    active_micro = np.ascontiguousarray(active_mics.astype(np.int32))
+
+    # Setting up output buffer
+    cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] power_map
+    _power_map = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
+    power_map = np.ascontiguousarray(_power_map)
+
+    print("Cython: Starting miso")
+    # Setup audio playback (Order is important)
+    load_miso()
+    mics = 128 # n_active_mics
+    print("Cython: enabling microphones")
+    load_pa(&active_micro[0], int(mics))
+
+    print("Cython: Steering beam")
+    steer_cartesian_degree(0, 0) # Listen at zero bearing
+
+
+    import queue
+    while running.value:
+        try:
+            lerp_mimo(&power_map[0, 0], &active_micro[0], int(n_active_mics))
+            q_out.put(power_map)
+
+            try:
+                (x, y) = q_steer.get(block=False)
+                q_steer.task_done()
+                steer4(x, y)
+            except queue.Empty:
+                pass
+            except Exception as e:
+                print(e)
+        except:
+            break
+    
+    # Unload when done
+    stop_miso()
+    unload_coefficients_lerp()
+
 
 cdef void api(q: JoinableQueue, running: Value):
     whole_samples, fractional_samples = calculate_coefficients()
@@ -406,6 +460,7 @@ cdef void just_miso(q: JoinableQueue, running: Value):
 
     
     load_miso()
+    # n_active_mics = 60
     load_pa(&active_micro[0], int(n_active_mics))
     # steer(0) # This will set the offset to zero, which is quite bad
 
@@ -565,6 +620,13 @@ def mimo():
     producer = b
     _main(consumer, producer)
 
+
+def _miso():
+    producer = just_miso_api
+    consumer = just_miso_loop
+    _main(consumer, producer)
+
+
 # def __miso():
 #     producer = uti_api_with_miso #just_miso_api
 #     from lib.visual import Viewer
@@ -581,6 +643,9 @@ def lop2(q: JoinableQueue, running: Value):
 
 def multi(q_steer: JoinableQueue, q_out: JoinableQueue, running: Value):
     _loop_mimo_and_miso_pad(q_steer, q_out, running)
+
+def multi_lerp(q_steer: JoinableQueue, q_out: JoinableQueue, running: Value):
+    _loop_mimo_and_miso_lerp(q_steer, q_out, running)
 
 def _miso():
     producer = lop2
@@ -625,7 +690,7 @@ def _miso():
 
 
 def miso():
-    producer = multi
+    producer = multi_lerp
     from lib.visual import Front
     
 

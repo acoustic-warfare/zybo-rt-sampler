@@ -222,9 +222,9 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, 
                 {
                     for (int x = 0; x < COLUMNS; x++)
                     {
-                        // rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[msg_offset + row + x]) / NORM_FACTOR);
+                        rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[msg_offset + row + x]) / NORM_FACTOR);
                         // rb->data[step + N_SAMPLES * s] = (float)((double)convertTo24Bit(message->stream[msg_offset + row + x]<<8) / NORM_FACTOR);
-                        rb->data[step + N_SAMPLES * s] = (float)((double)convertTo24Bit(message->stream[msg_offset + row + x]) / NORM_FACTOR);
+                        // rb->data[step + N_SAMPLES * s] = (float)((double)convertTo24Bit(message->stream[msg_offset + row + x]) / NORM_FACTOR);
 
                         s++;
                     }
@@ -233,9 +233,9 @@ int receive_and_write_to_buffer(int socket_desc, ring_buffer *rb, msg *message, 
                 {
                     for (int x = 0; x < COLUMNS; x++)
                     {
-                        // rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[msg_offset + row + COLUMNS - x]) / NORM_FACTOR);
+                        rb->data[step + N_SAMPLES * s] = (float)((double)(message->stream[msg_offset + row + COLUMNS - x]) / NORM_FACTOR);
                         // rb->data[step + N_SAMPLES * s] = (float)((double)convertTo24Bit(message->stream[msg_offset + row + COLUMNS - x]<<8) / NORM_FACTOR);
-                        rb->data[step + N_SAMPLES * s] = (float)((double)convertTo24Bit(message->stream[msg_offset + row + COLUMNS - x]) / NORM_FACTOR);
+                        // rb->data[step + N_SAMPLES * s] = (float)((double)convertTo24Bit(message->stream[msg_offset + row + COLUMNS - x]) / NORM_FACTOR);
                         s++;
                     }
                 }
