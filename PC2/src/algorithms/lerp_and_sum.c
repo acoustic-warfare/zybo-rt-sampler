@@ -1,3 +1,24 @@
+/******************************************************************************
+ * Title                 :   A lerp- and sum beamformer
+ * Filename              :   src/algorithms/lerp_and_sum.c
+ * Author                :   Irreq
+ * Origin Date           :   20/07/2023
+ * Version               :   1.0.0
+ * Compiler              :   gcc (GCC) 11.3.0
+ * Target                :   x86_64 GNU/Linux
+ * Notes                 :   None
+ ******************************************************************************
+
+ This file is a delay and sum beamformer which pads the signals with zeros as
+ and interpolates of the value to create a more continious delay.
+
+ Worst case scenario:
+
+ MAX_RES_X * MAX_RES_Y * n * N_SAMPLES
+
+ Which may result in a time complexity of O(n^4) // Different `n`
+
+*/
 
 #include <math.h>
 #include <string.h> // malloc
@@ -7,8 +28,7 @@
 
 #define LERP 0
 
-
-
+// Arrays that will hold the delay values for each microphone for each direction
 int *whole_samples_lerp;
 float *fractional_samples_lerp;
 
