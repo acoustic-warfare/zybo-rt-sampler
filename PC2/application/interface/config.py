@@ -4,7 +4,7 @@ import ctypes
 
 #General constants for both c and python.
 N_MICROPHONES = 256
-N_SAMPLES = 256
+N_SAMPLES = 512
 N_TAPS = 8
 EVERY_N_SAMPLES = 1
 COLUMNS = 8

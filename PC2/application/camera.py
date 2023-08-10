@@ -8,7 +8,7 @@ from lib.visual import calculate_heatmap, calculate_heatmap_fft
 import queue
 import interface.config as config
 import numpy as np
-from realtime_scripts.phase_shift_algorithm import main
+from realtime_scripts.beam_forming_algorithm import main
 WINDOW_DIMENSIONS = (1920, 1080)# (720, 480)
 APPLICATION_WINDOW_WIDTH, APPLICATION_WINDOW_HEIGHT = WINDOW_DIMENSIONS
 

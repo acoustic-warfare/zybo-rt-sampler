@@ -238,7 +238,7 @@ def calculate_heatmap_fft(image, threshold=5e-8):
     small_heatmap = np.zeros((11, 11, 3), dtype=np.uint8)
     # small_heatmap = np.zeros((MAX_RES_X, MAX_RES_Y, 3), dtype=np.uint8)
 
-    if lmax>threshold:
+    if lmax>threshold*1000000:
         for x in range(11):
             for y in range(11):
                 d = image[x, y]
