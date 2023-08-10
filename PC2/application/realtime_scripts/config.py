@@ -4,7 +4,7 @@ import ctypes
 
 #General constants for both c and python.
 N_MICROPHONES = 256
-N_SAMPLES = 512
+N_SAMPLES = 256
 N_TAPS = 64
 COLUMNS = 8
 ROWS = 8
@@ -12,8 +12,8 @@ MAX_RES = 11
 MAX_RES_X = 13
 MAX_RES_Y = 13
 Z = 1.0
-MAX_ANGLE = 68.0
-VIEW_ANGLE = 68.0
+MAX_ANGLE = 59.0
+VIEW_ANGLE = 59.0
 UDP_PORT = 21844
 ELEMENT_DISTANCE = 0.02
 ARRAY_SEPARATION = 0.0
@@ -45,7 +45,7 @@ mode = 1
 modes = 7
 plot_setup = 0
 threshold_freq_lower = 0
-threshold_freq_upper = 18000
+threshold_freq_upper = 24000
 fs = int(48828)
 DTYPE = ctypes.c_int32
 NP_DTYPE = numpy.float32

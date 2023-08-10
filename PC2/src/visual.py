@@ -246,7 +246,7 @@ def calculate_heatmap_fft(image, threshold=5e-8):
                 if d >= 0.5:
                     d -= 0.5
                     d*= 2
-                    val = int(255 * d ** POWER)
+                    val = int(255 * d ** 2)
 
                     small_heatmap[11 - 1 - y, 11 - 1 - x] = colors[val]
                     should_overlay = True
