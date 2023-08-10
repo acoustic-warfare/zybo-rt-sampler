@@ -20,8 +20,8 @@ lib/beamformer.so: config
 	mv *.so lib/
 	# cp unused_mics.npy lib/
 	cp -u -n src/visual.py lib/visual.py
-	cp lib/* application/lib/
-	cp interface/config.py application/interface/config.py
+	cp -u -n lib/* application/lib/
+	cp -u -n interface/config.py application/interface/config.py
 	
 bor: config
 	python3 setup.py build_ext --inplace --build-lib=build
