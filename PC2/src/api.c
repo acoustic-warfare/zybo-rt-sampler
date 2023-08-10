@@ -67,6 +67,7 @@
 #define DEBUG 0
 
 #define RINGBUFFER 1
+#define LERP 1
 
 /**
  * @brief MISO delay and sum beamforming - Together as one...
@@ -424,13 +425,19 @@ int miso_loop()
         // Receive latest buffer
         get_data(&miso->signals[0]);
 
+
         // Perform MISO and write to paData
-        // miso_pad(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
+#if LERP
         miso_lerp(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
+#else
+        miso_pad(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
+#endif
+
+
         for (int i = 0; i < N_SAMPLES; i++)
         {
             data.out[i] /= (float)miso->n;
-            data.out[i] *= (float)MIC_GAIN * 4.0; // The amount to multiply with to get a higher volume
+            data.out[i] *= (float)MIC_GAIN; // The amount to multiply with to get a higher volume
         }
         data.can_read = 1;
 
