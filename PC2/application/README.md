@@ -7,7 +7,7 @@
 
 ## Compile
 1. Navigate to ../src
-2. run make clean and make
+2. Run ```make clean``` and ```make```
    
 ## Run
 1. Set up the microphone array properly
