@@ -12,8 +12,8 @@ sys.path.insert(0, "") # Access local modules located in . Enables 'from . impor
 
 from config cimport *
 
-_N_MICS = 192
-_ACTIVE_MICS = 3
+_N_MICS = 256
+_ACTIVE_MICS = 4
 def calc_r_prime(d):
     half = d/2
     r_prime = np.zeros((2, _N_MICS))
@@ -60,6 +60,7 @@ def active_microphones():
     # take out the active microphones from the microphones matrix, save in list active_mics
     try:
         unused_mics = np.load('unused_mics.npy')
+        unused_mics += 64
     except:
         unused_mics = []
         print("Will use all microphones")
@@ -72,7 +73,7 @@ def active_microphones():
                 active_mics.append(int(mic))
 
     
-    if 1:
+    if 0:
         # active_mics = np.arange(60)
         # active_mics = np.arange(64, 128)
 

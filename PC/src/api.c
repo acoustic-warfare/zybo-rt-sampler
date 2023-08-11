@@ -107,6 +107,88 @@ typedef struct {
 RB rb_audio;
 
 
+
+#if 0
+
+#define BUFFER_SIZE BUFFER_LENGTH * 4
+
+typedef struct _ring_buffer
+{
+    int index;
+    float data[BUFFER_SIZE];
+    int counter;
+} ring_buffer;
+
+ring_buffer *rb
+
+/*
+Create a ring buffer
+*/
+ring_buffer *create_ring_buffer()
+{
+    ring_buffer *rb = (ring_buffer *)calloc(1, sizeof(ring_buffer));
+    rb->index = 0;
+    rb->counter = 0;
+    return rb;
+}
+
+/*
+Destroy a ring buffer
+*/
+ring_buffer *destroy_ring_buffer(ring_buffer *rb)
+{
+    free(rb);
+    rb = NULL;
+    return rb;
+}
+
+/*
+Almost 100 times faster than the code above but does the same
+*/
+void read_buffer_mcpy(ring_buffer *rb, float *out)
+{
+    while (rb->counter < BUFFER_LENGTH)
+    {
+        usleep(1);
+    }
+    int first_partition = BUFFER_SIZE - rb->index;
+
+    float *data_ptr = &rb->data[0];
+
+    memcpy(out, (void *)(data_ptr + rb->index), sizeof(float) * first_partition);
+    memcpy(out + first_partition, (void *)(data_ptr), sizeof(float) * rb->index);
+}
+
+/*
+Write data from an address `in` to a ring buffer you can specify offset
+but most of the times, it will probably just be 0
+*/
+void write_buffer(ringbuffer *rb, float *in, int length, int offset)
+{
+    while (rb->counter >= BUFFER_SIZE)
+    {
+        usleep(1);
+    }
+
+    int buffer_length = BUFFER_SIZE - 1;
+    int previous_item = rb->index;
+
+    int idx;
+    for (int i = 0; i < length; ++i)
+    {
+        idx = (i + previous_item) & buffer_length; // Wrap around
+        rb->data[idx] = in[i + offset];
+    }
+
+    // Sync current index
+    rb->index += length;
+    rb->index &= BUFFER_SIZE - 1;
+
+    rb->counter += length;
+}
+
+#endif
+
 // ---- BEGIN AUDIO RINGBUFFER ----
 void initRingBuffer(RB *buffer)
 {
@@ -427,7 +509,7 @@ int miso_loop()
 
 
         // Perform MISO and write to paData
-#if LERP
+#if 0
         miso_lerp(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
 #else
         miso_pad(&miso->signals[0], &data.out[0], &miso->adaptive_array[0], miso->n, miso->steer_offset);
@@ -654,6 +736,92 @@ void init_semaphore()
     }
 }
 
+#if 0
+
+bool can_read(ring_buffer *rb)
+{
+    semop(semid, &data_sem_wait, 1);
+
+    bool allowed = (bool)(rb->counter >= BUFFER_LENGTH);
+
+    semop(semid, &data_sem_signal, 1);
+
+    return allowed;
+}
+
+bool can_write(ring_buffer *rb)
+{
+    semop(semid, &data_sem_wait, 1);
+
+    bool allowed = (bool)(rb->counter <= BUFFER_SIZE - BUFFER_LENGTH);
+
+    semop(semid, &data_sem_signal, 1);
+
+    return allowed;
+}
+
+/*
+Almost 100 times faster than the code above but does the same
+*/
+void read_buffer_mcpy(ring_buffer *rb, float *out)
+{
+    while (!can_read(rb))
+    {
+        usleep(1);
+    }
+
+    semop(semid, &data_sem_wait, 1);
+    int first_partition = BUFFER_SIZE - rb->index;
+
+    float *data_ptr = &rb->data[0];
+
+    memcpy(out, (void *)(data_ptr + rb->index), sizeof(float) * first_partition);
+    memcpy(out + first_partition, (void *)(data_ptr), sizeof(float) * rb->index);
+
+    semop(semid, &data_sem_signal, 1);
+}
+
+/*
+Write data from an address `in` to a ring buffer you can specify offset
+but most of the times, it will probably just be 0
+*/
+void write_buffer(ringbuffer *rb, float *in, int length, int offset)
+{
+    while (!can_write(rb))
+    {
+        usleep(1);
+    }
+
+    semop(semid, &data_sem_wait, 1);
+
+    int buffer_length = BUFFER_SIZE - 1;
+    int previous_item = rb->index;
+
+    int idx;
+    for (int i = 0; i < length; ++i)
+    {
+        idx = (i + previous_item) & buffer_length; // Wrap around
+        rb->data[idx] = in[i + offset];
+    }
+
+    // Sync current index
+    rb->index += length;
+    rb->index &= BUFFER_SIZE - 1;
+
+    rb->counter += length;
+
+    semop(semid, &data_sem_signal, 1);
+}
+
+void get_data(float *out)
+{
+    semop(semid, &data_sem_wait, 1);
+    memcpy(out, (void *)&rb->data[0], sizeof(float) * BUFFER_LENGTH);
+    semop(semid, &data_sem_signal, 1);
+}
+
+#else
+
 /**
  * @brief Retrieve the data located in the ring buffer
  *
@@ -665,6 +833,12 @@ void get_data(float *out)
     memcpy(out, (void *)&rb->data[0], sizeof(float) * BUFFER_LENGTH);
     semop(semid, &data_sem_signal, 1);
 }
+
+#endif
+
+
+
+
 
 /**
  * @brief Main initialization function which starts
@@ -704,6 +878,14 @@ int load(bool replay_mode)
 
         while (1)
         {
+            // float data[BUFFER_LENGTH];
+
+            // if (receive_to_buffer(socket_desc, &data[0], client_msg, n_arrays) == -1)
+            // {
+            //     printf("Failure\n");
+            //     return -1;
+            // }
+
             semop(semid, &data_sem_wait, 1);
 
             if (receive_and_write_to_buffer(socket_desc, rb, client_msg, n_arrays) == -1)
@@ -711,6 +893,8 @@ int load(bool replay_mode)
                 printf("Failure\n");
                 return -1;
             }
+
+
 
             // for (int i = 0; i < N_SAMPLES; i++)
             // {
