@@ -230,7 +230,7 @@ cdef void _loop_miso_pad(q: JoinableQueue, running: Value):
         try:
             (x, y) = q.get()
             q.task_done()
-            steer4(x, y)
+            stear_miso_beam(x, y)
         except Exception as e:
             print(e)
 
@@ -267,7 +267,7 @@ cdef void _loop_miso_lerp(q: JoinableQueue, running: Value):
         try:
             (x, y) = q.get()
             q.task_done()
-            steer4(x, y)
+            stear_miso_beam(x, y)
         except Exception as e:
             print(e)
 
@@ -314,7 +314,7 @@ cdef void _loop_mimo_and_miso_pad(q_steer: JoinableQueue, q_out: JoinableQueue, 
             try:
                 (x, y) = q_steer.get(block=False)
                 q_steer.task_done()
-                steer4(x, y)
+                stear_miso_beam(x, y)
             except queue.Empty:
                 pass
             except Exception as e:
@@ -366,7 +366,7 @@ cdef void _loop_mimo_and_miso_lerp(q_steer: JoinableQueue, q_out: JoinableQueue,
             try:
                 (x, y) = q_steer.get(block=False)
                 q_steer.task_done()
-                steer4(x, y)
+                stear_miso_beam(x, y)
             except queue.Empty:
                 pass
             except Exception as e:
@@ -430,9 +430,8 @@ cdef void api_with_miso(q: JoinableQueue, running: Value):
 
     cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] mimo_arr
     mimo_arr = np.ascontiguousarray(x)
-    import time
+
     load_miso()
-    # time.sleep(1)
     load_pa(&active_micro[0], int(n_active_mics))
     steer(0)
 
@@ -514,9 +513,8 @@ def steer_cartesian_degree(azimuth: float, elevation: float):
     
     steer(steer_offset)
 
-def steer4(azimuth: float, elevation: float):
+def stear_miso_beam(azimuth: float, elevation: float):
     """Steer a MISO into a specific direction"""
-    # print("Lol got angles from python")
     
     azimuth = int(azimuth * MAX_RES_X)
     elevation = int(elevation * MAX_RES_Y)
@@ -581,7 +579,11 @@ def just_miso_loop(q: JoinableQueue, running: Value):
 
 
 # Testing
-def _main(consumer, producer):
+
+def mimo():
+    from lib.visual import Viewer
+    consumer = Viewer().loop
+    producer = b
     jobs = 1
     q = JoinableQueue(maxsize=2)
 
@@ -613,79 +615,19 @@ def _main(consumer, producer):
         v.value = 0
         disconnect()
 
-def mimo():
-    from lib.visual import Viewer
-    consumer = Viewer().loop
-    # producer = uti_api
-    producer = b
-    _main(consumer, producer)
 
-
-def _miso():
-    producer = just_miso_api
-    consumer = just_miso_loop
-    _main(consumer, producer)
-
-
-# def __miso():
-#     producer = uti_api_with_miso #just_miso_api
-#     from lib.visual import Viewer
-#     consumer = Viewer(cb=steer2).loop
-#     # consumer = just_miso_loop
-#     _main(consumer, producer)
-
-
-def lop(q: JoinableQueue, running: Value):
+# ---- Wrappers for the beamforming loops
+def pure_miso_pad(q: JoinableQueue, running: Value):
     _loop_miso_pad(q, running)
 
-def lop2(q: JoinableQueue, running: Value):
+def pure_miso_lerp(q: JoinableQueue, running: Value):
     _loop_miso_lerp(q, running)
 
-def multi(q_steer: JoinableQueue, q_out: JoinableQueue, running: Value):
+def multi_pad(q_steer: JoinableQueue, q_out: JoinableQueue, running: Value):
     _loop_mimo_and_miso_pad(q_steer, q_out, running)
 
 def multi_lerp(q_steer: JoinableQueue, q_out: JoinableQueue, running: Value):
     _loop_mimo_and_miso_lerp(q_steer, q_out, running)
-
-def _miso():
-    producer = lop2
-    from lib.visual import Front
-    
-
-    q_rec = JoinableQueue(maxsize=2)
-    q_out = JoinableQueue(maxsize=2)
-
-    v = Value('i', 1)
-    f = Front(q_rec, q_out, v)
-    consumer = f.loop
-
-    print("Cython: Connecting to FPGA")
-    connect()
-
-    try:
-
-        producers = [
-            Process(target=producer, args=(q_out, v))
-        ]
-
-        # daemon=True is important here
-        consumers = [
-            Process(target=consumer, daemon=True)
-        ]
-
-        # + order here doesn't matter
-        for p in consumers + producers:
-            p.start()
-
-        for p in producers:
-            p.join()
-
-
-    finally:
-
-        # Stop the program
-        v.value = 0
-        disconnect()
 
 
 
@@ -693,12 +635,13 @@ def miso():
     producer = multi_lerp
     from lib.visual import Front
     
-
+    # Create some queues for IPC with the new user input directions and
+    # Heatmap feed
     q_rec = JoinableQueue(maxsize=2)
     q_out = JoinableQueue(maxsize=2)
 
-    v = Value('i', 1)
-    f = Front(q_rec, q_out, v)
+    is_running = Value('i', 1)
+    f = Front(q_rec, q_out, is_running)
     consumer = f.multi_loop
 
     print("Cython: Connecting to FPGA")
@@ -707,7 +650,7 @@ def miso():
     try:
 
         producers = [
-            Process(target=producer, args=(q_out, q_rec, v))
+            Process(target=producer, args=(q_out, q_rec, is_running))
         ]
 
         # daemon=True is important here
@@ -726,5 +669,5 @@ def miso():
     finally:
 
         # Stop the program
-        v.value = 0
+        is_running.value = 0
         disconnect()
