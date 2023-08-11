@@ -26,13 +26,22 @@
 #include "config.h"
 #include <stdbool.h>
 
+#define BUFFER_SIZE BUFFER_LENGTH * 4
+
 typedef struct _ring_buffer
 {
     int index;
-    float data[BUFFER_LENGTH];
-    // double mydata[BUFFER_LENGTH];
+    float data[BUFFER_SIZE];
     int counter;
 } ring_buffer;
+
+// typedef struct _ring_buffer
+// {
+//     int index;
+//     float data[BUFFER_LENGTH];
+//     // double mydata[BUFFER_LENGTH];
+//     int counter;
+// } ring_buffer;
 
 ring_buffer *create_ring_buffer();
 
@@ -74,4 +83,7 @@ int close_socket(int socket_desc);
 /// @param socket_desc
 /// @return The number of connected arrays
 int receive_header_data(int socket_desc);
+
+void receive_to_buffer(int socket_desc, float *out, msg *message, int n_arrays);
+
 #endif
