@@ -197,6 +197,34 @@ void unload_coefficients_pad2()
 //     }
 // }
 
+#if 0
+
+
+int main(int argc, char const *argv[])
+{
+    float signals[BUFFER_LENGTH];
+    for (int i = 0; i < BUFFER_LENGTH; i++)
+    {
+        signals = (float)i / 100.0;
+    }
+
+    float image[MAX_RES_X * MAX_RES_Y];
+
+    int n_h = MAX_RES_X * MAX_RES_Y * N_MICROPHONES;
+
+    float coefficients[MAX_RES_X * MAX_RES_Y * N_MICROPHONES];
+    for (int i = 0; i < MAX_RES_X * MAX_RES_Y * N_MICROPHONES; i++)
+    {
+        coefficients[i] = 1.0 + (float)i / MAX_RES_X * MAX_RES_Y * N_MICROPHONES;
+    }
+    
+
+    return 0;
+}
+
+
+#endif
+
 
 
 
