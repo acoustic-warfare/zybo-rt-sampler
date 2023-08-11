@@ -11,7 +11,12 @@ APPLICATION_NAME = "Demo App"
 
 POWER = 5
 
+SRC = "/dev/video2" # This was our webcam
+
+SRC = -1 # This will give any webcam
+
 try:
+    # Try to import kalman filter for tracking, but no method is using it at the moment
     from lib.kf import *
     kf = CyKF()
 except ModuleNotFoundError:
@@ -133,49 +138,6 @@ def calculate_heatmap2(image, threshold=1e-7, amount = 0.5, exponent = POWER):
     cv2.circle(heatmap,(X, Y), 50, (0,255,0), 5)
     return heatmap, should_overlay
 
-def calculate_heatmap_(image, threshold=1e-7, amount = 0.5, exponent = POWER):
-    """Create a heatmap over the perceived powerlevel
-
-    Args:
-        image (np.ndarray[MAX_RES_X, MAX_RES_Y]): The calculated powerlevels for each anlge
-        threshold (float, optional): minimum max value to print out. Defaults to 5e-8.
-
-    Returns:
-        (heatmap, bool): the calculated heatmap and if it should be output or not
-    """
-    should_overlay = False
-    small_heatmap = np.zeros((MAX_RES_Y, MAX_RES_X, 3), dtype=np.uint8)
-    
-    max_power_level = np.max(image)
-
-    # Only calculate heatmap if the maximum powerlevel is above a certain threshold 
-    if max_power_level > threshold:
-
-        # Normalize the image
-        image /= max_power_level
-
-        should_overlay = True
-        # Convert image value in range between [0, 1] to a RGB color value
-        for x in range(MAX_RES_X):
-            for y in range(MAX_RES_Y):
-                power_level = image[x, y]
-
-                # Only paint levels above a certain amount, i.e 50%
-                if power_level >= amount:
-                    power_level -= amount
-                    power_level /= amount
-
-                    # Some heatmaps are very flat, so the power of the power
-                    # May give more sharper results
-                    color_val = int(255 * power_level ** exponent)
-
-                    # This indexing is a bit strange, but CV2 orders it like this (Same as flip operation)
-                    small_heatmap[MAX_RES_Y - 1 - y, MAX_RES_X - 1 - x] = colors[color_val]
-
-    # Must resize to fit camera dimensions
-    heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)
-    
-    return heatmap, should_overlay
 
 def calculate_heatmap(image, threshold=1e-7, amount = 0.5, exponent = POWER):
     """Create a heatmap over the perceived powerlevel
@@ -255,134 +217,12 @@ def calculate_heatmap_fft(image, threshold=5e-8):
     # heatmap = cv2.resize(small_heatmap, (1000, 1000), interpolation=cv2.INTER_NEAREST)
     return heatmap, should_overlay
 
-def calculate_heatmap2_(img):
-    """"""
-    lmax = np.max(img)
-
-    # image /= lmax
-
-    small_heatmap = np.zeros((MAX_RES_Y, MAX_RES_X, 3), dtype=np.uint8)
-
-    kernel = np.ones((6,6))
-
-    img2 = np.ones_like(img)
-    loc_max = cv2.dilate(img, kernel) == img
-    res = np.int8(img2 * loc_max)
-
-    if lmax>1e-8:
-        for x in range(MAX_RES_X):
-            for y in range(MAX_RES_Y):
-                d = res[x, y]
-
-                if d > 0.9:
-                    val = int(255 * d ** POWER)
-
-                    small_heatmap[MAX_RES_Y - 1 - y, x] = colors[val]
-                    # small_heatmap[MAX_RES_Y - 1 - y, MAX_RES_X - 1 - x] = colors[val]
-
-
-    heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)
-
-    
-
-    return heatmap
-
-
-
-
-
-from scipy.ndimage import gaussian_filter
-def calculate_heatmap2(img):
-
-    img = gaussian_filter(img, sigma=8)
-    peaks = local_max(img, threshold=-np.inf)
-
-    small_heatmap = np.zeros((MAX_RES_Y, MAX_RES_X, 3), dtype=np.uint8)
-
-    dd = np.copy(img)
-
-    old_max = dd.max()
-
-    dd /= old_max
-
-    dd **=10
-
-    r = 6
-
-    rang = (np.log10(old_max) + 10) / r
-
-    dd *= rang
-
-    
-
-    for x in range(MAX_RES_X):
-        for y in range(MAX_RES_Y):
-            d = dd[x, y]
-
-            if d > 0.4:
-                val = max(min(int(255 * d), 255), 0)
-                # small_heatmap[MAX_RES_Y - 1 - y, x] = colors[val]
-                small_heatmap[MAX_RES_Y - 1 - y, MAX_RES_X - 1 - x] = colors[val]
-    
-    x, y = np.unravel_index(dd.argmax(), dd.shape)
-    d = dd[x, y]
-    # print(d)
-
-    if d > 0.4:
-        # small_heatmap[MAX_RES_Y - 1 - y, x] = colors[255]
-        small_heatmap[MAX_RES_Y - 1 - y, MAX_RES_X - 1 - x] = colors[255]
-        kf.update([x, y, 0])
-
-        x, y, _ = kf.get_state()
-        # print(x, y)
-
-        if x < 0:
-            x = 0
-        elif x >= MAX_RES_X:
-            x = MAX_RES_X - 1
-        else:
-            x = int(x)
-
-        if y < 0:
-            y = 0
-        elif y >= MAX_RES_Y:
-            y = MAX_RES_Y - 1
-        else:
-            y = int(y)
-        
-        # small_heatmap[MAX_RES_Y - 1 - y, x] = colors[200]
-        small_heatmap[MAX_RES_Y - 1 - y, MAX_RES_X - 1 - x] = colors[200]
-
-        x, y, _ = kf.predict(1)
-        # print(x, y)
-
-        if x < 0:
-            x = 0
-        elif x >= MAX_RES_X:
-            x = MAX_RES_X - 1
-        else:
-            x = int(x)
-
-        if y < 0:
-            y = 0
-        elif y >= MAX_RES_Y:
-            y = MAX_RES_Y - 1
-        else:
-            y = int(y)
-        
-        # small_heatmap[MAX_RES_Y - 1 - y, x] = colors[180]
-        small_heatmap[MAX_RES_Y - 1 - y, MAX_RES_X - 1 - x] = colors[180]
-
-
-    heatmap = cv2.resize(small_heatmap, WINDOW_DIMENSIONS, interpolation=cv2.INTER_LINEAR)
-
-    return heatmap, True
 
 import queue
 from multiprocessing import JoinableQueue, Value
 
 class Front:
-    def __init__(self, q_rec: JoinableQueue, q_out: JoinableQueue, running: Value, src="/dev/video2"):
+    def __init__(self, q_rec: JoinableQueue, q_out: JoinableQueue, running: Value, src=SRC):
         self.q_rec = q_rec
         self.q_out = q_out
         self.running = running
@@ -393,44 +233,6 @@ class Front:
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, APPLICATION_WINDOW_WIDTH)
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, APPLICATION_WINDOW_HEIGHT)
         self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
-
-    def loop(self, *args, **kwargs):
-        prev = np.zeros((1080, 1920, 3), dtype=np.uint8)
-        self.MAX_X = MAX_ANGLE
-        self.MAX_Y = MAX_ANGLE /  ASPECT_RATIO
-        while self.running:
-            try:
-                # output = self.q_rec.get(block=False)
-                # self.q_rec.task_done()
-                status, frame = self.capture.read()
-                frame = cv2.flip(frame, 1) # Nobody likes looking out of the array :(
-                try:
-                    frame = cv2.resize(frame, WINDOW_DIMENSIONS)
-                except cv2.error as e:
-                    print("An error ocurred with image processing! Check if camera and antenna connected properly")
-                    self.running.value = 0
-                    break
-
-                # res1, should_overlay = calculate_heatmap(output)
-
-                # res = cv2.addWeighted(prev, 0.5, res1, 0.5, 0)
-                # prev = res
-
-                # if should_overlay:
-                #     image = cv2.addWeighted(frame, 0.9, res, 0.9, 0)
-                # else:
-                #     image = frame
-
-                image = frame
-
-                cv2.imshow(APPLICATION_NAME, image)
-                cv2.setMouseCallback(APPLICATION_NAME, self.mouse_click_handler)
-                cv2.waitKey(1)
-            except queue.Empty:
-                pass
-            except KeyboardInterrupt:
-                self.running.value = 0
-                break
 
     def multi_loop(self, *args, **kwargs):
         prev = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -471,17 +273,13 @@ class Front:
     def mouse_click_handler(self, event, x, y, flags, params):
         """Steers the antenna to listen in a specific direction"""
         if event == cv2.EVENT_LBUTTONDOWN:
-            # horizontal = (x / WINDOW_DIMENSIONS[0]) * self.MAX_X * 2 - self.MAX_X
-            # vertical = (y / WINDOW_DIMENSIONS[1]) * self.MAX_Y * 2 - self.MAX_Y
-            
-            # self.q_out.put((horizontal, vertical))
-            # # self.q_out.put((vertical, horizontal))
-            # print(f"{horizontal}, {vertical}")
 
             horizontal = (x / WINDOW_DIMENSIONS[0]) 
             vertical = (y / WINDOW_DIMENSIONS[1]) 
             
             # self.q_out.put((horizontal, vertical))
+
+            # We need to invert Y-axis for the incoming frame since CV2 indexes it as Y - y
             self.q_out.put((vertical, 1.0 - horizontal))
             print(f"{horizontal}, {vertical}")
 
