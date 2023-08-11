@@ -1,4 +1,0 @@
-Modules in here are supposed to mirror the capeabbilities 
-of the modules located in interface/modules/
-
-The file config.pxd is a soft link to the file located in src/config.pxd
