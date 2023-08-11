@@ -287,7 +287,7 @@ class Front:
 class Viewer:
     """Test viewer used for outputting calculated heatmaps onto a screen
     """
-    def __init__(self, src="/dev/video2", cb=None):
+    def __init__(self, src=SRC, cb=None):
         """constructor with the camera source to use
 
         Args:
