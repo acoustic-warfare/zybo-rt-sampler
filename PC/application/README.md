@@ -12,3 +12,4 @@
 ## Run
 1. Standing inside this folder run the application with the command
 ```sudo python3 manage.py runserver```
+2. Open web browser and navigate to the url localhost:8000

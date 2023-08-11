@@ -1,3 +1,5 @@
+## Realtime application
+This folder contains all code for the realtime applications and demos. Navigate to the folder application to see information about the web application
 
 ## Prerequisites (Ubuntu 22.04)
 The program only can be built using libraries located on the system, but
