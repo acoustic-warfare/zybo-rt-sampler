@@ -8,7 +8,7 @@ The following directories can be summarized as the following:
 
 * `out/` Generated images from the scripts in zybo/
 
-* `PC/` A large collection of APIs, programs and tips on how to use the microphone array. It is here the beamforming algorithms resides.
+* `PC/` A large collection of APIs, programs and tips on how to use the microphone array. It is here the beamforming algorithms resides. Here you will find the demo applications as well
 
 Rapid Development on the Zybo using Baremetal uBoot
 
