@@ -1,7 +1,7 @@
 {
     "general": {
         "N_MICROPHONES": 256,
-        "N_SAMPLES": 512,
+        "N_SAMPLES": 256,
         "N_TAPS": 8,
         "EVERY_N_SAMPLES": 1,
         "COLUMNS": 8,
@@ -58,8 +58,8 @@
         "NORM_FACTOR": 16777216.0,
         "NORM_FACTOR_SOUND": 2000000.0,
         "MISO_POWER": 15,
-        "MIC_GAIN": 10,
-        "KEY": 1244,
+        "MIC_GAIN": 128,
+        "KEY": 1232,
         "KEY_SOUND": 1235,
         "expression": {}
     }
