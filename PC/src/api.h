@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 int load(bool replay_mode);
+int load_filter(bool replay_mode);
 void get_data(float *signals);
 void stop_receiving();
 void signal_handler();

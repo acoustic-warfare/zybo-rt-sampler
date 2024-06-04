@@ -1,9 +1,9 @@
 CC = gcc
 CYCC = cython3
-
+NVCC = /usr/local/cuda/bin/nvcc
 PYTHON_PATH = `python3 -c "import distutils.sysconfig;print(distutils.sysconfig.get_python_inc())"`
 
-CFLAGS = -O3 -march=native -mavx2
+CFLAGS = -O3 -march=native -mavx2 
 LDFLAGS = -shared -pthread -fPIC -fwrapv -Wall -fno-strict-aliasing
 
 .PHONY: all
@@ -14,7 +14,7 @@ config:
 	python3 src/build_config.py
 	cp -u -n src/config.h src/algorithms/config.h
 
-lib/beamformer.so: config
+lib/beamformer.so: config lib/cuKernel.o lib/dlink.o
 	python3 setup.py build_ext --inplace --build-lib=build
 	mkdir -p lib
 	mv *.so lib/
@@ -22,7 +22,14 @@ lib/beamformer.so: config
 	cp -u -n src/visual.py lib/visual.py
 	cp -u -n lib/* application/lib/
 	cp interface/config.py application/interface/config.py
-	
+
+lib/cuKernel.o:
+	mkdir -p lib
+	$(NVCC) -c -Xcompiler -fPIC src/kernel.cu -o lib/cuKernel.o -lcufft
+
+lib/dlink.o:
+	$(NVCC) lib/cuKernel.o -o lib/dlink.o -dlink
+
 bor: config
 	python3 setup.py build_ext --inplace --build-lib=build
 	mv *.so lib/

@@ -44,6 +44,7 @@ from config cimport *
 # API must contain all C functions that needs IPC
 cdef extern from "api.h":
     int load(bint)
+    int load_filter(bint replay_mode)
     void get_data(float *signals)
     void stop_receiving()
     void pad_mimo(float *image, int *adaptive_array, int n)
@@ -89,8 +90,12 @@ cdef extern from "algorithms/lerp_and_sum.h":
     void load_coefficients_lerp(float *delays, int n)
     void unload_coefficients_lerp()
 
+cdef extern from "kernel.h":
+    void cuda_init_all()
 
 # ---- BEGIN LIBRARY FUNCTIONS ----
+def connect_filter(replay_mode: bool = False):
+    load_filter(replay_mode*1)
 
 def connect(replay_mode: bool = False, verbose=True) -> None:
     """
@@ -189,7 +194,8 @@ cdef void _loop_mimo_pad(q: JoinableQueue, running: Value):
     cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] power_map
     _power_map = np.zeros((MAX_RES_X, MAX_RES_Y), dtype=DTYPE_arr)
     power_map = np.ascontiguousarray(_power_map)
-
+    #cuda_init_all()
+    
     while running.value:
         try:
             pad_mimo(&power_map[0, 0], &active_micro[0], int(n_active_mics))
@@ -199,6 +205,7 @@ cdef void _loop_mimo_pad(q: JoinableQueue, running: Value):
     
     # Unload when done
     unload_coefficients_pad()
+
 
 cdef void _loop_miso_pad(q: JoinableQueue, running: Value):
     """Consumer loop for MISO using pad-delay algorithm"""
@@ -568,6 +575,7 @@ def just_miso_api(q: JoinableQueue, running: Value):
 def b(q: JoinableQueue, running: Value):
     _loop_mimo_pad(q, running)
 
+
 def just_miso_loop(q: JoinableQueue, running: Value):
     """Dummy loop for testing miso"""
     import time
@@ -579,6 +587,40 @@ def just_miso_loop(q: JoinableQueue, running: Value):
 
 
 # Testing
+def mimo_filter():
+    from lib.visual import Viewer
+    consumer = Viewer().loop
+    producer = b
+    jobs = 1
+    q = JoinableQueue(maxsize=2)
+
+    v = Value('i', 1)
+
+    connect_filter()
+
+    try:
+
+        producers = [
+            Process(target=producer, args=(q, v))
+            for _ in range(jobs)
+        ]
+
+        # daemon=True is important here
+        consumers = [
+            Process(target=consumer, args=(q, v), daemon=True)
+            for _ in range(jobs * 1)
+        ]
+
+        # + order here doesn't matter
+        for p in consumers + producers:
+            p.start()
+
+        for p in producers:
+            p.join()
+
+    finally: # Stop the program
+        v.value = 0
+        disconnect()
 
 def mimo():
     from lib.visual import Viewer
@@ -588,7 +630,7 @@ def mimo():
     q = JoinableQueue(maxsize=2)
 
     v = Value('i', 1)
-
+    #TODO
     connect()
 
     try:

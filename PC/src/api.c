@@ -64,10 +64,19 @@
 #include "algorithms/convolve_and_sum.h"
 #include "algorithms/lerp_and_sum.h"
 
+#include <cufft.h>
+#include "filter.h"
+#include <immintrin.h>
+#include "kernel.h"
+
+
 #define DEBUG 0
 
 #define RINGBUFFER 1
 #define LERP 1
+
+double total_time = 0;
+double it_count = 0;
 
 /**
  * @brief MISO delay and sum beamforming - Together as one...
@@ -106,6 +115,11 @@ typedef struct {
 
 RB rb_audio;
 
+float *filter_1_coefficients;
+float **filter_1_coefficients_wma;
+float *filter_2_coefficients;
+float *filter_output;
+float *filter_input;
 
 
 #if 0
@@ -822,9 +836,17 @@ void get_data(float *out)
 
 #else
 
+void disable_microphones(float *out, int *mic_indicies, int n_mic){
+    float *zero_arr = calloc(256, sizeof(float));
+    for(int i = 0; i < n_mic; i++){
+        int index = mic_indicies[i];
+        memcpy(&out[index*256], zero_arr, 256*sizeof(float));
+    }
+}
+
 /**
  * @brief Retrieve the data located in the ring buffer
- *
+ * Some microphones are faulty - They are set to zero in disable_microphones
  * @param out
  */
 void get_data(float *out)
@@ -832,7 +854,12 @@ void get_data(float *out)
     semop(semid, &data_sem_wait, 1);
     memcpy(out, (void *)&rb->data[0], sizeof(float) * BUFFER_LENGTH);
     semop(semid, &data_sem_signal, 1);
+    int mic_idx[30] = {136, 144, 145, 146, 147, 148, 149, 150, 151, 153, 154, 155, 156, 157,  158, 159, 217, 218, 219, 220, 221, 233, 234, 235, 236, 237, 249, 250, 251, 252};
+    int n_mic = 30;
+    disable_microphones(out, mic_idx, n_mic);
+    
 }
+
 
 #endif
 
@@ -914,6 +941,100 @@ int load(bool replay_mode)
     return 0;
 }
 
+
+void init_filter_memory(){
+    if(FILTER_MODE == 0){
+        filter_input = (float *)calloc(256, sizeof(float));
+        filter_output = (float *)_mm_malloc(256 * sizeof(float), 32);
+        for(int i = 0; i < 256; i++){
+            filter_output[i] = 0;
+        }
+
+        //Ta fram de bakvända koefficienterna
+        //float *filter_1_coeffs = reverse_filter_coeffs(BPS, BPSL);
+        filter_1_coefficients = reverse_filter_coeffs_merge();
+        filter_1_coefficients_wma = generate_coeffs_copies_preset(filter_1_coefficients);
+        //filter_2_coefficients = reverse_filter_coeffs_preset(1, 256);
+    }else if(FILTER_MODE == 1){
+        filter_input = (float *)calloc(256*256, sizeof(float));
+        filter_output = (float *)calloc(256*256, sizeof(float));
+        //cuda_filter_init_new();
+        //generate_FFT_header_file();
+
+    }
+}
+
+int load_filter(bool replay_mode)
+{
+    init_shared_memory();
+    init_semaphore();
+    //FILTER
+    init_filter_memory();
+    
+
+    pid_t pid = fork(); // Fork child
+    
+    if (pid == -1)
+    {
+        perror("fork");
+        exit(1);
+    }
+    else if (pid == 0) // Child
+    {
+        
+        // Create UDP socket:
+        socket_desc = create_and_bind_socket(replay_mode);
+        if (socket_desc == -1)
+        {
+            exit(1);
+        }
+
+        client_msg = create_msg();
+        
+        int n_arrays = receive_header_data(socket_desc);
+        if (n_arrays == -1)
+        {
+            exit(1);
+        }
+        //FILTER
+        if(FILTER_MODE == 1){
+            cuda_init_all();
+        }
+        
+        
+        while (1)
+        {
+
+            semop(semid, &data_sem_wait, 1);
+
+            if (receive_and_write_to_buffer(socket_desc, rb, client_msg, n_arrays) == -1)
+            {
+                printf("Failure\n");
+                return -1;
+            }
+            
+           if(FILTER_MODE == 0){
+        
+                simd_fir_filter_wma(filter_1_coefficients_wma, &rb->data[0], filter_input, filter_output);
+           
+            }
+            if(FILTER_MODE == 1){
+                cuda_filter_rt(&rb->data[0], filter_input, filter_output);
+               
+            }
+            
+
+            semop(semid, &data_sem_signal, 1);
+        }
+
+        exit(0);
+    }
+
+    pid_child = pid;
+
+    // Return to parent
+    return 0;
+}
 
 // Algorithms
 

@@ -61,6 +61,7 @@
         "MIC_GAIN": 128,
         "KEY": 1232,
         "KEY_SOUND": 1235,
+        "FILTER_MODE": 0,
         "expression": {}
     }
 }
