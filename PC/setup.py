@@ -12,7 +12,7 @@ c_files = []
 c_files.extend(glob.glob("src/*.c"))
 c_files.extend(glob.glob("src/algorithms/*.c"))
 
-CFLAGS = "-finline-functions -O3 -march=native -mavx2 -lm -lrt -lasound -ljack -lpthread -lportaudio -lfftw3"
+CFLAGS = "-finline-functions -O3 -march=native -mavx2 -lm -lrt -lasound -ljack -lpthread -lportaudio"
 CFLAGS = CFLAGS.split(" ")
 
 setup (
