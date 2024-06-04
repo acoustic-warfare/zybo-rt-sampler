@@ -20,7 +20,7 @@ setup (
     ext_modules = cythonize(
         [
             Extension("beamformer", ["src/main.pyx"] + c_files, 
-                      include_dirs=["src/", "/usr/local/cuda/include", "/usr/local/include"], extra_objects=["lib/dlink.o", "lib/cuKernel.o"] , extra_compile_args = CFLAGS, libraries=['portaudio', "cudart", "cudadevrt", "cufft", "fftw3"], library_dirs=["/usr/local/cuda/lib64"],),
+                      include_dirs=["src/", "/usr/local/cuda/include", "/usr/local/include"], extra_objects=["lib/dlink.o", "lib/cuKernel.o"] , extra_compile_args = CFLAGS, libraries=['portaudio', "cudart", "cudadevrt", "cufft"], library_dirs=["/usr/local/cuda/lib64"],),
             Extension("directions", ["src/directions.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
             Extension("tests", ["src/benchmark.pyx"], include_dirs=["src/"], extra_compile_args = CFLAGS),
             # Extension("kf", ["src/kf.pyx"], include_dirs=["src/"], extra_compile_args = ["-lm"]),
