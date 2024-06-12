@@ -130,7 +130,7 @@ def disconnect() -> None:
     stop_receiving()
 
 
-def receive(signals: np.ndarray[N_MICROPHONES, N_SAMPLES]) -> None:
+def receive(signals) -> None:
     """
     Receive the N_SAMPLES latest samples from the Zybo.
 
